@@ -4,7 +4,7 @@ Functions: 8
 
 ## Function Checklist
 
-- [ ] `player_apply_move_with_spawn_avoidance` — TODO (ref: crimsonland:0041e290)
+- [x] `player_apply_move_with_spawn_avoidance` — Implemented analog via spawn-avoidance helper in `src/sim/world.ts` used by creature/bonus spawns. (ref: crimsonland:0041e290)
 - [ ] `player_find_in_radius` — TODO (ref: crimsonland:00420730)
 - [x] `player_fire_weapon` — Implemented (basic fire flow in `src/sim/systems/weapons.ts`) (ref: crimsonland:00444980)
 - [ ] `player_render_overlays` — TODO (ref: crimsonland:00428390)
@@ -15,4 +15,5 @@ Functions: 8
 
 ## Notes
 - Current `player_update` handles movement acceleration, damping, aim direction/angle, and world bounds.
-- Missing from reference parity: reload flow, overlay rendering, spawn avoidance, and any weapon/fire behavior.
+- Spawn avoidance exists as a world helper for spawns, not as a player movement routine.
+- Missing from reference parity: reload flow, overlay rendering, and any remaining weapon/fire behavior.

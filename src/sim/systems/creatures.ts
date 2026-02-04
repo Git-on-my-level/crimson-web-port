@@ -1,38 +1,21 @@
 import { getCreatureDef } from '../../content/creatures';
 import type { SimState } from '../state';
 import type { SimEvent } from '../types';
+import { clampToWorld, findSpawnPosAwayFromPlayer, pickRandomWorldEdge } from '../world';
 
-export const WORLD_BOUNDS = {
-  minX: -50,
-  maxX: 50,
-  minY: -50,
-  maxY: 50,
-};
+export const CREATURE_SPAWN_MIN_DISTANCE = 10;
 
 export function spawnCreatureAtEdge(state: SimState, events: SimEvent[], kind: string): void {
   const def = getCreatureDef(kind);
-  const side = state.rng.nextInt(4);
-  const minX = WORLD_BOUNDS.minX + def.radius;
-  const maxX = WORLD_BOUNDS.maxX - def.radius;
-  const minY = WORLD_BOUNDS.minY + def.radius;
-  const maxY = WORLD_BOUNDS.maxY - def.radius;
-  const t = state.rng.nextFloat01();
-
-  let x = 0;
-  let y = 0;
-  if (side === 0) {
-    x = minX;
-    y = minY + t * (maxY - minY);
-  } else if (side === 1) {
-    x = maxX;
-    y = minY + t * (maxY - minY);
-  } else if (side === 2) {
-    x = minX + t * (maxX - minX);
-    y = minY;
-  } else {
-    x = minX + t * (maxX - minX);
-    y = maxY;
-  }
+  const spawn = findSpawnPosAwayFromPlayer(
+    state.rng,
+    state.player.pos,
+    CREATURE_SPAWN_MIN_DISTANCE,
+    20,
+    (rng) => pickRandomWorldEdge(rng, def.radius),
+  );
+  const x = spawn.x;
+  const y = spawn.y;
 
   const id = state.nextEntityId++;
   state.creatures.push({
@@ -56,10 +39,6 @@ export function updateCreatures(state: SimState, events: SimEvent[], dt: number)
   void events;
 
   const player = state.player;
-  const minX = WORLD_BOUNDS.minX;
-  const maxX = WORLD_BOUNDS.maxX;
-  const minY = WORLD_BOUNDS.minY;
-  const maxY = WORLD_BOUNDS.maxY;
   let writeIndex = 0;
   for (let i = 0; i < state.creatures.length; i += 1) {
     const creature = state.creatures[i];
@@ -81,22 +60,7 @@ export function updateCreatures(state: SimState, events: SimEvent[], dt: number)
       creature.vel.y = 0;
     }
 
-    const clampMinX = minX + creature.radius;
-    const clampMaxX = maxX - creature.radius;
-    const clampMinY = minY + creature.radius;
-    const clampMaxY = maxY - creature.radius;
-
-    if (creature.pos.x < clampMinX) {
-      creature.pos.x = clampMinX;
-    } else if (creature.pos.x > clampMaxX) {
-      creature.pos.x = clampMaxX;
-    }
-
-    if (creature.pos.y < clampMinY) {
-      creature.pos.y = clampMinY;
-    } else if (creature.pos.y > clampMaxY) {
-      creature.pos.y = clampMaxY;
-    }
+    clampToWorld(creature.pos, creature.radius);
 
     state.creatures[writeIndex] = creature;
     writeIndex += 1;

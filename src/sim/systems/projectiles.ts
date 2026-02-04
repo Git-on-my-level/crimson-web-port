@@ -1,12 +1,6 @@
 import type { SimState } from '../state';
 import type { SimEvent, Vec2 } from '../types';
-
-const WORLD_BOUNDS = {
-  minX: -50,
-  maxX: 50,
-  minY: -50,
-  maxY: 50,
-};
+import { WORLD_BOUNDS } from '../world';
 
 const OUT_OF_BOUNDS_MARGIN = 6;
 

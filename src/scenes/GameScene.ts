@@ -3,6 +3,7 @@ import { Sim } from '../sim/sim';
 import { PhaserInputAdapter } from '../adapters/phaser/input';
 import { PhaserRenderAdapter } from '../adapters/phaser/render';
 import { DebugOverlay } from '../adapters/phaser/debugOverlay';
+import { TerrainBackground } from '../adapters/phaser/terrainBackground';
 import { Hud } from '../ui/Hud';
 import { PerkPickerOverlay } from '../ui/PerkPickerOverlay';
 
@@ -17,7 +18,7 @@ export class GameScene extends Phaser.Scene {
   private readonly pixelsPerUnit = 12;
   private originX = 0;
   private originY = 0;
-  private background?: Phaser.GameObjects.Rectangle;
+  private terrain?: TerrainBackground;
   private gameOverText?: Phaser.GameObjects.Text;
   private wasGameOver = false;
   private pendingPerkChoice: number | null = null;
@@ -31,8 +32,7 @@ export class GameScene extends Phaser.Scene {
     this.originX = width / 2;
     this.originY = height / 2;
 
-    this.background = this.add.rectangle(width / 2, height / 2, width * 0.9, height * 0.9, 0x111826)
-      .setStrokeStyle(2, 0x1f2937);
+    this.terrain = new TerrainBackground(this, width, height);
     this.gameOverText = this.add.text(width / 2, height / 2, 'Game Over', {
       fontFamily: '"Atkinson Hyperlegible", "Trebuchet MS", sans-serif',
       fontSize: '32px',
@@ -71,6 +71,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.renderAdapter.render(this.sim.state);
+    this.terrain?.update(this.cameras.main);
     const fps = this.game.loop.actualFps || 0;
     this.debugOverlay.update(this.sim.state, this.seed, fps);
     this.hud.update(this.sim.state);
@@ -83,10 +84,7 @@ export class GameScene extends Phaser.Scene {
     this.originX = gameSize.width / 2;
     this.originY = gameSize.height / 2;
     this.renderAdapter.setTransform(this.getTransform());
-    if (this.background) {
-      this.background.setPosition(this.originX, this.originY);
-      this.background.setSize(gameSize.width * 0.9, gameSize.height * 0.9);
-    }
+    this.terrain?.resize(gameSize.width, gameSize.height);
     if (this.gameOverText) {
       this.gameOverText.setPosition(this.originX, this.originY);
     }

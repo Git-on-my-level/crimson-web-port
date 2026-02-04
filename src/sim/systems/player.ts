@@ -1,15 +1,9 @@
 import type { SimState } from '../state';
 import { vec2AddInplace, vec2Length, vec2Scale } from '../types';
+import { clampToWorld } from '../world';
 
 const PLAYER_ACCEL = 18;
 const PLAYER_DAMPING = 10;
-const WORLD_BOUNDS = {
-  minX: -50,
-  maxX: 50,
-  minY: -50,
-  maxY: 50,
-};
-
 function getPlayerMaxSpeed(player: SimState['player']): number {
   const speedBoostTicks = player.activeEffects['speed_boost'] ?? 0;
   const bonusMultiplier = speedBoostTicks > 0 ? 1.5 : 1.0;
@@ -41,25 +35,15 @@ export function updatePlayer(state: SimState, dt: number): void {
 
   vec2AddInplace(state.player.pos, vec2Scale(state.player.vel, dt));
 
-  const minX = WORLD_BOUNDS.minX + state.player.radius;
-  const maxX = WORLD_BOUNDS.maxX - state.player.radius;
-  const minY = WORLD_BOUNDS.minY + state.player.radius;
-  const maxY = WORLD_BOUNDS.maxY - state.player.radius;
+  const prevX = state.player.pos.x;
+  const prevY = state.player.pos.y;
+  clampToWorld(state.player.pos, state.player.radius);
 
-  if (state.player.pos.x < minX) {
-    state.player.pos.x = minX;
-    if (state.player.vel.x < 0) state.player.vel.x = 0;
-  } else if (state.player.pos.x > maxX) {
-    state.player.pos.x = maxX;
-    if (state.player.vel.x > 0) state.player.vel.x = 0;
+  if (state.player.pos.x !== prevX) {
+    state.player.vel.x = 0;
   }
-
-  if (state.player.pos.y < minY) {
-    state.player.pos.y = minY;
-    if (state.player.vel.y < 0) state.player.vel.y = 0;
-  } else if (state.player.pos.y > maxY) {
-    state.player.pos.y = maxY;
-    if (state.player.vel.y > 0) state.player.vel.y = 0;
+  if (state.player.pos.y !== prevY) {
+    state.player.vel.y = 0;
   }
 
   const aimDx = input.aimX - state.player.pos.x;

@@ -2,6 +2,7 @@ import { getBonusDef, pickRandomBonusType, type BonusId } from '../../content/bo
 import type { SimState } from '../state';
 import type { SimEvent } from '../types';
 import { WEAPON_BY_ID } from '../../content/weapons';
+import { clampToWorld, findSpawnPosAwayFromPlayer } from '../world';
 
 const BONUS_DROP_CHANCE = 0.25;
 const BONUS_DESPAWN_TICKS = 900;
@@ -9,6 +10,8 @@ const BONUS_RADIUS = 0.8;
 const BONUS_PICKUP_RADIUS = 1.5;
 const MEDKIT_HEAL_AMOUNT = 30;
 const SCORE_BONUS_AMOUNT = 50;
+const BONUS_SPAWN_MIN_DISTANCE = 3.0;
+const BONUS_SPAWN_JITTER = 3.5;
 
 export function updateBonuses(state: SimState, events: SimEvent[]): void {
   updateBonusEffects(state);
@@ -23,7 +26,22 @@ export function trySpawnBonusOnKill(state: SimState, events: SimEvent[], pos: { 
     return;
   }
   const bonusType = pickRandomBonusType(state.rng);
-  spawnBonus(state, events, pos, bonusType);
+  const spawnPos = findSpawnPosAwayFromPlayer(
+    state.rng,
+    state.player.pos,
+    BONUS_SPAWN_MIN_DISTANCE,
+    12,
+    (rng) => {
+      const angle = rng.nextFloat01() * Math.PI * 2;
+      const distance = rng.nextFloat01() * BONUS_SPAWN_JITTER;
+      const candidate = {
+        x: pos.x + Math.cos(angle) * distance,
+        y: pos.y + Math.sin(angle) * distance,
+      };
+      return clampToWorld(candidate, BONUS_RADIUS);
+    },
+  );
+  spawnBonus(state, events, spawnPos, bonusType);
 }
 
 export function spawnBonus(
@@ -32,16 +50,17 @@ export function spawnBonus(
   pos: { x: number; y: number },
   kind: BonusId,
 ): void {
+  const spawnPos = clampToWorld({ x: pos.x, y: pos.y }, BONUS_RADIUS);
   const id = state.nextEntityId++;
   state.bonuses.push({
     id,
-    pos: { x: pos.x, y: pos.y },
+    pos: { x: spawnPos.x, y: spawnPos.y },
     active: true,
     kind,
     radius: BONUS_RADIUS,
     lifeTicksRemaining: BONUS_DESPAWN_TICKS,
   });
-  events.push({ type: 'spawnBonus', id, pos, kind });
+  events.push({ type: 'spawnBonus', id, pos: spawnPos, kind });
 }
 
 export function checkBonusPickup(state: SimState, events: SimEvent[]): void {
