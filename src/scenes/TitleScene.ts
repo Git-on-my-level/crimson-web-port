@@ -1,6 +1,10 @@
 import Phaser from 'phaser';
+import { Menu, type MenuItem } from '../ui/Menu';
+import { UI_STYLE } from '../ui/style';
 
 export class TitleScene extends Phaser.Scene {
+  private menu?: Menu;
+
   constructor() {
     super('title');
   }
@@ -8,23 +12,47 @@ export class TitleScene extends Phaser.Scene {
   create() {
     const { width, height } = this.scale;
 
-    this.add.text(width / 2, height / 2 - 40, 'Crimson Web Port', {
-      fontFamily: '"Trebuchet MS", "Lucida Sans Unicode", "Lucida Grande", "Lucida Sans", Arial, sans-serif',
-      fontSize: '48px',
-      color: '#f5f5f5',
+    this.add.text(width / 2, height / 2 - 120, 'Crimson Web Port', {
+      ...UI_STYLE.text.title,
+      fontFamily: UI_STYLE.fontFamily,
     }).setOrigin(0.5);
 
-    this.add.text(width / 2, height / 2 + 30, 'Press Enter or Click to Start', {
-      fontFamily: '"Trebuchet MS", "Lucida Sans Unicode", "Lucida Grande", "Lucida Sans", Arial, sans-serif',
-      fontSize: '20px',
-      color: '#9aa4b2',
+    this.add.text(width / 2, height / 2 - 80, 'Press Enter or Click to Start', {
+      ...UI_STYLE.text.subtitle,
+      fontFamily: UI_STYLE.fontFamily,
     }).setOrigin(0.5);
 
-    const startGame = () => {
-      this.scene.start('game');
-    };
+    const menuItems: MenuItem[] = [
+      {
+        label: 'Survival',
+        action: () => this.startSurvival(),
+      },
+      {
+        label: 'Quest',
+        action: () => this.showQuestStub(),
+      },
+      {
+        label: 'Options',
+        action: () => this.scene.start('options'),
+      },
+      {
+        label: 'Highscores',
+        action: () => this.scene.start('highscores'),
+      },
+    ];
 
-    this.input.keyboard?.once('keydown-ENTER', startGame);
-    this.input.once(Phaser.Input.Events.POINTER_DOWN, startGame);
+    this.menu = new Menu(this, menuItems);
+  }
+
+  private startSurvival(): void {
+    this.scene.start('game', { mode: 'survival' });
+  }
+
+  private showQuestStub(): void {
+    this.scene.start('questStub');
+  }
+
+  shutdown(): void {
+    this.menu?.destroy();
   }
 }

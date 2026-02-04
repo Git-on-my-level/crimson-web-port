@@ -7,6 +7,11 @@ import { TerrainBackground } from '../adapters/phaser/terrainBackground';
 import { Hud } from '../ui/Hud';
 import { PerkPickerOverlay } from '../ui/PerkPickerOverlay';
 
+interface GameSceneInitData {
+  mode?: 'survival' | 'quest';
+  seed?: number;
+}
+
 export class GameScene extends Phaser.Scene {
   private sim!: Sim;
   private inputAdapter!: PhaserInputAdapter;
@@ -15,6 +20,7 @@ export class GameScene extends Phaser.Scene {
   private hud!: Hud;
   private perkOverlay!: PerkPickerOverlay;
   private seed = 1;
+  private mode: 'survival' | 'quest' = 'survival';
   private readonly pixelsPerUnit = 12;
   private originX = 0;
   private originY = 0;
@@ -25,6 +31,11 @@ export class GameScene extends Phaser.Scene {
 
   constructor() {
     super('game');
+  }
+
+  init(data: GameSceneInitData): void {
+    this.mode = data.mode ?? 'survival';
+    this.seed = data.seed ?? this.readSeedFromQuery();
   }
 
   create() {
@@ -47,8 +58,8 @@ export class GameScene extends Phaser.Scene {
       .setDepth(900)
       .setVisible(false);
 
-    this.seed = this.readSeedFromQuery();
     this.sim = new Sim({ seed: this.seed });
+    this.sim.state.mode = this.mode;
     this.inputAdapter = new PhaserInputAdapter(this, () => this.getTransform());
     this.renderAdapter = new PhaserRenderAdapter(this, this.getTransform());
     this.debugOverlay = new DebugOverlay(this);

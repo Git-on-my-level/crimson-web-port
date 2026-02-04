@@ -32,10 +32,56 @@ Functions: 37
   - GameScene stops update loop
   - Transitions to GameOverScene with score, timeAlive, seed
 
+### TICKET-300 — Menus + Mode Selection + Basic UI Surfaces
+
+#### Menu Component (`src/ui/Menu.ts`)
+- Generic menu component with vertical list of items
+- Supports mouse navigation (hover/click)
+- Supports keyboard navigation (UP/DOWN/ENTER/SPACE)
+- Visual feedback for selected item
+- Each item has label + action callback
+- Configurable enabled/disabled state per item
+
+#### UI Style Constants (`src/ui/style.ts`)
+- Centralized style definitions
+- Font family (Atkinson Hyperlegible, Trebuchet MS)
+- Button dimensions
+- Color palette (primary, hover, text, background)
+- Text styles (title, subtitle, button)
+
+#### TitleScene (`src/scenes/TitleScene.ts`)
+- Main menu with 4 options:
+  - Survival (starts game in survival mode)
+  - Quest (shows stub scene, TODO in TICKET-310)
+  - Options (navigates to OptionsScene)
+  - Highscores (navigates to HighscoresScene)
+- Uses generic Menu component
+- Title and subtitle text
+
+#### OptionsScene (`src/scenes/OptionsScene.ts`)
+- Stub scene for options
+- "Coming soon..." subtitle
+- Back to Title button
+
+#### HighscoresScene (`src/scenes/HighscoresScene.ts`)
+- Stub scene for highscores
+- "Coming soon..." subtitle
+- Back to Title button
+
+#### QuestStubScene (`src/scenes/QuestStubScene.ts`)
+- Stub scene for quest mode
+- "Coming soon in TICKET-310..." subtitle
+- Back to Title button
+
+#### GameScene Mode Selection
+- GameScene now accepts init data: `{ mode?: 'survival' | 'quest', seed?: number }`
+- Mode is passed to Sim state before game starts
+- Survival is default mode
+
 ## Function Checklist
 
 - [x] `ui_render_hud` — Implemented as `src/ui/Hud.ts` (simplified HUD with HP, score, weapon name, pause overlay)
-- [ ] `ui_button_update` — TODO (ref: crimsonland:0043e830)
+- [x] `ui_button_update` — Implemented as `src/ui/Menu.ts` (generic menu with hover/keyboard support)
 - [ ] `ui_checkbox_update` — TODO (ref: crimsonland:0043dc80)
 - [ ] `ui_cursor_render` — TODO (ref: crimsonland:0041a040)
 - [ ] `ui_draw_clock_gauge` — TODO (ref: crimsonland:004061e0)
@@ -54,14 +100,14 @@ Functions: 37
 - [ ] `ui_focus_set` — TODO (ref: crimsonland:0043d7e0)
 - [ ] `ui_focus_update` — TODO (ref: crimsonland:0043d830)
 - [ ] `ui_get_element_index` — TODO (ref: crimsonland:00446150)
-- [ ] `ui_list_widget_update` — TODO (ref: crimsonland:0043efc0)
-- [ ] `ui_menu_assets_init` — TODO (ref: crimsonland:00419dd0)
-- [ ] `ui_menu_item_update` — TODO (ref: crimsonland:0043e5e0)
-- [ ] `ui_menu_layout_init` — TODO (ref: crimsonland:0044fcb0)
-- [ ] `ui_menu_main_click_options` — TODO (ref: crimsonland:00447370)
-- [ ] `ui_menu_main_click_play_game` — TODO (ref: crimsonland:00447400)
-- [ ] `ui_menu_main_click_quit` — TODO (ref: crimsonland:00447450)
-- [ ] `ui_mouse_inside_rect` — TODO (ref: crimsonland:004034a0)
+- [ ] `ui_list_widget_update` — Implemented as `src/ui/Menu.ts` (vertical list widget with keyboard support)
+- [ ] `ui_menu_assets_init` — N/A (no assets needed for web port)
+- [x] `ui_menu_item_update` — Implemented as `src/ui/Menu.ts` (menu item with hover/click actions)
+- [ ] `ui_menu_layout_init` — Implemented as `src/ui/Menu.ts` (simple vertical layout)
+- [x] `ui_menu_main_click_options` — Implemented (Options button in TitleScene)
+- [x] `ui_menu_main_click_play_game` — Implemented (Survival button in TitleScene)
+- [ ] `ui_menu_main_click_quit` — TODO (Quit button, if needed for web)
+- [ ] `ui_mouse_inside_rect` — Implemented via Phaser input events in Menu component
 - [ ] `ui_profile_menu_update` — TODO (ref: crimsonland:004443c0)
 - [ ] `ui_render_aim_enhancement` — TODO (ref: crimsonland:0041a320)
 - [ ] `ui_render_aim_indicators` — TODO (ref: crimsonland:0040a510)
@@ -72,8 +118,8 @@ Functions: 37
 - [ ] `ui_text_input_update` — TODO (ref: crimsonland:0043ecf0)
 - [ ] `ui_update_notice_update` — TODO (ref: crimsonland:00442150)
 
-## Notes on Missing Menus/Options
-- Main menu system (options, profiles) not yet implemented
-- Only basic title/start flow exists
-- No options/config UI
+## Notes on Remaining Work
+- Options UI (volume, controls) - slated for TICKET-400
+- Highscores persistence - slated for TICKET-340
+- Quest mode UI - slated for TICKET-310
 - Perk selection UI implemented for `phase === 'PerkSelect'` (overlay with 3 choices)
