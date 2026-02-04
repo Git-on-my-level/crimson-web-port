@@ -1,7 +1,9 @@
 import Phaser from 'phaser';
 import { Menu, type MenuItem } from '../ui/Menu';
 import { UI_STYLE } from '../ui/style';
-import { loadSettings, updateKeybindSetting, updateVolumeSettings, resetKeybindsToDefaults, resetVolumeToDefaults, type Keybinds } from '../persistence/settings';
+import { loadSettings, updateKeybindSetting, resetKeybindsToDefaults, resetVolumeToDefaults, type Keybinds } from '../persistence/settings';
+import { PhaserAudioAdapter } from '../adapters/phaser/audio';
+import { SFX_KEYS } from '../audio/sfx';
 
 type KeybindAction = keyof Keybinds;
 
@@ -27,6 +29,7 @@ export class OptionsScene extends Phaser.Scene {
   private volumeSliders?: Phaser.GameObjects.Container;
   private remapPrompt?: Phaser.GameObjects.Text;
   private volumeDisplay: Phaser.GameObjects.Text[] = [];
+  private audio?: PhaserAudioAdapter;
 
   constructor() {
     super('options');
@@ -34,6 +37,7 @@ export class OptionsScene extends Phaser.Scene {
 
   create() {
     const { width, height } = this.scale;
+    this.audio = new PhaserAudioAdapter(this);
 
     this.add.text(width / 2, 50, 'Options', {
       ...UI_STYLE.text.title,
@@ -71,6 +75,7 @@ export class OptionsScene extends Phaser.Scene {
       }).setOrigin(0.5);
 
       bg.on('pointerdown', () => {
+        this.audio?.playSfx(SFX_KEYS.uiClick);
         this.currentTab = tab.tab;
         this.createTabs(width, height);
         this.updateTabContent();
@@ -100,7 +105,10 @@ export class OptionsScene extends Phaser.Scene {
     const menuItems: MenuItem[] = [
       {
         label: 'Back to Title',
-        action: () => this.scene.start('title'),
+        action: () => {
+          this.audio?.playSfx(SFX_KEYS.uiClick);
+          this.scene.start('title');
+        },
       },
     ];
 
@@ -137,6 +145,7 @@ export class OptionsScene extends Phaser.Scene {
         .setInteractive({ useHandCursor: true });
 
       buttonBg.on('pointerdown', () => {
+        this.audio?.playSfx(SFX_KEYS.uiClick);
         this.startRemap(action);
       });
 
@@ -163,6 +172,7 @@ export class OptionsScene extends Phaser.Scene {
     resetBtn.on('pointerover', () => resetBtn.setColor('#fca5a5'));
     resetBtn.on('pointerout', () => resetBtn.setColor('#f87171'));
     resetBtn.on('pointerdown', () => {
+      this.audio?.playSfx(SFX_KEYS.uiClick);
       resetKeybindsToDefaults();
       this.updateTabContent();
     });
@@ -235,8 +245,7 @@ export class OptionsScene extends Phaser.Scene {
           sliderFill.x = width / 2 - 200 + clampedX / 2;
 
           displayText.text = `${Math.round(newValue * 100)}%`;
-
-          updateVolumeSettings({ [type]: newValue });
+          this.updateVolumeSetting(type, newValue);
         }
       });
 
@@ -250,8 +259,7 @@ export class OptionsScene extends Phaser.Scene {
         sliderFill.x = width / 2 - 200 + clampedX / 2;
 
         displayText.text = `${Math.round(newValue * 100)}%`;
-
-        updateVolumeSettings({ [type]: newValue });
+        this.updateVolumeSetting(type, newValue);
       });
 
       container.add([label, sliderBg, sliderFill, sliderHandle, displayText]);
@@ -269,7 +277,9 @@ export class OptionsScene extends Phaser.Scene {
     resetBtn.on('pointerover', () => resetBtn.setColor('#fca5a5'));
     resetBtn.on('pointerout', () => resetBtn.setColor('#f87171'));
     resetBtn.on('pointerdown', () => {
+      this.audio?.playSfx(SFX_KEYS.uiClick);
       resetVolumeToDefaults();
+      this.audio?.reloadSettings();
       this.updateTabContent();
     });
 
@@ -307,6 +317,17 @@ export class OptionsScene extends Phaser.Scene {
     overlay.destroy();
     this.scene.resume();
     this.updateTabContent();
+  }
+
+  private updateVolumeSetting(type: 'master' | 'sfx' | 'music', value: number): void {
+    if (!this.audio) return;
+    if (type === 'master') {
+      this.audio.setMasterVolume(value);
+    } else if (type === 'sfx') {
+      this.audio.setSfxVolume(value);
+    } else {
+      this.audio.setMusicVolume(value);
+    }
   }
 
   private eventToKeyCode(event: KeyboardEvent): string {

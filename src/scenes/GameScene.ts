@@ -9,6 +9,8 @@ import { PerkPickerOverlay } from '../ui/PerkPickerOverlay';
 import { spawnCreatureAtEdge } from '../sim/systems/creatures';
 import { WEAPON_BY_ID } from '../content/weapons';
 import type { SimEvent } from '../sim/types';
+import { PhaserAudioAdapter } from '../adapters/phaser/audio';
+import { mapSimSfxName, SFX_KEYS } from '../audio/sfx';
 
 interface GameSceneInitData {
   mode?: 'survival' | 'quest';
@@ -23,6 +25,7 @@ export class GameScene extends Phaser.Scene {
   private debugOverlay!: DebugOverlay;
   private hud!: Hud;
   private perkOverlay!: PerkPickerOverlay;
+  private audio!: PhaserAudioAdapter;
   private seed = 1;
   private mode: 'survival' | 'quest' = 'survival';
   private questId?: string;
@@ -92,6 +95,7 @@ export class GameScene extends Phaser.Scene {
     this.hud = new Hud(this, true);
     this.perkOverlay = new PerkPickerOverlay(this, (slot) => this.queuePerkChoice(slot));
     this.perkOverlay.resize(width, height);
+    this.audio = new PhaserAudioAdapter(this);
 
     this.scale.on('resize', this.handleResize, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleShutdown, this);
@@ -109,7 +113,8 @@ export class GameScene extends Phaser.Scene {
       const rawInput = this.inputAdapter.readInput();
       const input = { ...rawInput, perkChoice: this.pendingPerkChoice ?? rawInput.perkChoice };
       this.pendingPerkChoice = null;
-      this.sim.step(input);
+      const { events } = this.sim.step(input);
+      this.handleSimEvents(events);
     }
 
     this.renderAdapter.render(this.sim.state);
@@ -246,6 +251,36 @@ export class GameScene extends Phaser.Scene {
 
   private queuePerkChoice(slot: number): void {
     this.pendingPerkChoice = slot;
+  }
+
+  private handleSimEvents(events: SimEvent[]): void {
+    if (!events.length) return;
+    const sfxKeys = new Set<string>();
+
+    for (const event of events) {
+      switch (event.type) {
+        case 'playSfx': {
+          const key = mapSimSfxName(event.name);
+          if (key) sfxKeys.add(key);
+          break;
+        }
+        case 'pickup':
+          sfxKeys.add(SFX_KEYS.pickup);
+          break;
+        case 'perkOffered':
+          sfxKeys.add(SFX_KEYS.perkOffer);
+          break;
+        case 'perkChosen':
+          sfxKeys.add(SFX_KEYS.perkChoose);
+          break;
+        default:
+          break;
+      }
+    }
+
+    for (const key of sfxKeys) {
+      this.audio.playSfx(key);
+    }
   }
 
   private updateSurvivalSpawnRange(): void {

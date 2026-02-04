@@ -16,13 +16,18 @@ Functions: 8
 ## Implementation Notes
 
 **Implemented Features:**
-- Audio adapter with volume control support (stub implementation)
-- Master, SFX, and Music volume controls
-- Volume persistence via settings system
-- Sim emits `playSfx` events (currently logged to console)
+- Phaser audio adapter wired to the global sound manager
+- Real SFX + music playback with master/SFX/music volume control
+- Sim events (`playSfx`, `pickup`, `perkOffered`, `perkChosen`) routed to audio
+- UI click sounds on menu interactions
+- Volume persistence via settings system with live volume updates
+- Basic SFX de-dupe cooldown to prevent spam
 
 **Files:**
-- `src/adapters/phaser/audio.ts` - Audio adapter with volume controls (stub)
+- `src/adapters/phaser/audio.ts` - Phaser audio adapter with playback + volume control
+- `src/audio/sfx.ts` - Sim SFX name mapping + preload keys
+- `src/scenes/GameScene.ts` - Sim event routing to audio
+- `src/scenes/TitleScene.ts` / `OptionsScene.ts` - UI click SFX + music start
 - `src/persistence/settings.ts` - Volume configuration storage
 - `src/sim/types.ts` - `playSfx` SimEvent type
 

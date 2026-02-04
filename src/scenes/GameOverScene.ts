@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 import { addRunRecord, type RunRecord } from '../persistence/highscores';
+import { PhaserAudioAdapter } from '../adapters/phaser/audio';
+import { SFX_KEYS } from '../audio/sfx';
 
 interface GameOverSceneInitData {
   score: number;
@@ -13,6 +15,7 @@ export class GameOverScene extends Phaser.Scene {
   private timeAlive = 0;
   private seed = 1;
   private level = 1;
+  private audio?: PhaserAudioAdapter;
 
   constructor() {
     super('gameOver');
@@ -41,6 +44,7 @@ export class GameOverScene extends Phaser.Scene {
     const { width, height } = this.scale;
     const centerX = width / 2;
     const centerY = height / 2;
+    this.audio = new PhaserAudioAdapter(this);
 
     const textStyle = {
       fontFamily: '"Atkinson Hyperlegible", "Trebuchet MS", sans-serif',
@@ -97,7 +101,10 @@ export class GameOverScene extends Phaser.Scene {
 
       txt.on('pointerover', hoverOver);
       txt.on('pointerout', hoverOut);
-      txt.on('pointerdown', onClick);
+      txt.on('pointerdown', () => {
+        this.audio?.playSfx(SFX_KEYS.uiClick);
+        onClick();
+      });
 
       return { bg, txt };
     };
@@ -111,10 +118,12 @@ export class GameOverScene extends Phaser.Scene {
     });
 
     this.input.keyboard?.once('keydown-ENTER', () => {
+      this.audio?.playSfx(SFX_KEYS.uiClick);
       this.scene.start('game', { seed: this.seed });
     });
 
     this.input.keyboard?.once('keydown-ESC', () => {
+      this.audio?.playSfx(SFX_KEYS.uiClick);
       this.scene.start('title');
     });
   }

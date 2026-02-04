@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 import { getQuestDef } from '../content/quests';
+import { PhaserAudioAdapter } from '../adapters/phaser/audio';
+import { SFX_KEYS } from '../audio/sfx';
 
 interface QuestFailedSceneInitData {
   questId: string;
@@ -16,6 +18,7 @@ export class QuestFailedScene extends Phaser.Scene {
   private elapsedTicks = 0;
   private killsTotal = 0;
   private seed = 1;
+  private audio?: PhaserAudioAdapter;
 
   constructor() {
     super('questFailed');
@@ -34,6 +37,7 @@ export class QuestFailedScene extends Phaser.Scene {
     const centerX = width / 2;
     const centerY = height / 2;
     const quest = getQuestDef(this.questId);
+    this.audio = new PhaserAudioAdapter(this);
 
     const textStyle = {
       fontFamily: '"Atkinson Hyperlegible", "Trebuchet MS", sans-serif',
@@ -104,7 +108,10 @@ export class QuestFailedScene extends Phaser.Scene {
 
       txt.on('pointerover', hoverOver);
       txt.on('pointerout', hoverOut);
-      txt.on('pointerdown', onClick);
+      txt.on('pointerdown', () => {
+        this.audio?.playSfx(SFX_KEYS.uiClick);
+        onClick();
+      });
 
       return { bg, txt };
     };
@@ -122,14 +129,17 @@ export class QuestFailedScene extends Phaser.Scene {
     });
 
     this.input.keyboard?.once('keydown-R', () => {
+      this.audio?.playSfx(SFX_KEYS.uiClick);
       this.scene.start('game', { mode: 'quest', questId: this.questId, seed: this.seed });
     });
 
     this.input.keyboard?.once('keydown-ENTER', () => {
+      this.audio?.playSfx(SFX_KEYS.uiClick);
       this.scene.start('game', { mode: 'quest', questId: this.questId, seed: this.seed });
     });
 
     this.input.keyboard?.once('keydown-ESC', () => {
+      this.audio?.playSfx(SFX_KEYS.uiClick);
       this.scene.start('questSelect');
     });
   }

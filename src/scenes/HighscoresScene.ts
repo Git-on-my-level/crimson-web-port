@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import { Menu, type MenuItem } from '../ui/Menu';
 import { UI_STYLE } from '../ui/style';
 import { getSurvivalHighscores } from '../persistence/highscores';
+import { PhaserAudioAdapter } from '../adapters/phaser/audio';
+import { SFX_KEYS } from '../audio/sfx';
 
 type TabMode = 'survival' | 'quest';
 
@@ -10,6 +12,7 @@ export class HighscoresScene extends Phaser.Scene {
   private tabMode: TabMode = 'survival';
   private tabButtons: Phaser.GameObjects.Container[] = [];
   private tableContainer?: Phaser.GameObjects.Container;
+  private audio?: PhaserAudioAdapter;
 
   constructor() {
     super('highscores');
@@ -17,6 +20,7 @@ export class HighscoresScene extends Phaser.Scene {
 
   create() {
     const { width, height } = this.scale;
+    this.audio = new PhaserAudioAdapter(this);
 
     this.add.text(width / 2, height / 2 - 200, 'Highscores', {
       ...UI_STYLE.text.title,
@@ -29,13 +33,17 @@ export class HighscoresScene extends Phaser.Scene {
     const menuItems: MenuItem[] = [
       {
         label: 'Back to Title',
-        action: () => this.scene.start('title'),
+        action: () => {
+          this.audio?.playSfx(SFX_KEYS.uiClick);
+          this.scene.start('title');
+        },
       },
     ];
 
     this.menu = new Menu(this, menuItems);
 
     this.input.keyboard?.once('keydown-ESC', () => {
+      this.audio?.playSfx(SFX_KEYS.uiClick);
       this.scene.start('title');
     });
   }
@@ -65,6 +73,7 @@ export class HighscoresScene extends Phaser.Scene {
       }).setOrigin(0.5);
 
       bg.on('pointerdown', () => {
+        this.audio?.playSfx(SFX_KEYS.uiClick);
         this.setTabMode(tab.mode);
       });
 
