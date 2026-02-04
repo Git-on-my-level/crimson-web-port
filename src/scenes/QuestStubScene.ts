@@ -17,12 +17,16 @@ export class QuestStubScene extends Phaser.Scene {
       fontFamily: UI_STYLE.fontFamily,
     }).setOrigin(0.5);
 
-    this.add.text(width / 2, height / 2 - 80, 'Coming soon in TICKET-310...', {
+    this.add.text(width / 2, height / 2 - 80, 'Prototype runtime now available.', {
       ...UI_STYLE.text.subtitle,
       fontFamily: UI_STYLE.fontFamily,
     }).setOrigin(0.5);
 
     const menuItems: MenuItem[] = [
+      {
+        label: 'Start Quest',
+        action: () => this.scene.start('game', { mode: 'quest' }),
+      },
       {
         label: 'Back to Title',
         action: () => this.scene.start('title'),

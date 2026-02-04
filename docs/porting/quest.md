@@ -2,6 +2,12 @@
 
 Functions: 61
 
+## Runtime Status
+
+- Quest runtime model implemented in `src/sim/systems/mode_quest.ts` (timeline stepping, objectives, status transitions).
+- Spawn timeline is represented as ordered events with a `nextTimelineIndex` cursor.
+- Quest results/failed phases are represented in sim (`QuestResults`, `QuestFailed`).
+
 ## Function Checklist
 
 - [ ] `quest_build_8_legged_terror` — TODO (ref: crimsonland:00436120)
@@ -60,8 +66,8 @@ Functions: 61
 - [ ] `quest_failed_screen_update` — TODO (ref: crimsonland:004107e0)
 - [ ] `quest_meta_init` — TODO (ref: crimsonland:00412190)
 - [ ] `quest_meta_init_entry` — TODO (ref: crimsonland:00430a20)
-- [ ] `quest_mode_update` — TODO (ref: crimsonland:004070e0)
+- [x] `quest_mode_update` — PARTIAL (ref: crimsonland:004070e0; TS: `src/sim/systems/mode_quest.ts`)
 - [ ] `quest_results_screen_update` — TODO (ref: crimsonland:00410d20)
-- [ ] `quest_spawn_table_empty` — TODO (ref: crimsonland:00434220)
-- [ ] `quest_spawn_timeline_update` — TODO (ref: crimsonland:00434250)
+- [x] `quest_spawn_table_empty` — PARTIAL (ref: crimsonland:00434220; cursor-based timeline with no pending events)
+- [x] `quest_spawn_timeline_update` — PARTIAL (ref: crimsonland:00434250; deterministic timeline events)
 - [ ] `quest_start_selected` — TODO (ref: crimsonland:0043a790)

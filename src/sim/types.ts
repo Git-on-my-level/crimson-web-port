@@ -45,7 +45,9 @@ export type SimEvent =
   | { type: 'perkOffered'; level: number; choices: PerkId[] }
   | { type: 'perkChosen'; perkId: PerkId; level: number }
   | { type: 'playSfx'; name: string }
-  | { type: 'pickup'; id: EntityId; bonusType: string };
+  | { type: 'pickup'; id: EntityId; bonusType: string }
+  | { type: 'questStatusChanged'; status: 'Playing' | 'Success' | 'Failed' }
+  | { type: 'questMessage'; text: string };
 
 export function vec2(x = 0, y = 0): Vec2 {
   return { x, y };

@@ -4,6 +4,7 @@ import { despawnProjectile } from './projectiles';
 import { trySpawnBonusOnKill } from './bonuses';
 import { getCreatureDef } from '../../content/creatures';
 import { grantXp } from './progression';
+import { registerQuestKill, setQuestStatus } from './mode_quest';
 
 export function resolveCollisions(state: SimState, events: SimEvent[]): void {
   const player = state.player;
@@ -78,6 +79,9 @@ function applyDamageToCreature(
 
   creature.alive = false;
   events.push({ type: 'death', target: 'creature', id: creature.id });
+  if (state.mode === 'quest' && state.modeState.kind === 'quest') {
+    registerQuestKill(state.modeState, creature.kind);
+  }
   const def = getCreatureDef(creature.kind);
   state.score += def.scoreValue;
   events.push({ type: 'score', amount: def.scoreValue, total: state.score });
@@ -96,6 +100,14 @@ function applyDamageToPlayer(state: SimState, amount: number, events: SimEvent[]
   events.push({ type: 'damage', target: 'player', id: state.player.id, amount: finalAmount });
 
   if (state.player.hp > 0) {
+    return;
+  }
+
+  if (state.mode === 'quest' && state.modeState.kind === 'quest') {
+    if (state.modeState.status === 'Playing' && state.phase !== 'QuestFailed') {
+      events.push({ type: 'death', target: 'player', id: state.player.id });
+      setQuestStatus(state, state.modeState, 'Failed', events);
+    }
     return;
   }
 

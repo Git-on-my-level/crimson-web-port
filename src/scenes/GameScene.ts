@@ -10,6 +10,7 @@ import { PerkPickerOverlay } from '../ui/PerkPickerOverlay';
 interface GameSceneInitData {
   mode?: 'survival' | 'quest';
   seed?: number;
+  questId?: string;
 }
 
 export class GameScene extends Phaser.Scene {
@@ -21,12 +22,16 @@ export class GameScene extends Phaser.Scene {
   private perkOverlay!: PerkPickerOverlay;
   private seed = 1;
   private mode: 'survival' | 'quest' = 'survival';
+  private questId?: string;
   private readonly pixelsPerUnit = 12;
   private originX = 0;
   private originY = 0;
   private terrain?: TerrainBackground;
   private gameOverText?: Phaser.GameObjects.Text;
+  private questStatusText?: Phaser.GameObjects.Text;
   private wasGameOver = false;
+  private wasQuestComplete = false;
+  private wasQuestFailed = false;
   private pendingPerkChoice: number | null = null;
 
   constructor() {
@@ -36,6 +41,7 @@ export class GameScene extends Phaser.Scene {
   init(data: GameSceneInitData): void {
     this.mode = data.mode ?? 'survival';
     this.seed = data.seed ?? this.readSeedFromQuery();
+    this.questId = data.questId;
   }
 
   create() {
@@ -58,8 +64,21 @@ export class GameScene extends Phaser.Scene {
       .setDepth(900)
       .setVisible(false);
 
-    this.sim = new Sim({ seed: this.seed });
-    this.sim.state.mode = this.mode;
+    this.questStatusText = this.add.text(width / 2, height / 2, '', {
+      fontFamily: '"Atkinson Hyperlegible", "Trebuchet MS", sans-serif',
+      fontSize: '32px',
+      color: '#f8fafc',
+      align: 'center',
+      stroke: '#0f172a',
+      strokeThickness: 4,
+      backgroundColor: 'rgba(15, 23, 42, 0.65)',
+      padding: { x: 18, y: 14 },
+    })
+      .setOrigin(0.5)
+      .setDepth(900)
+      .setVisible(false);
+
+    this.sim = new Sim({ seed: this.seed, mode: this.mode, questId: this.questId });
     this.inputAdapter = new PhaserInputAdapter(this, () => this.getTransform());
     this.renderAdapter = new PhaserRenderAdapter(this, this.getTransform());
     this.debugOverlay = new DebugOverlay(this);
@@ -88,7 +107,9 @@ export class GameScene extends Phaser.Scene {
     this.hud.update(this.sim.state);
     this.perkOverlay.update(this.sim.state);
     this.syncGameOverOverlay();
+    this.syncQuestOverlay();
     this.checkGameOverTransition();
+    this.checkQuestTransition();
   }
 
   private handleResize(gameSize: Phaser.Structs.Size): void {
@@ -98,6 +119,9 @@ export class GameScene extends Phaser.Scene {
     this.terrain?.resize(gameSize.width, gameSize.height);
     if (this.gameOverText) {
       this.gameOverText.setPosition(this.originX, this.originY);
+    }
+    if (this.questStatusText) {
+      this.questStatusText.setPosition(this.originX, this.originY);
     }
     if (this.perkOverlay) {
       this.perkOverlay.resize(gameSize.width, gameSize.height);
@@ -128,6 +152,21 @@ export class GameScene extends Phaser.Scene {
     this.gameOverText.setVisible(isGameOver);
   }
 
+  private syncQuestOverlay(): void {
+    if (!this.questStatusText) return;
+    if (this.sim.state.phase === 'QuestResults') {
+      this.questStatusText.setText('Quest Complete!');
+      this.questStatusText.setVisible(true);
+      return;
+    }
+    if (this.sim.state.phase === 'QuestFailed') {
+      this.questStatusText.setText('Quest Failed');
+      this.questStatusText.setVisible(true);
+      return;
+    }
+    this.questStatusText.setVisible(false);
+  }
+
   private checkGameOverTransition(): void {
     const isGameOver = this.sim.state.phase === 'GameOver';
     if (isGameOver && !this.wasGameOver) {
@@ -138,6 +177,19 @@ export class GameScene extends Phaser.Scene {
       });
     }
     this.wasGameOver = isGameOver;
+  }
+
+  private checkQuestTransition(): void {
+    const isQuestComplete = this.sim.state.phase === 'QuestResults';
+    const isQuestFailed = this.sim.state.phase === 'QuestFailed';
+    if (isQuestComplete && !this.wasQuestComplete) {
+      // Placeholder until TICKET-330 quest results scene.
+    }
+    if (isQuestFailed && !this.wasQuestFailed) {
+      // Placeholder until TICKET-330 quest failed scene.
+    }
+    this.wasQuestComplete = isQuestComplete;
+    this.wasQuestFailed = isQuestFailed;
   }
 
   private queuePerkChoice(slot: number): void {

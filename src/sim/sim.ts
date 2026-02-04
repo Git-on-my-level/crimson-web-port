@@ -1,5 +1,6 @@
 import { FixedStepClock } from './clock';
 import { createSimState, type SimState } from './state';
+import type { QuestId } from '../content/quests';
 import type { InputFrame, SimEvent } from './types';
 import { applyInput } from './systems/input';
 import { updatePlayer } from './systems/player';
@@ -17,13 +18,13 @@ export class Sim {
   readonly fixedDeltaSeconds = 1 / 60;
   readonly clock = new FixedStepClock(this.fixedDeltaSeconds);
 
-  constructor({ seed = 1 }: { seed?: number } = {}) {
-    this.state = createSimState(seed);
+  constructor({ seed = 1, mode, questId }: { seed?: number; mode?: SimState['mode']; questId?: QuestId } = {}) {
+    this.state = createSimState(seed, { mode, questId });
   }
 
-  reset(seed?: number): void {
-    const nextSeed = seed ?? this.state.rng.nextUint32();
-    const fresh = createSimState(nextSeed);
+  reset(options: { seed?: number; mode?: SimState['mode']; questId?: QuestId } = {}): void {
+    const nextSeed = options.seed ?? this.state.rng.nextUint32();
+    const fresh = createSimState(nextSeed, { mode: options.mode, questId: options.questId });
     this.state.tick = fresh.tick;
     this.state.rng = fresh.rng;
     this.state.player = fresh.player;
@@ -39,6 +40,7 @@ export class Sim {
     this.state.projectilePool = fresh.projectilePool;
     this.state.lastStepTimeMs = 0;
     this.state.perkChoices = fresh.perkChoices;
+    this.state.selectedQuestId = fresh.selectedQuestId;
   }
 
   step(input: InputFrame): { events: SimEvent[] } {

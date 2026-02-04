@@ -14,9 +14,18 @@ export function spawnCreatureAtEdge(state: SimState, events: SimEvent[], kind: s
     20,
     (rng) => pickRandomWorldEdge(rng, def.radius),
   );
-  const x = spawn.x;
-  const y = spawn.y;
+  spawnCreatureAtPosition(state, events, kind, spawn);
+}
 
+export function spawnCreatureAtPosition(
+  state: SimState,
+  events: SimEvent[],
+  kind: string,
+  pos: { x: number; y: number },
+): void {
+  const def = getCreatureDef(kind);
+  const x = pos.x;
+  const y = pos.y;
   const id = state.nextEntityId++;
   state.creatures.push({
     id,

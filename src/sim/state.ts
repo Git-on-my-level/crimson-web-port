@@ -1,4 +1,5 @@
 import { WEAPONS, type WeaponId } from '../content/weapons';
+import { DEFAULT_QUEST_ID, type QuestId, type QuestStatus } from '../content/quests';
 import { type BonusId } from '../content/bonuses';
 import { EMPTY_INPUT, type InputFrame, type Vec2, vec2 } from './types';
 import { createPerkStats, type PerkStats } from './perks';
@@ -76,11 +77,12 @@ export interface SimState {
   timeAlive: number;
   mode: 'survival' | 'quest';
   modeState: ModeState;
-  phase: 'Playing' | 'GameOver' | 'Paused' | 'PerkSelect';
+  phase: 'Playing' | 'GameOver' | 'Paused' | 'PerkSelect' | 'QuestResults' | 'QuestFailed';
   perkChoices: PerkId[] | null;
   nextEntityId: number;
   projectilePool: ObjectPool<ProjectileState>;
   lastStepTimeMs: number;
+  selectedQuestId: QuestId;
 }
 
 export interface SurvivalModeState {
@@ -93,7 +95,13 @@ export interface SurvivalModeState {
 
 export interface QuestModeState {
   kind: 'quest';
+  questId: QuestId;
   elapsedTicks: number;
+  killsByKind: Record<string, number>;
+  killsTotal: number;
+  status: QuestStatus;
+  nextTimelineIndex: number;
+  messages: { text: string; tick: number }[];
 }
 
 export type ModeState = SurvivalModeState | QuestModeState;
@@ -108,15 +116,26 @@ export function createSurvivalModeState(): SurvivalModeState {
   };
 }
 
-export function createQuestModeState(): QuestModeState {
+export function createQuestModeState(questId: QuestId = DEFAULT_QUEST_ID): QuestModeState {
   return {
     kind: 'quest',
+    questId,
     elapsedTicks: 0,
+    killsByKind: {},
+    killsTotal: 0,
+    status: 'Playing',
+    nextTimelineIndex: 0,
+    messages: [],
   };
 }
 
-export function createSimState(seed = 1): SimState {
+export function createSimState(
+  seed = 1,
+  options: { mode?: SimState['mode']; questId?: QuestId } = {},
+): SimState {
   const rng = new Rng(seed);
+  const mode = options.mode ?? 'survival';
+  const selectedQuestId = options.questId ?? DEFAULT_QUEST_ID;
   const projectilePool = new ObjectPool<ProjectileState>(
     () => ({
       id: 0,
@@ -164,12 +183,13 @@ export function createSimState(seed = 1): SimState {
     bonuses: [],
     score: 0,
     timeAlive: 0,
-    mode: 'survival',
-    modeState: createSurvivalModeState(),
+    mode,
+    modeState: mode === 'quest' ? createQuestModeState(selectedQuestId) : createSurvivalModeState(),
     phase: 'Playing',
     perkChoices: null,
     nextEntityId: 2,
     projectilePool,
     lastStepTimeMs: 0,
+    selectedQuestId,
   };
 }

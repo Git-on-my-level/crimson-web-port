@@ -45,6 +45,17 @@ export function pickRandomWorldEdge(rng: Rng, margin = 0): Vec2 {
   return { x: minX + t * (maxX - minX), y: maxY };
 }
 
+export function pickRandomWorldPos(rng: Rng, margin = 0): Vec2 {
+  const minX = WORLD_BOUNDS.minX + margin;
+  const maxX = WORLD_BOUNDS.maxX - margin;
+  const minY = WORLD_BOUNDS.minY + margin;
+  const maxY = WORLD_BOUNDS.maxY - margin;
+  return {
+    x: minX + rng.nextFloat01() * (maxX - minX),
+    y: minY + rng.nextFloat01() * (maxY - minY),
+  };
+}
+
 export function findSpawnPosAwayFromPlayer(
   rng: Rng,
   playerPos: Vec2,

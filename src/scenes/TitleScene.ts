@@ -29,7 +29,7 @@ export class TitleScene extends Phaser.Scene {
       },
       {
         label: 'Quest',
-        action: () => this.showQuestStub(),
+        action: () => this.startQuest(),
       },
       {
         label: 'Options',
@@ -48,8 +48,8 @@ export class TitleScene extends Phaser.Scene {
     this.scene.start('game', { mode: 'survival' });
   }
 
-  private showQuestStub(): void {
-    this.scene.start('questStub');
+  private startQuest(): void {
+    this.scene.start('game', { mode: 'quest' });
   }
 
   shutdown(): void {
