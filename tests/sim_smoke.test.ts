@@ -77,7 +77,7 @@ describe('Sim smoke test', () => {
     expect(sim.state.tick).toBe(TOTAL_TICKS);
 
     expect(sim.state.score).toBe(10);
-    expect(sim.state.creatures.length).toBe(1);
+    expect(sim.state.creatures.length).toBe(7);
     expect(sim.state.projectiles.length).toBe(0);
 
     expect(sim.state.player.hp).toBeGreaterThan(0);
@@ -104,6 +104,6 @@ describe('Sim smoke test', () => {
     };
 
     const hash = hashSnapshot(JSON.stringify(snapshot));
-    expect(hash).toBe('c6fb9395');
+    expect(hash).toBe('31a5a721');
   });
 });

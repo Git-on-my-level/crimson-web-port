@@ -27,18 +27,25 @@ function countEvents(events: SimEvent[], type: SimEvent['type']): number {
 }
 
 describe('Quest mode', () => {
-  it('runs timeline spawns and succeeds after objectives complete', () => {
+  it('runs timeline spawns and succeeds at the expected tick', () => {
     const sim = new Sim({ seed: 123, mode: 'quest', questId: 'quest_test_short' });
     boostPlayerHp(sim);
 
     let spawnEvents = 0;
     let statusEvents: SimEvent[] = [];
+    let successTick: number | null = null;
 
-    const totalTicks = 150;
+    const totalTicks = 140;
     for (let tick = 0; tick < totalTicks; tick += 1) {
       const result = sim.step(IDLE_INPUT);
       spawnEvents += countEvents(result.events, 'spawnCreature');
-      statusEvents = statusEvents.concat(result.events.filter((event) => event.type === 'questStatusChanged'));
+      const statusChanges = result.events.filter((event) => event.type === 'questStatusChanged');
+      statusEvents = statusEvents.concat(statusChanges);
+      if (statusChanges.some((event) => event.status === 'Success') && successTick === null) {
+        if (sim.state.modeState.kind === 'quest') {
+          successTick = sim.state.modeState.elapsedTicks;
+        }
+      }
     }
 
     expect(spawnEvents).toBeGreaterThan(0);
@@ -48,5 +55,7 @@ describe('Quest mode', () => {
       expect(sim.state.modeState.elapsedTicks).toBeGreaterThanOrEqual(120);
     }
     expect(statusEvents.some((event) => event.type === 'questStatusChanged' && event.status === 'Success')).toBe(true);
+    expect(successTick).toBe(120);
+    expect(statusEvents.filter((event) => event.type === 'questStatusChanged').length).toBe(1);
   });
 });

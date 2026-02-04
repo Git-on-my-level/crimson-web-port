@@ -25,3 +25,13 @@
 - [ ] Survival director ramps difficulty
 - [ ] Game over and restart stable
 - [ ] No console errors after 5 minutes of play
+
+## M3 (TICKET-595)
+
+- [ ] Menus navigate correctly
+- [ ] Survival still works
+- [ ] Quest select works
+- [ ] At least 5 quests are playable
+- [ ] Quest results and failed screens work
+- [ ] Highscores persist across reload
+- [ ] No console errors after 10 minutes of mixed play

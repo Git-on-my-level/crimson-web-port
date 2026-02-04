@@ -66,6 +66,21 @@ Intentionally skipped for now:
 - Meta-progression, unlock tables, and leaderboard persistence.
 - Full Crimsonland UI chrome (wave cards, streak trackers, announcers).
 
+## Quest Parity (M3)
+
+Framework implemented:
+- Quest mode state machine (`Playing` → `Success`/`Failed`) with phase transitions.
+- Timeline events: spawn (`edge`, `ring`, `random`), message, grant bonus.
+- Objective evaluators: survive (duration), kill count (total or per creature), score.
+- Quest kill tracking and success/fail status events.
+
+Quest count implemented:
+- 2 quests in `src/content/quests/index.ts` (`quest_training_grounds`, `quest_test_short`).
+
+Missing objectives/quests:
+- All remaining original quest definitions beyond the two placeholders.
+- Any objective types not covered by `survive`, `killCount`, or `score`.
+
 ## High-Signal Prefixes
 
 | Prefix | Count |
