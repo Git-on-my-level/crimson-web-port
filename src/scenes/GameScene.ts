@@ -85,6 +85,7 @@ export class GameScene extends Phaser.Scene {
       .setVisible(false);
 
     this.sim = new Sim({ seed: this.seed, mode: this.mode, questId: this.questId, debug: this.debugEnabled });
+    this.updateSurvivalSpawnRange();
     this.inputAdapter = new PhaserInputAdapter(this, () => this.getTransform());
     this.renderAdapter = new PhaserRenderAdapter(this, this.getTransform());
     this.debugOverlay = new DebugOverlay(this);
@@ -128,6 +129,7 @@ export class GameScene extends Phaser.Scene {
     this.originY = gameSize.height / 2;
     this.renderAdapter.setTransform(this.getTransform());
     this.terrain?.resize(gameSize.width, gameSize.height);
+    this.updateSurvivalSpawnRange();
     if (this.gameOverText) {
       this.gameOverText.setPosition(this.originX, this.originY);
     }
@@ -244,6 +246,17 @@ export class GameScene extends Phaser.Scene {
 
   private queuePerkChoice(slot: number): void {
     this.pendingPerkChoice = slot;
+  }
+
+  private updateSurvivalSpawnRange(): void {
+    if (this.sim?.state.mode !== 'survival' || this.sim.state.modeState.kind !== 'survival') {
+      return;
+    }
+    const { width, height } = this.scale;
+    const viewRadiusUnits = 0.5 * Math.hypot(width / this.pixelsPerUnit, height / this.pixelsPerUnit);
+    const minDistance = viewRadiusUnits + 2;
+    this.sim.state.modeState.spawnMinDistance = minDistance;
+    this.sim.state.modeState.spawnMaxDistance = minDistance + 6;
   }
 
   private setupDebugControls(): void {

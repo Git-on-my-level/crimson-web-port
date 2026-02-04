@@ -105,6 +105,8 @@ export interface SurvivalModeState {
   spawnBudget: number;
   difficultyLevel: number;
   maxCreaturesSoftCap: number;
+  spawnMinDistance: number;
+  spawnMaxDistance: number;
 }
 
 export interface QuestModeState {
@@ -127,6 +129,8 @@ export function createSurvivalModeState(): SurvivalModeState {
     spawnBudget: 0,
     difficultyLevel: 0,
     maxCreaturesSoftCap: 6,
+    spawnMinDistance: 10,
+    spawnMaxDistance: 24,
   };
 }
 

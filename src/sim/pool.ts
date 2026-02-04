@@ -32,7 +32,7 @@ export class ObjectPool<T> {
     }
   }
 
-  alloc(initializer: (data: T) => void): number | null {
+  alloc(initializer: (data: T) => void, idOverride?: number): number | null {
     let slotIndex: number;
 
     if (this.freeList.length > 0) {
@@ -50,7 +50,14 @@ export class ObjectPool<T> {
 
     const slot = this.slots[slotIndex];
     slot.active = true;
-    slot.id = this.nextId++;
+    if (idOverride !== undefined) {
+      slot.id = idOverride;
+      if (idOverride >= this.nextId) {
+        this.nextId = idOverride + 1;
+      }
+    } else {
+      slot.id = this.nextId++;
+    }
     initializer(slot.data);
 
     return slot.id;

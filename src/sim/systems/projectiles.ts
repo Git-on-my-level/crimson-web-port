@@ -26,7 +26,7 @@ export function spawnProjectile(
     proj.owner = owner;
     proj.radius = radius;
     proj.alive = true;
-  });
+  }, state.nextEntityId++);
 
   if (id !== null) {
     events.push({ type: 'spawnProjectile', id, pos, vel, kind });

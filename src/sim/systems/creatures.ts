@@ -4,6 +4,7 @@ import type { SimEvent } from '../types';
 import { clampToWorld, findSpawnPosAwayFromPlayer, pickRandomWorldEdge } from '../world';
 
 export const CREATURE_SPAWN_MIN_DISTANCE = 10;
+const CREATURE_SPAWN_MAX_DISTANCE = 24;
 
 export function spawnCreatureAtEdge(state: SimState, events: SimEvent[], kind: string): void {
   const def = getCreatureDef(kind);
@@ -13,6 +14,34 @@ export function spawnCreatureAtEdge(state: SimState, events: SimEvent[], kind: s
     CREATURE_SPAWN_MIN_DISTANCE,
     20,
     (rng) => pickRandomWorldEdge(rng, def.radius),
+  );
+  spawnCreatureAtPosition(state, events, kind, spawn);
+}
+
+export function spawnCreatureNearPlayer(
+  state: SimState,
+  events: SimEvent[],
+  kind: string,
+  minDistance = CREATURE_SPAWN_MIN_DISTANCE,
+  maxDistance = CREATURE_SPAWN_MAX_DISTANCE,
+): void {
+  const def = getCreatureDef(kind);
+  const spawn = findSpawnPosAwayFromPlayer(
+    state.rng,
+    state.player.pos,
+    minDistance,
+    20,
+    (rng) => {
+      const angle = rng.nextFloat01() * Math.PI * 2;
+      const dist = minDistance + rng.nextFloat01() * Math.max(0, maxDistance - minDistance);
+      return clampToWorld(
+        {
+          x: state.player.pos.x + Math.cos(angle) * dist,
+          y: state.player.pos.y + Math.sin(angle) * dist,
+        },
+        def.radius,
+      );
+    },
   );
   spawnCreatureAtPosition(state, events, kind, spawn);
 }

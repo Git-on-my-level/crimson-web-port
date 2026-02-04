@@ -1,6 +1,6 @@
 import type { SimState, SurvivalModeState } from '../state';
 import type { SimEvent } from '../types';
-import { spawnCreatureAtEdge } from './creatures';
+import { spawnCreatureNearPlayer } from './creatures';
 
 type SpawnWeight = {
   kind: string;
@@ -116,7 +116,13 @@ export function updateSurvivalMode(state: SimState, events: SimEvent[]): void {
     if (!pick) {
       break;
     }
-    spawnCreatureAtEdge(state, events, pick.kind);
+    spawnCreatureNearPlayer(
+      state,
+      events,
+      pick.kind,
+      modeState.spawnMinDistance,
+      modeState.spawnMaxDistance,
+    );
     modeState.spawnBudget -= pick.cost;
     aliveCount += 1;
     spawnsThisTick += 1;
@@ -133,6 +139,8 @@ function ensureSurvivalState(state: SimState): SurvivalModeState {
     spawnBudget: 0,
     difficultyLevel: 0,
     maxCreaturesSoftCap: SURVIVAL_TIERS[0]?.maxCreatures ?? 6,
+    spawnMinDistance: 10,
+    spawnMaxDistance: 24,
   };
   state.modeState = next;
   return next;
