@@ -1,0 +1,136 @@
+import Phaser from 'phaser';
+import { getQuestDef } from '../content/quests';
+
+interface QuestFailedSceneInitData {
+  questId: string;
+  score: number;
+  elapsedTicks: number;
+  killsTotal: number;
+  killsByKind: Record<string, number>;
+  seed: number;
+}
+
+export class QuestFailedScene extends Phaser.Scene {
+  private questId = '';
+  private score = 0;
+  private elapsedTicks = 0;
+  private killsTotal = 0;
+  private seed = 1;
+
+  constructor() {
+    super('questFailed');
+  }
+
+  init(data: QuestFailedSceneInitData): void {
+    this.questId = data.questId || '';
+    this.score = data.score || 0;
+    this.elapsedTicks = data.elapsedTicks || 0;
+    this.killsTotal = data.killsTotal || 0;
+    this.seed = data.seed || 1;
+  }
+
+  create() {
+    const { width, height } = this.scale;
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const quest = getQuestDef(this.questId);
+
+    const textStyle = {
+      fontFamily: '"Atkinson Hyperlegible", "Trebuchet MS", sans-serif',
+      color: '#f8fafc',
+      stroke: '#0f172a',
+      strokeThickness: 4,
+      align: 'center',
+    };
+
+    this.add.text(centerX, centerY - 140, 'QUEST FAILED', {
+      ...textStyle,
+      fontSize: '42px',
+      color: '#ef4444',
+      backgroundColor: 'rgba(15, 23, 42, 0.65)',
+      padding: { x: 24, y: 16 },
+    }).setOrigin(0.5);
+
+    this.add.text(centerX, centerY - 90, quest.title, {
+      ...textStyle,
+      fontSize: '24px',
+      color: '#fbbf24',
+    }).setOrigin(0.5);
+
+    const scoreText = `Score: ${Math.round(this.score)}`;
+    this.add.text(centerX, centerY - 40, scoreText, {
+      ...textStyle,
+      fontSize: '28px',
+    }).setOrigin(0.5);
+
+    const timeSeconds = Math.round(this.elapsedTicks / 60);
+    const timeText = `Time: ${timeSeconds}s`;
+    this.add.text(centerX, centerY, timeText, {
+      ...textStyle,
+      fontSize: '20px',
+      color: '#94a3b8',
+    }).setOrigin(0.5);
+
+    const killsText = `Kills: ${this.killsTotal}`;
+    this.add.text(centerX, centerY + 30, killsText, {
+      ...textStyle,
+      fontSize: '20px',
+      color: '#94a3b8',
+    }).setOrigin(0.5);
+
+    const buttonStyle = {
+      fontFamily: '"Atkinson Hyperlegible", "Trebuchet MS", sans-serif',
+      fontSize: '18px',
+      color: '#f8fafc',
+      padding: { x: 24, y: 12 },
+    };
+
+    const createButton = (y: number, text: string, bgColor: number, onClick: () => void) => {
+      const bg = this.add.rectangle(centerX, y, 200, 44, bgColor)
+        .setStrokeStyle(2, 0x3b82f6);
+
+      const txt = this.add.text(centerX, y, text, buttonStyle)
+        .setOrigin(0.5)
+        .setInteractive({ useHandCursor: true })
+        .setDepth(1);
+
+      const hoverOver = () => {
+        bg.setFillStyle(bgColor + 0x222222);
+      };
+
+      const hoverOut = () => {
+        bg.setFillStyle(bgColor);
+      };
+
+      txt.on('pointerover', hoverOver);
+      txt.on('pointerout', hoverOut);
+      txt.on('pointerdown', onClick);
+
+      return { bg, txt };
+    };
+
+    createButton(centerY + 100, 'Retry', 0x1e40af, () => {
+      this.scene.start('game', { mode: 'quest', questId: this.questId, seed: this.seed });
+    });
+
+    createButton(centerY + 160, 'Quest Select', 0x4b5563, () => {
+      this.scene.start('questSelect');
+    });
+
+    createButton(centerY + 220, 'Main Menu', 0x4b5563, () => {
+      this.scene.start('title');
+    });
+
+    this.input.keyboard?.once('keydown-R', () => {
+      this.scene.start('game', { mode: 'quest', questId: this.questId, seed: this.seed });
+    });
+
+    this.input.keyboard?.once('keydown-ENTER', () => {
+      this.scene.start('game', { mode: 'quest', questId: this.questId, seed: this.seed });
+    });
+
+    this.input.keyboard?.once('keydown-ESC', () => {
+      this.scene.start('questSelect');
+    });
+  }
+}

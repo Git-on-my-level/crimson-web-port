@@ -183,10 +183,28 @@ export class GameScene extends Phaser.Scene {
     const isQuestComplete = this.sim.state.phase === 'QuestResults';
     const isQuestFailed = this.sim.state.phase === 'QuestFailed';
     if (isQuestComplete && !this.wasQuestComplete) {
-      // Placeholder until TICKET-330 quest results scene.
+      if (this.sim.state.modeState.kind === 'quest') {
+        this.scene.start('questResults', {
+          questId: this.sim.state.modeState.questId,
+          score: this.sim.state.score,
+          elapsedTicks: this.sim.state.modeState.elapsedTicks,
+          killsTotal: this.sim.state.modeState.killsTotal,
+          killsByKind: this.sim.state.modeState.killsByKind,
+          seed: this.seed,
+        });
+      }
     }
     if (isQuestFailed && !this.wasQuestFailed) {
-      // Placeholder until TICKET-330 quest failed scene.
+      if (this.sim.state.modeState.kind === 'quest') {
+        this.scene.start('questFailed', {
+          questId: this.sim.state.modeState.questId,
+          score: this.sim.state.score,
+          elapsedTicks: this.sim.state.modeState.elapsedTicks,
+          killsTotal: this.sim.state.modeState.killsTotal,
+          killsByKind: this.sim.state.modeState.killsByKind,
+          seed: this.seed,
+        });
+      }
     }
     this.wasQuestComplete = isQuestComplete;
     this.wasQuestFailed = isQuestFailed;

@@ -83,13 +83,13 @@ Functions: 61
 - [ ] `quest_build_zombie_time` — TODO (ref: crimsonland:00437d70)
 - [ ] `quest_database_advance_slot` — TODO (ref: crimsonland:004343c0)
 - [ ] `quest_database_init` — TODO (ref: crimsonland:00439230)
-- [ ] `quest_failed_screen_update` — TODO (ref: crimsonland:004107e0)
 - [ ] `quest_meta_init` — TODO (ref: crimsonland:00412190)
 - [ ] `quest_meta_init_entry` — TODO (ref: crimsonland:00430a20)
 - [x] `quest_mode_update` — PARTIAL (ref: crimsonland:004070e0; TS: `src/sim/systems/mode_quest.ts`)
-- [ ] `quest_results_screen_update` — TODO (ref: crimsonland:00410d20)
+- [x] `quest_results_screen_update` — IMPLEMENTED (ref: crimsonland:00410d20; TS: `src/scenes/QuestResultsScene.ts`)
 - [x] `quest_spawn_table_empty` — PARTIAL (ref: crimsonland:00434220; cursor-based timeline with no pending events)
 - [x] `quest_spawn_timeline_update` — PARTIAL (ref: crimsonland:00434250; deterministic timeline events)
+- [x] `quest_failed_screen_update` — IMPLEMENTED (ref: crimsonland:004107e0; TS: `src/scenes/QuestFailedScene.ts`)
 - [ ] `quest_start_selected` — TODO (ref: crimsonland:0043a790)
 
 ## Quest Catalog Structure
