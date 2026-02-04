@@ -12,7 +12,8 @@
     "prepare": "husky install",
     "test": "vitest run",
     "preview": "vite preview",
-    "tools:extract-ref": "tsx src/tools/extract_ref_map.ts"
+    "tools:extract-ref": "tsx src/tools/extract_ref_map.ts",
+    "tools:extract-quests": "tsx src/tools/extract_quest_names.ts"
   },
   "devDependencies": {
     "@types/node": "^25.2.0",

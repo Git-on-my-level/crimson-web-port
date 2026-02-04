@@ -49,7 +49,7 @@ export class TitleScene extends Phaser.Scene {
   }
 
   private startQuest(): void {
-    this.scene.start('game', { mode: 'quest' });
+    this.scene.start('questSelect');
   }
 
   shutdown(): void {

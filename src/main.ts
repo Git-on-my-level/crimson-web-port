@@ -6,7 +6,7 @@ import { GameScene } from './scenes/GameScene';
 import { GameOverScene } from './scenes/GameOverScene';
 import { OptionsScene } from './scenes/OptionsScene';
 import { HighscoresScene } from './scenes/HighscoresScene';
-import { QuestStubScene } from './scenes/QuestStubScene';
+import { QuestSelectScene } from './scenes/QuestSelectScene';
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -18,7 +18,7 @@ const config: Phaser.Types.Core.GameConfig = {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
-  scene: [BootScene, TitleScene, GameScene, GameOverScene, OptionsScene, HighscoresScene, QuestStubScene],
+  scene: [BootScene, TitleScene, GameScene, GameOverScene, OptionsScene, HighscoresScene, QuestSelectScene],
 };
 
 new Phaser.Game(config);
