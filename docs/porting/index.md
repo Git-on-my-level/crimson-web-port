@@ -34,6 +34,11 @@ This workbook tracks progress porting functions from the Crimsonland decompiled 
 | [ui](./ui.md) | 37 |
 | [weapon](./weapon.md) | 5 |
 
+## Notes
+
+- Parity harness: `src/tools/sim_trace.ts` for deterministic sim traces + `tests/parity/` for golden scenarios.
+- Parity scorecard lives at `docs/parity/scorecard.md`.
+
 ## Survival Parity (M2)
 
 Implemented reference functions (name parity):
