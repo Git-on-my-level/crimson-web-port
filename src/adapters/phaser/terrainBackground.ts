@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-const TEXTURE_KEY = 'terrain-tile';
+const TEXTURE_KEY = 'terrain-q1-base';
 const TILE_SIZE = 128;
 
 export class TerrainBackground {

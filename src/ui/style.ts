@@ -14,6 +14,7 @@ export const UI_STYLE = {
   text: {
     title: { fontSize: '48px', color: '#f5f5f5' },
     subtitle: { fontSize: '20px', color: '#9aa4b2' },
+    small: { fontSize: '14px', color: '#cbd5f5' },
     button: { fontSize: '18px', color: '#f8fafc' },
     buttonHover: { fontSize: '18px', color: '#f8fafc' },
   },

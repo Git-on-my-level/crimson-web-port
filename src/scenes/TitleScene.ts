@@ -41,6 +41,13 @@ export class TitleScene extends Phaser.Scene {
       },
     ];
 
+    if (this.isAtlasPreviewEnabled()) {
+      menuItems.push({
+        label: 'Atlas Preview',
+        action: () => this.scene.start('atlasPreview'),
+      });
+    }
+
     this.menu = new Menu(this, menuItems);
   }
 
@@ -50,6 +57,14 @@ export class TitleScene extends Phaser.Scene {
 
   private startQuest(): void {
     this.scene.start('questSelect');
+  }
+
+  private isAtlasPreviewEnabled(): boolean {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+    const params = new URLSearchParams(window.location.search);
+    return Boolean(params.get('debug')) || params.get('atlas') === '1' || import.meta.env.DEV;
   }
 
   shutdown(): void {

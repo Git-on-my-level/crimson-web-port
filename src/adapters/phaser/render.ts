@@ -1,7 +1,9 @@
 import Phaser from 'phaser';
 import type { SimState } from '../../sim/state';
 import type { EntityId } from '../../sim/types';
-import { getBonusDef } from '../../content/bonuses';
+import { type BonusId } from '../../content/bonuses';
+import type { WeaponId } from '../../content/weapons';
+import { BONUS_FRAMES, PROJECTILE_FRAMES } from '../../content/atlas';
 
 export type RenderTransform = {
   originX: number;
@@ -16,15 +18,21 @@ const COLORS = {
   bonus: 0xfacc15,
 };
 
+const PROJECTILE_SPRITE_KEY = 'game-projs-grid4';
+const BONUS_SPRITE_KEY = 'game-bonuses-grid4';
+
+const PROJECTILE_FRAME_BY_WEAPON: Record<WeaponId, number> = PROJECTILE_FRAMES;
+const BONUS_FRAME_BY_KIND: Record<BonusId, number> = BONUS_FRAMES;
+
 export class PhaserRenderAdapter {
   private readonly scene: Phaser.Scene;
   private player?: Phaser.GameObjects.Arc;
   private readonly creatures = new Map<EntityId, Phaser.GameObjects.Arc>();
-  private readonly projectiles = new Map<EntityId, Phaser.GameObjects.Arc>();
-  private readonly bonuses = new Map<EntityId, Phaser.GameObjects.Arc>();
-  private readonly projectileSpritePool: Phaser.GameObjects.Arc[] = [];
+  private readonly projectiles = new Map<EntityId, Phaser.GameObjects.Sprite>();
+  private readonly bonuses = new Map<EntityId, Phaser.GameObjects.Sprite>();
+  private readonly projectileSpritePool: Phaser.GameObjects.Sprite[] = [];
   private readonly creatureSpritePool: Phaser.GameObjects.Arc[] = [];
-  private readonly bonusSpritePool: Phaser.GameObjects.Arc[] = [];
+  private readonly bonusSpritePool: Phaser.GameObjects.Sprite[] = [];
   private transform: RenderTransform;
   private debugCollisionEnabled = false;
   private debugGraphics?: Phaser.GameObjects.Graphics;
@@ -48,14 +56,7 @@ export class PhaserRenderAdapter {
       10,
       (entry) => entry.alive,
     );
-    this.syncEntities(
-      state.projectiles,
-      this.projectiles,
-      this.projectileSpritePool,
-      COLORS.projectile,
-      4,
-      (entry) => entry.alive,
-    );
+    this.syncProjectiles(state.projectiles);
     this.syncBonuses(state.bonuses);
     this.renderCollisionDebug(state);
   }
@@ -101,19 +102,20 @@ export class PhaserRenderAdapter {
 
   private syncBonuses(bonuses: SimState['bonuses']): void {
     const seen = new Set<EntityId>();
-    const defaultColor = COLORS.bonus;
-    const radius = 6;
+    const radius = 0.6;
 
     for (const bonus of bonuses) {
       if (!bonus.active) {
         continue;
       }
       seen.add(bonus.id);
-      const def = getBonusDef(bonus.kind);
-      const color = def.color ?? defaultColor;
-      const obj = this.bonuses.get(bonus.id) ?? this.createCircle(this.bonuses, this.bonusSpritePool, bonus.id, radius, color);
+      const frame = BONUS_FRAME_BY_KIND[bonus.kind];
+      const obj =
+        this.bonuses.get(bonus.id) ??
+        this.createSprite(this.bonuses, this.bonusSpritePool, bonus.id, BONUS_SPRITE_KEY, frame);
       const { x, y } = this.toScreen(bonus.pos.x, bonus.pos.y);
       obj.setPosition(x, y);
+      obj.setDisplaySize(radius * 2 * this.transform.pixelsPerUnit, radius * 2 * this.transform.pixelsPerUnit);
       obj.setVisible(true);
     }
 
@@ -122,6 +124,34 @@ export class PhaserRenderAdapter {
         obj.setVisible(false);
         this.bonuses.delete(id);
         this.bonusSpritePool.push(obj);
+      }
+    }
+  }
+
+  private syncProjectiles(projectiles: SimState['projectiles']): void {
+    const seen = new Set<EntityId>();
+    const fallbackFrame = 0;
+
+    for (const projectile of projectiles) {
+      if (!projectile.alive) {
+        continue;
+      }
+      seen.add(projectile.id);
+      const frame = PROJECTILE_FRAME_BY_WEAPON[projectile.kind as WeaponId] ?? fallbackFrame;
+      const obj =
+        this.projectiles.get(projectile.id) ??
+        this.createSprite(this.projectiles, this.projectileSpritePool, projectile.id, PROJECTILE_SPRITE_KEY, frame);
+      const { x, y } = this.toScreen(projectile.pos.x, projectile.pos.y);
+      obj.setPosition(x, y);
+      obj.setDisplaySize(projectile.radius * 2 * this.transform.pixelsPerUnit, projectile.radius * 2 * this.transform.pixelsPerUnit);
+      obj.setVisible(true);
+    }
+
+    for (const [id, obj] of this.projectiles) {
+      if (!seen.has(id)) {
+        obj.setVisible(false);
+        this.projectiles.delete(id);
+        this.projectileSpritePool.push(obj);
       }
     }
   }
@@ -145,6 +175,27 @@ export class PhaserRenderAdapter {
 
     map.set(id, circle);
     return circle;
+  }
+
+  private createSprite(
+    map: Map<EntityId, Phaser.GameObjects.Sprite>,
+    pool: Phaser.GameObjects.Sprite[],
+    id: EntityId,
+    textureKey: string,
+    frame: number,
+  ): Phaser.GameObjects.Sprite {
+    let sprite: Phaser.GameObjects.Sprite;
+
+    if (pool.length > 0) {
+      sprite = pool.pop()!;
+      sprite.setTexture(textureKey, frame);
+    } else {
+      sprite = this.scene.add.sprite(0, 0, textureKey, frame);
+      sprite.setOrigin(0.5);
+    }
+
+    map.set(id, sprite);
+    return sprite;
   }
 
   private toScreen(simX: number, simY: number): { x: number; y: number } {

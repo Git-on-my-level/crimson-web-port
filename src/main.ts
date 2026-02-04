@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import './style.css';
 import { BootScene } from './scenes/BootScene';
+import { PreloadScene } from './scenes/PreloadScene';
+import { AtlasPreviewScene } from './scenes/AtlasPreviewScene';
 import { TitleScene } from './scenes/TitleScene';
 import { GameScene } from './scenes/GameScene';
 import { GameOverScene } from './scenes/GameOverScene';
@@ -20,7 +22,19 @@ const config: Phaser.Types.Core.GameConfig = {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
-  scene: [BootScene, TitleScene, GameScene, GameOverScene, OptionsScene, HighscoresScene, QuestSelectScene, QuestResultsScene, QuestFailedScene],
+  scene: [
+    BootScene,
+    PreloadScene,
+    AtlasPreviewScene,
+    TitleScene,
+    GameScene,
+    GameOverScene,
+    OptionsScene,
+    HighscoresScene,
+    QuestSelectScene,
+    QuestResultsScene,
+    QuestFailedScene,
+  ],
 };
 
 new Phaser.Game(config);
