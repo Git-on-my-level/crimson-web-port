@@ -7,6 +7,7 @@ import { grantXp } from './progression';
 import { registerQuestKill, setQuestStatus } from './mode_quest';
 import { registerSurvivalKill } from './mode_survival';
 import { WORLD_BOUNDS } from '../world';
+import { isTerrainBlocked } from '../terrain';
 
 const CELL_SIZE = 6;
 const GRID_WIDTH = Math.ceil((WORLD_BOUNDS.maxX - WORLD_BOUNDS.minX) / CELL_SIZE);
@@ -29,6 +30,25 @@ export function resolveCollisions(state: SimState, events: SimEvent[]): void {
 
   state.projectilePool.forEachActive((projId, projectile) => {
     if (!projectile.alive || projectile.owner !== 'player') {
+      return;
+    }
+
+    if (isTerrainBlocked(state.terrain, projectile.pos.x, projectile.pos.y, projectile.radius)) {
+      const impactPos = { x: projectile.pos.x, y: projectile.pos.y };
+      const explosionRadius = projectile.explosionRadius;
+      if (explosionRadius > 0) {
+        const explosionDamage = projectile.explosionDamage || projectile.damage;
+        applyExplosionDamage(state, impactPos, explosionRadius, explosionDamage, events);
+        events.push({
+          type: 'projectileImpact',
+          id: projId,
+          pos: impactPos,
+          kind: projectile.kind,
+          explosionRadius,
+        });
+      }
+      projectile.alive = false;
+      toRemove.push(projId);
       return;
     }
 

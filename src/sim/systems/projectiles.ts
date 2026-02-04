@@ -1,8 +1,6 @@
 import type { SimState } from '../state';
 import type { SimEvent, Vec2 } from '../types';
 import { WORLD_BOUNDS } from '../world';
-import { isTerrainBlocked } from '../terrain';
-
 const OUT_OF_BOUNDS_MARGIN = 6;
 
 export function spawnProjectile(
@@ -68,8 +66,7 @@ export function updateProjectiles(state: SimState, events: SimEvent[], dt: numbe
       proj.pos.x < minX ||
       proj.pos.x > maxX ||
       proj.pos.y < minY ||
-      proj.pos.y > maxY ||
-      isTerrainBlocked(state.terrain, proj.pos.x, proj.pos.y, proj.radius)
+      proj.pos.y > maxY
     ) {
       toRelease.push(id);
     }
