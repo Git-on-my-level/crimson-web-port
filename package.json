@@ -10,7 +10,7 @@
     "check:build": "vite build --emptyOutDir",
     "verify": "npm run check:types && npm run check:build",
     "prepare": "husky install",
-    "test": "echo \"No tests yet\"",
+    "test": "vitest run",
     "preview": "vite preview",
     "tools:extract-ref": "tsx src/tools/extract_ref_map.ts"
   },
@@ -19,7 +19,8 @@
     "husky": "^9.1.7",
     "tsx": "^4.21.0",
     "typescript": "~5.9.3",
-    "vite": "^5.4.14"
+    "vite": "^5.4.14",
+    "vitest": "^3.2.4"
   },
   "dependencies": {
     "phaser": "^3.90.0"

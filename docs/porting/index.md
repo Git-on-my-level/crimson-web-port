@@ -2,6 +2,11 @@
 
 This workbook tracks progress porting functions from the Crimsonland decompiled C reference to TypeScript.
 
+## Recent Updates
+
+- Scaffolded `gameplay_reset_state` as `Sim.reset` in `src/sim/sim.ts`.
+- Scaffolded `vec2_add_inplace`, `vec2_length`, `vec2_sub` in `src/sim/types.ts`.
+
 ## Subsystem Status
 
 | Subsystem | Functions |
