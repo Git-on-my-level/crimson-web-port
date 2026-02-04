@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { InputFrame } from '../../sim/types';
+import { loadSettings, type Keybinds } from '../../persistence/settings';
 
 export type InputTransform = {
   originX: number;
@@ -11,20 +12,49 @@ export class PhaserInputAdapter {
   private readonly scene: Phaser.Scene;
   private readonly keys: Record<string, Phaser.Input.Keyboard.Key>;
   private readonly getTransform: () => InputTransform;
+  private keybinds: Keybinds;
 
   constructor(scene: Phaser.Scene, getTransform: () => InputTransform) {
     this.scene = scene;
     this.getTransform = getTransform;
-    this.keys = scene.input.keyboard?.addKeys(
-      'W,A,S,D,UP,DOWN,LEFT,RIGHT,SPACE,R,P,ESC,ONE,TWO,THREE,FOUR,FIVE'
-    ) as Record<string, Phaser.Input.Keyboard.Key>;
+    this.keybinds = loadSettings().keybinds;
+    this.keys = this.setupKeys();
+  }
+
+  private setupKeys(): Record<string, Phaser.Input.Keyboard.Key> {
+    const allCodes = new Set<string>();
+    allCodes.add('W');
+    allCodes.add('A');
+    allCodes.add('S');
+    allCodes.add('D');
+    allCodes.add('UP');
+    allCodes.add('DOWN');
+    allCodes.add('LEFT');
+    allCodes.add('RIGHT');
+    allCodes.add('SPACE');
+    allCodes.add('R');
+    allCodes.add('P');
+    allCodes.add('ESC');
+    allCodes.add('ONE');
+    allCodes.add('TWO');
+    allCodes.add('THREE');
+    allCodes.add('FOUR');
+    allCodes.add('FIVE');
+
+    Object.values(this.keybinds).forEach(code => allCodes.add(code));
+
+    return this.scene.input.keyboard?.addKeys(Array.from(allCodes).join(',')) as Record<string, Phaser.Input.Keyboard.Key>;
+  }
+
+  reloadKeybinds(): void {
+    this.keybinds = loadSettings().keybinds;
   }
 
   readInput(): InputFrame {
-    const moveX = (this.isDown('LEFT') || this.isDown('A') ? -1 : 0)
-      + (this.isDown('RIGHT') || this.isDown('D') ? 1 : 0);
-    const moveY = (this.isDown('UP') || this.isDown('W') ? -1 : 0)
-      + (this.isDown('DOWN') || this.isDown('S') ? 1 : 0);
+    const moveX = (this.isKeybindDown(this.keybinds.moveLeft) ? -1 : 0)
+      + (this.isKeybindDown(this.keybinds.moveRight) ? 1 : 0);
+    const moveY = (this.isKeybindDown(this.keybinds.moveUp) ? -1 : 0)
+      + (this.isKeybindDown(this.keybinds.moveDown) ? 1 : 0);
 
     const pointer = this.scene.input.activePointer;
     const { originX, originY, pixelsPerUnit } = this.getTransform();
@@ -37,10 +67,10 @@ export class PhaserInputAdapter {
       moveY,
       aimX: aimWorldX,
       aimY: aimWorldY,
-      fire: pointer.isDown || this.isDown('SPACE'),
-      reload: this.isDown('R'),
+      fire: pointer.isDown || this.isKeybindDown(this.keybinds.fire),
+      reload: this.isKeybindDown(this.keybinds.reload),
       weaponSwitch: this.readWeaponSwitch(),
-      pause: this.isDown('P') || this.isDown('ESC'),
+      pause: this.isKeybindDown(this.keybinds.pause) || this.isDown('ESC'),
       perkChoice: this.readPerkChoice(),
     };
   }
@@ -49,17 +79,22 @@ export class PhaserInputAdapter {
     return Boolean(this.keys[key]?.isDown);
   }
 
+  private isKeybindDown(keyCode: string): boolean {
+    return Boolean(this.keys[keyCode]?.isDown);
+  }
+
   private readWeaponSwitch(): number | null {
-    const mapping: Array<[string, number]> = [
-      ['ONE', 1],
-      ['TWO', 2],
-      ['THREE', 3],
-      ['FOUR', 4],
-      ['FIVE', 5],
+    const mapping: Array<[keyof Keybinds, number]> = [
+      ['weaponSwitch1', 1],
+      ['weaponSwitch2', 2],
+      ['weaponSwitch3', 3],
+      ['weaponSwitch4', 4],
+      ['weaponSwitch5', 5],
     ];
 
-    for (const [key, slot] of mapping) {
-      const keyObj = this.keys[key];
+    for (const [keybind, slot] of mapping) {
+      const keyCode = this.keybinds[keybind];
+      const keyObj = this.keys[keyCode];
       if (keyObj && Phaser.Input.Keyboard.JustDown(keyObj)) {
         return slot;
       }

@@ -81,6 +81,23 @@ Missing objectives/quests:
 - All remaining original quest definitions beyond the two placeholders.
 - Any objective types not covered by `survive`, `killCount`, or `score`.
 
+## Options/Settings Parity (M4)
+
+Implemented features:
+- Settings persistence via localStorage (keybinds + volume)
+- Keybind remapping for all game actions (movement, fire, reload, weapon switch, pause)
+- Volume controls for master, SFX, and music
+- Options scene with tabbed UI (controls, volume)
+- Settings reload without game restart
+
+Files implemented:
+- `src/persistence/settings.ts` - Settings model and persistence
+- `src/scenes/OptionsScene.ts` - Options UI implementation
+- `src/adapters/phaser/input.ts` - Configurable keybind support
+- `src/adapters/phaser/audio.ts` - Audio adapter with volume (stub)
+
+See TICKET-400 documentation for details: `docs/progress/TICKET-400.md`
+
 ## High-Signal Prefixes
 
 | Prefix | Count |

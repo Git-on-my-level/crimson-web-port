@@ -12,3 +12,20 @@ Functions: 8
 - [ ] `audio_suspend_all` — TODO (ref: crimsonland:0042a630)
 - [ ] `audio_suspend_channels` — TODO (ref: crimsonland:0043d730)
 - [ ] `audio_update` — TODO (ref: crimsonland:0043d3f0)
+
+## Implementation Notes
+
+**Implemented Features:**
+- Audio adapter with volume control support (stub implementation)
+- Master, SFX, and Music volume controls
+- Volume persistence via settings system
+- Sim emits `playSfx` events (currently logged to console)
+
+**Files:**
+- `src/adapters/phaser/audio.ts` - Audio adapter with volume controls (stub)
+- `src/persistence/settings.ts` - Volume configuration storage
+- `src/sim/types.ts` - `playSfx` SimEvent type
+
+**See Also:**
+- TICKET-400 documentation: `docs/progress/TICKET-400.md`
+- Config subsystem: `docs/porting/config.md`
