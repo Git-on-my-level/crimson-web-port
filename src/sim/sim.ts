@@ -35,13 +35,17 @@ export class Sim {
     this.state.phase = fresh.phase;
     this.state.creatureSpawnCooldownTicks = fresh.creatureSpawnCooldownTicks;
     this.state.nextEntityId = fresh.nextEntityId;
+    this.state.projectilePool = fresh.projectilePool;
+    this.state.lastStepTimeMs = 0;
   }
 
   step(input: InputFrame): { events: SimEvent[] } {
+    const startTime = performance.now();
     const events: SimEvent[] = [];
 
     applyInput(this.state, input);
     if (this.state.phase !== 'Playing') {
+      this.state.lastStepTimeMs = performance.now() - startTime;
       return { events };
     }
     updatePlayer(this.state, this.fixedDeltaSeconds);
@@ -59,6 +63,7 @@ export class Sim {
 
     this.state.tick += 1;
     this.state.timeAlive += this.fixedDeltaSeconds;
+    this.state.lastStepTimeMs = performance.now() - startTime;
 
     return { events };
   }

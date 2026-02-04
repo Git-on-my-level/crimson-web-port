@@ -1,5 +1,5 @@
 import type { SimState } from '../state';
-import type { SimEvent } from '../types';
+import type { SimEvent, Vec2 } from '../types';
 
 const WORLD_BOUNDS = {
   minX: -50,
@@ -10,6 +10,41 @@ const WORLD_BOUNDS = {
 
 const OUT_OF_BOUNDS_MARGIN = 6;
 
+export function spawnProjectile(
+  state: SimState,
+  events: SimEvent[],
+  pos: Vec2,
+  vel: Vec2,
+  kind: string,
+  damage: number,
+  lifeTicks: number,
+  owner: 'player' | 'creature' = 'player',
+  radius: number = 0.4,
+): number | null {
+  const id = state.projectilePool.alloc((proj) => {
+    proj.pos.x = pos.x;
+    proj.pos.y = pos.y;
+    proj.vel.x = vel.x;
+    proj.vel.y = vel.y;
+    proj.kind = kind;
+    proj.damage = damage;
+    proj.lifeTicksRemaining = lifeTicks;
+    proj.owner = owner;
+    proj.radius = radius;
+    proj.alive = true;
+  });
+
+  if (id !== null) {
+    events.push({ type: 'spawnProjectile', id, pos, vel, kind });
+  }
+
+  return id;
+}
+
+export function despawnProjectile(state: SimState, id: number): void {
+  state.projectilePool.release(id);
+}
+
 export function updateProjectiles(state: SimState, events: SimEvent[], dt: number): void {
   void events;
 
@@ -18,32 +53,36 @@ export function updateProjectiles(state: SimState, events: SimEvent[], dt: numbe
   const minY = WORLD_BOUNDS.minY - OUT_OF_BOUNDS_MARGIN;
   const maxY = WORLD_BOUNDS.maxY + OUT_OF_BOUNDS_MARGIN;
 
-  let writeIndex = 0;
-  for (let i = 0; i < state.projectiles.length; i += 1) {
-    const projectile = state.projectiles[i];
-    if (!projectile.alive) {
-      continue;
-    }
+  const toRelease: number[] = [];
 
-    projectile.pos.x += projectile.vel.x * dt;
-    projectile.pos.y += projectile.vel.y * dt;
-    projectile.lifeTicksRemaining -= 1;
+  state.projectilePool.forEachActive((id, proj) => {
+    proj.pos.x += proj.vel.x * dt;
+    proj.pos.y += proj.vel.y * dt;
+    proj.lifeTicksRemaining -= 1;
 
     if (
-      projectile.lifeTicksRemaining <= 0 ||
-      projectile.pos.x < minX ||
-      projectile.pos.x > maxX ||
-      projectile.pos.y < minY ||
-      projectile.pos.y > maxY
+      proj.lifeTicksRemaining <= 0 ||
+      proj.pos.x < minX ||
+      proj.pos.x > maxX ||
+      proj.pos.y < minY ||
+      proj.pos.y > maxY
     ) {
-      projectile.alive = false;
+      toRelease.push(id);
     }
+  });
 
-    if (projectile.alive) {
-      state.projectiles[writeIndex] = projectile;
-      writeIndex += 1;
-    }
+  for (const id of toRelease) {
+    state.projectilePool.release(id);
   }
 
-  state.projectiles.length = writeIndex;
+  syncProjectilesArray(state);
+}
+
+function syncProjectilesArray(state: SimState): void {
+  state.projectiles = [];
+  state.projectilePool.forEachActive((id, proj) => {
+    if (proj.alive) {
+      state.projectiles.push({ ...proj, id });
+    }
+  });
 }

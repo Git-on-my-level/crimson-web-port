@@ -11,3 +11,5 @@ Functions: 2
 
 - Basic `creature_spawn` and `creature_update_all` behavior now lives in `src/sim/systems/creatures.ts` (see `docs/porting/creature.md` for checklist updates).
 - Basic collision damage + death lives in `src/sim/systems/collision.ts`.
+- Projectile-creature collision iterates over projectile pool (`forEachActive()`) for efficiency (TICKET-210).
+- Creature sprites are pooled in the render layer (TICKET-210).

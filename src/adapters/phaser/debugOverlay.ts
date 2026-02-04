@@ -4,6 +4,8 @@ import type { SimState } from '../../sim/state';
 export class DebugOverlay {
   private readonly text: Phaser.GameObjects.Text;
   private visible = true;
+  private readonly stepTimeHistory: number[] = [];
+  private readonly HISTORY_SIZE = 60;
 
   constructor(scene: Phaser.Scene) {
     this.text = scene.add.text(12, 12, '', {
@@ -24,8 +26,17 @@ export class DebugOverlay {
   update(state: SimState, seed: number, fps: number): void {
     if (!this.visible) return;
 
+    this.stepTimeHistory.push(state.lastStepTimeMs);
+    if (this.stepTimeHistory.length > this.HISTORY_SIZE) {
+      this.stepTimeHistory.shift();
+    }
+
+    const avgStepTime =
+      this.stepTimeHistory.reduce((sum, t) => sum + t, 0) / this.stepTimeHistory.length;
+
     const speed = Math.hypot(state.player.vel.x, state.player.vel.y);
     const aimDegrees = (state.player.aimAngle * 180) / Math.PI;
+    const poolUtil = state.projectilePool.getActiveCount() / state.projectilePool.getCapacity();
 
     this.text.setText([
       `FPS: ${fps.toFixed(1)}`,
@@ -40,6 +51,8 @@ export class DebugOverlay {
       `Bonuses: ${state.bonuses.length}`,
       `Score: ${state.score}`,
       `Seed: ${seed}`,
+      `Step Time: ${(avgStepTime * 1000).toFixed(2)}µs`,
+      `Pool: ${state.projectilePool.getActiveCount()}/${state.projectilePool.getCapacity()} (${(poolUtil * 100).toFixed(0)}%)`,
     ]);
   }
 }

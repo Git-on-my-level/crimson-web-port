@@ -1,6 +1,7 @@
 import { WEAPONS, type WeaponId } from '../content/weapons';
 import { EMPTY_INPUT, type InputFrame, type Vec2, vec2 } from './types';
 import { Rng } from './rng';
+import { ObjectPool } from './pool';
 
 export interface PlayerState {
   id: number;
@@ -64,10 +65,28 @@ export interface SimState {
   phase: 'Playing' | 'GameOver' | 'Paused' | 'PerkSelect';
   creatureSpawnCooldownTicks: number;
   nextEntityId: number;
+  projectilePool: ObjectPool<ProjectileState>;
+  lastStepTimeMs: number;
 }
 
 export function createSimState(seed = 1): SimState {
   const rng = new Rng(seed);
+  const projectilePool = new ObjectPool<ProjectileState>(
+    () => ({
+      id: 0,
+      pos: vec2(0, 0),
+      vel: vec2(0, 0),
+      alive: false,
+      radius: 0.4,
+      damage: 0,
+      lifeTicksRemaining: 0,
+      owner: 'player',
+      kind: '',
+    }),
+    50,
+    1000,
+  );
+
   return {
     tick: 0,
     rng,
@@ -95,5 +114,7 @@ export function createSimState(seed = 1): SimState {
     phase: 'Playing',
     creatureSpawnCooldownTicks: 0,
     nextEntityId: 2,
+    projectilePool,
+    lastStepTimeMs: 0,
   };
 }

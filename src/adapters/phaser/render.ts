@@ -21,6 +21,9 @@ export class PhaserRenderAdapter {
   private readonly creatures = new Map<EntityId, Phaser.GameObjects.Arc>();
   private readonly projectiles = new Map<EntityId, Phaser.GameObjects.Arc>();
   private readonly bonuses = new Map<EntityId, Phaser.GameObjects.Arc>();
+  private readonly projectileSpritePool: Phaser.GameObjects.Arc[] = [];
+  private readonly creatureSpritePool: Phaser.GameObjects.Arc[] = [];
+  private readonly bonusSpritePool: Phaser.GameObjects.Arc[] = [];
   private transform: RenderTransform;
 
   constructor(scene: Phaser.Scene, transform: RenderTransform) {
@@ -34,9 +37,30 @@ export class PhaserRenderAdapter {
 
   render(state: SimState): void {
     this.ensurePlayer(state);
-    this.syncEntities(state.creatures, this.creatures, COLORS.creature, 10, (entry) => entry.alive);
-    this.syncEntities(state.projectiles, this.projectiles, COLORS.projectile, 4, (entry) => entry.alive);
-    this.syncEntities(state.bonuses, this.bonuses, COLORS.bonus, 6, (entry) => entry.active);
+    this.syncEntities(
+      state.creatures,
+      this.creatures,
+      this.creatureSpritePool,
+      COLORS.creature,
+      10,
+      (entry) => entry.alive,
+    );
+    this.syncEntities(
+      state.projectiles,
+      this.projectiles,
+      this.projectileSpritePool,
+      COLORS.projectile,
+      4,
+      (entry) => entry.alive,
+    );
+    this.syncEntities(
+      state.bonuses,
+      this.bonuses,
+      this.bonusSpritePool,
+      COLORS.bonus,
+      6,
+      (entry) => entry.active,
+    );
   }
 
   private ensurePlayer(state: SimState): void {
@@ -51,6 +75,7 @@ export class PhaserRenderAdapter {
   private syncEntities<T extends { id: EntityId; pos: { x: number; y: number } }>(
     entries: T[],
     map: Map<EntityId, Phaser.GameObjects.Arc>,
+    pool: Phaser.GameObjects.Arc[],
     color: number,
     radius: number,
     isActive: (entry: T) => boolean,
@@ -62,26 +87,38 @@ export class PhaserRenderAdapter {
         continue;
       }
       seen.add(entry.id);
-      const obj = map.get(entry.id) ?? this.createCircle(map, entry.id, radius, color);
+      const obj = map.get(entry.id) ?? this.createCircle(map, pool, entry.id, radius, color);
       const { x, y } = this.toScreen(entry.pos.x, entry.pos.y);
       obj.setPosition(x, y);
+      obj.setVisible(true);
     }
 
     for (const [id, obj] of map) {
       if (!seen.has(id)) {
-        obj.destroy();
+        obj.setVisible(false);
         map.delete(id);
+        pool.push(obj);
       }
     }
   }
 
   private createCircle(
     map: Map<EntityId, Phaser.GameObjects.Arc>,
+    pool: Phaser.GameObjects.Arc[],
     id: EntityId,
     radius: number,
     color: number,
   ): Phaser.GameObjects.Arc {
-    const circle = this.scene.add.circle(0, 0, radius, color);
+    let circle: Phaser.GameObjects.Arc;
+
+    if (pool.length > 0) {
+      circle = pool.pop()!;
+      circle.setRadius(radius);
+      circle.setFillStyle(color);
+    } else {
+      circle = this.scene.add.circle(0, 0, radius, color);
+    }
+
     map.set(id, circle);
     return circle;
   }

@@ -2,8 +2,11 @@ import type { WeaponDef } from '../../content/weapons';
 import type { SimState } from '../state';
 import type { SimEvent } from '../types';
 import { getWeaponById, getWeaponOrder } from '../weapons/weaponTable';
+import { spawnProjectile } from './projectiles';
 
 const DEFAULT_PROJECTILE_RADIUS = 0.4;
+
+const BURST_COOLDOWN = 4;
 
 export function updateWeapons(state: SimState, events: SimEvent[], dt: number): void {
   const player = state.player;
@@ -50,38 +53,30 @@ export function updateWeapons(state: SimState, events: SimEvent[], dt: number): 
   const pellets = Math.max(1, weapon.pellets ?? 1);
   const spread = weapon.spreadRadians ?? 0;
   const muzzleOffset = weapon.muzzleOffset;
+  const lifeTicks = Math.max(1, weapon.projectileLifeTicks);
 
   for (let i = 0; i < pellets; i += 1) {
     const spreadOffset = spread > 0 ? (state.rng.nextFloat01() - 0.5) * spread : 0;
     const angle = player.aimAngle + spreadOffset;
-    const dirX = Math.cos(angle);
-    const dirY = Math.sin(angle);
+    const pDirX = Math.cos(angle);
+    const pDirY = Math.sin(angle);
 
-    const pos = {
-      x: player.pos.x + dirX * muzzleOffset,
-      y: player.pos.y + dirY * muzzleOffset,
-    };
-    const vel = {
-      x: dirX * weapon.projectileSpeed,
-      y: dirY * weapon.projectileSpeed,
-    };
+    const posX = player.pos.x + pDirX * muzzleOffset;
+    const posY = player.pos.y + pDirY * muzzleOffset;
+    const velX = pDirX * weapon.projectileSpeed;
+    const velY = pDirY * weapon.projectileSpeed;
 
-    const projectileId = state.nextEntityId++;
-    const lifeTicks = Math.max(1, weapon.projectileLifeTicks);
-
-    state.projectiles.push({
-      id: projectileId,
-      pos,
-      vel,
-      alive: true,
-      radius: DEFAULT_PROJECTILE_RADIUS,
-      damage: weapon.damage,
-      lifeTicksRemaining: lifeTicks,
-      owner: 'player',
-      kind: weapon.id,
-    });
-
-    events.push({ type: 'spawnProjectile', id: projectileId, pos, vel, kind: weapon.id });
+    spawnProjectile(
+      state,
+      events,
+      { x: posX, y: posY },
+      { x: velX, y: velY },
+      weapon.id,
+      weapon.damage,
+      lifeTicks,
+      'player',
+      DEFAULT_PROJECTILE_RADIUS,
+    );
   }
 
   if (weapon.ammoMax !== undefined) {
@@ -90,8 +85,51 @@ export function updateWeapons(state: SimState, events: SimEvent[], dt: number): 
 
   events.push({ type: 'playSfx', name: `${weapon.id}_shot` });
 
-  const cooldownTicks = Math.max(1, Math.round((1 / weapon.fireRate) / dt));
+  let cooldownTicks = Math.max(1, Math.round((1 / weapon.fireRate) / dt));
+  if (weapon.fireMode === 'burst') {
+    cooldownTicks = Math.max(cooldownTicks, BURST_COOLDOWN);
+  }
   player.fireCooldownTicks = cooldownTicks;
+}
+
+export function fireSpiralPattern(
+  state: SimState,
+  events: SimEvent[],
+  weapon: WeaponDef,
+  projectilesPerTick: number,
+  rotationSpeed: number,
+  tickOffset: number,
+): void {
+  const player = state.player;
+  const lifeTicks = Math.max(1, weapon.projectileLifeTicks);
+
+  for (let i = 0; i < projectilesPerTick; i++) {
+    const angleOffset = (i / projectilesPerTick) * Math.PI * 2;
+    const rotationAngle = tickOffset * rotationSpeed;
+    const totalAngle = player.aimAngle + angleOffset + rotationAngle;
+
+    const dirX = Math.cos(totalAngle);
+    const dirY = Math.sin(totalAngle);
+
+    const posX = player.pos.x + dirX * weapon.muzzleOffset;
+    const posY = player.pos.y + dirY * weapon.muzzleOffset;
+    const velX = dirX * weapon.projectileSpeed;
+    const velY = dirY * weapon.projectileSpeed;
+
+    spawnProjectile(
+      state,
+      events,
+      { x: posX, y: posY },
+      { x: velX, y: velY },
+      weapon.id,
+      weapon.damage,
+      lifeTicks,
+      'player',
+      DEFAULT_PROJECTILE_RADIUS,
+    );
+  }
+
+  events.push({ type: 'playSfx', name: `${weapon.id}_shot` });
 }
 
 function switchWeapon(player: SimState['player'], slot: number): boolean {

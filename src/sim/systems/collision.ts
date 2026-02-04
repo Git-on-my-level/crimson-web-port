@@ -1,5 +1,6 @@
 import type { CreatureState, SimState } from '../state';
 import type { SimEvent } from '../types';
+import { despawnProjectile } from './projectiles';
 
 export function resolveCollisions(state: SimState, events: SimEvent[]): void {
   const player = state.player;
@@ -10,9 +11,11 @@ export function resolveCollisions(state: SimState, events: SimEvent[]): void {
     }
   }
 
-  for (const projectile of state.projectiles) {
+  const toRemove: number[] = [];
+
+  state.projectilePool.forEachActive((projId, projectile) => {
     if (!projectile.alive || projectile.owner !== 'player') {
-      continue;
+      return;
     }
 
     for (const creature of state.creatures) {
@@ -26,9 +29,14 @@ export function resolveCollisions(state: SimState, events: SimEvent[]): void {
       if (dx * dx + dy * dy <= radius * radius) {
         applyDamageToCreature(state, creature, projectile.damage, events);
         projectile.alive = false;
+        toRemove.push(projId);
         break;
       }
     }
+  });
+
+  for (const id of toRemove) {
+    despawnProjectile(state, id);
   }
 
   for (const creature of state.creatures) {
