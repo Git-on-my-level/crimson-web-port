@@ -15,7 +15,7 @@
     "prepare": "husky install",
     "test": "vitest run",
     "preview": "npm run assets:copy && vite preview",
-    "preview:real": "REAL_ASSETS=1 VITE_USE_REAL_ASSETS=1 npm run preview",
+    "preview:real": "npm run build:real && vite preview",
     "tools:extract-ref": "tsx src/tools/extract_ref_map.ts",
     "tools:extract-quests": "tsx src/tools/extract_quest_names.ts"
   },

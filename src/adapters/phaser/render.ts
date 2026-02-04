@@ -76,6 +76,7 @@ export class PhaserRenderAdapter {
     this.player.setPosition(x, y);
     const size = state.player.radius * 2 * this.transform.pixelsPerUnit;
     this.player.setDisplaySize(size, size);
+    this.player.setRotation(state.player.aimAngle);
   }
 
   private syncEntities<T extends { id: EntityId; pos: { x: number; y: number } }>(
@@ -97,6 +98,13 @@ export class PhaserRenderAdapter {
       obj.setPosition(x, y);
       const entryRadius = typeof radius === 'function' ? radius(entry) : radius;
       obj.setDisplaySize(entryRadius * 2 * this.transform.pixelsPerUnit, entryRadius * 2 * this.transform.pixelsPerUnit);
+      if ('vel' in entry) {
+        const vel = entry.vel as { x: number; y: number };
+        const speedSq = vel.x * vel.x + vel.y * vel.y;
+        if (speedSq > 0.0001) {
+          obj.setRotation(Math.atan2(vel.y, vel.x));
+        }
+      }
       obj.setVisible(true);
     }
 
@@ -176,7 +184,7 @@ export class PhaserRenderAdapter {
 
     if (pool.length > 0) {
       sprite = pool.pop()!;
-      sprite.setTexture(textureKey);
+      sprite.setTexture(textureKey, 0);
     } else {
       sprite = this.scene.add.sprite(0, 0, textureKey);
       sprite.setOrigin(0.5);

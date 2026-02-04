@@ -9,6 +9,7 @@ export class PreloadScene extends Phaser.Scene {
 
   preload() {
     const useRealAssets = import.meta.env.VITE_USE_REAL_ASSETS === '1';
+    const creatureFrame = 64;
     this.load.image('terrain-q1-base', 'assets/crimson/ter/ter_q1_base.png');
     this.load.image('terrain-q1-fb', 'assets/crimson/ter/fb_q1.png');
 
@@ -19,10 +20,22 @@ export class PreloadScene extends Phaser.Scene {
       });
     }
 
-    this.load.image('game-bodyset', 'assets/crimson/game/bodyset.png');
-    this.load.image('game-trooper', 'assets/crimson/game/trooper.png');
-    this.load.image('game-alien', 'assets/crimson/game/alien.png');
-    this.load.image('game-zombie', 'assets/crimson/game/zombie.png');
+    this.load.spritesheet('game-bodyset', 'assets/crimson/game/bodyset.png', {
+      frameWidth: creatureFrame,
+      frameHeight: creatureFrame,
+    });
+    this.load.spritesheet('game-trooper', 'assets/crimson/game/trooper.png', {
+      frameWidth: creatureFrame,
+      frameHeight: creatureFrame,
+    });
+    this.load.spritesheet('game-alien', 'assets/crimson/game/alien.png', {
+      frameWidth: creatureFrame,
+      frameHeight: creatureFrame,
+    });
+    this.load.spritesheet('game-zombie', 'assets/crimson/game/zombie.png', {
+      frameWidth: creatureFrame,
+      frameHeight: creatureFrame,
+    });
 
     this.load.image('ui-cursor', 'assets/crimson/ui/ui_cursor.png');
     this.load.image('ui-aim', 'assets/crimson/ui/ui_aim.png');
