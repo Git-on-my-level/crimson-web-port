@@ -18,7 +18,12 @@ export interface PlayerState {
 export interface CreatureState {
   id: number;
   pos: Vec2;
+  vel: Vec2;
   hp: number;
+  hpMax: number;
+  radius: number;
+  speed: number;
+  touchDamage: number;
   alive: boolean;
   kind: string;
 }
@@ -52,6 +57,7 @@ export interface SimState {
   score: number;
   timeAlive: number;
   mode: 'survival' | 'quest';
+  creatureSpawnCooldownTicks: number;
   nextEntityId: number;
 }
 
@@ -79,6 +85,7 @@ export function createSimState(seed = 1): SimState {
     score: 0,
     timeAlive: 0,
     mode: 'survival',
+    creatureSpawnCooldownTicks: 0,
     nextEntityId: 2,
   };
 }

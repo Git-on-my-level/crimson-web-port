@@ -32,6 +32,7 @@ export class Sim {
     this.state.score = fresh.score;
     this.state.timeAlive = fresh.timeAlive;
     this.state.mode = fresh.mode;
+    this.state.creatureSpawnCooldownTicks = fresh.creatureSpawnCooldownTicks;
     this.state.nextEntityId = fresh.nextEntityId;
   }
 
@@ -42,7 +43,7 @@ export class Sim {
     updatePlayer(this.state, this.fixedDeltaSeconds);
     updateWeapons(this.state, events, this.fixedDeltaSeconds);
     updateProjectiles(this.state, events, this.fixedDeltaSeconds);
-    updateCreatures(this.state, events);
+    updateCreatures(this.state, events, this.fixedDeltaSeconds);
     resolveCollisions(this.state, events);
     updateBonuses(this.state, events);
 

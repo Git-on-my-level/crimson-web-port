@@ -15,8 +15,8 @@ Functions: 16
 - [ ] `creature_name_draw_labels` — TODO (ref: crimsonland:00445600)
 - [ ] `creature_render_all` — TODO (ref: crimsonland:00419680)
 - [ ] `creature_render_type` — TODO (ref: crimsonland:00418b60)
-- [ ] `creature_spawn` — TODO (ref: crimsonland:00428240)
+- [x] `creature_spawn` — Implemented (basic edge spawn in `src/sim/systems/creatures.ts`).
 - [ ] `creature_spawn_slot_alloc` — TODO (ref: crimsonland:00430ad0)
 - [ ] `creature_spawn_template` — TODO (ref: crimsonland:00430af0)
 - [ ] `creature_spawn_tinted` — TODO (ref: crimsonland:00444810)
-- [ ] `creature_update_all` — TODO (ref: crimsonland:00426220)
+- [x] `creature_update_all` — Implemented (basic seek AI in `src/sim/systems/creatures.ts`).
