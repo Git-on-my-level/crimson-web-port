@@ -34,6 +34,38 @@ This workbook tracks progress porting functions from the Crimsonland decompiled 
 | [ui](./ui.md) | 37 |
 | [weapon](./weapon.md) | 5 |
 
+## Survival Parity (M2)
+
+Implemented reference functions (name parity):
+- `survival_update`
+- `survival_spawn_creature`
+- `survival_gameplay_update_and_render`
+- `creature_spawn`
+- `creature_update_all`
+- `creature_apply_damage`
+- `creature_handle_death`
+- `player_update`
+- `player_fire_weapon`
+- `player_start_reload`
+- `player_take_damage`
+- `weapon_table_init`
+- `weapon_assign_player`
+- `weapon_pick_random_available`
+- `projectile_spawn`
+- `projectile_update`
+- `bonus_update`
+- `bonus_apply`
+- `bonus_try_spawn_on_kill`
+- `perks_generate_choices`
+- `perk_apply`
+- `perks_update_effects`
+
+Intentionally skipped for now:
+- Survival boss/elite wave logic and scripted wave banners.
+- Arena hazards, map modifiers, and timed events beyond the spawn-budget ramp.
+- Meta-progression, unlock tables, and leaderboard persistence.
+- Full Crimsonland UI chrome (wave cards, streak trackers, announcers).
+
 ## High-Signal Prefixes
 
 | Prefix | Count |

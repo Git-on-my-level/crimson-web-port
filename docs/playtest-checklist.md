@@ -15,3 +15,13 @@
 - Death triggers game over
 - Restart works from Game Over screen
 - Pause toggle works and freezes sim
+
+## M2 (TICKET-595)
+
+- [ ] Survival run can start from Title (or direct)
+- [ ] Multiple weapons work and can be switched
+- [ ] Bonuses drop and apply correctly
+- [ ] Level-ups occur and perk UI works
+- [ ] Survival director ramps difficulty
+- [ ] Game over and restart stable
+- [ ] No console errors after 5 minutes of play
