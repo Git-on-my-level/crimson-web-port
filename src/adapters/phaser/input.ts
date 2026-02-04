@@ -15,7 +15,7 @@ export class PhaserInputAdapter {
   constructor(scene: Phaser.Scene, getTransform: () => InputTransform) {
     this.scene = scene;
     this.getTransform = getTransform;
-    this.keys = scene.input.keyboard?.addKeys('W,A,S,D,UP,DOWN,LEFT,RIGHT,SPACE,R,P') as Record<
+    this.keys = scene.input.keyboard?.addKeys('W,A,S,D,UP,DOWN,LEFT,RIGHT,SPACE,R,P,ESC') as Record<
       string,
       Phaser.Input.Keyboard.Key
     >;
@@ -40,7 +40,7 @@ export class PhaserInputAdapter {
       aimY: aimWorldY,
       fire: pointer.isDown || this.isDown('SPACE'),
       reload: this.isDown('R'),
-      pause: this.isDown('P'),
+      pause: this.isDown('P') || this.isDown('ESC'),
     };
   }
 

@@ -2,8 +2,39 @@
 
 Functions: 37
 
+## Implemented UI Flows
+
+### TICKET-140 — HUD + Pause + GameOver + Restart Loop
+
+#### HUD Overlay (`src/ui/Hud.ts`)
+- HP display: `player.hp / player.hpMax`
+- Score display
+- Weapon name display
+- Pause overlay ("PAUSED" text)
+- Optional debug info (entity counts)
+
+#### Pause Behavior
+- Toggle with ESC or P key
+- Toggles sim phase between `Playing` and `Paused`
+- Sim stepping stops when paused
+- Shows overlay text when paused
+
+#### GameOver Scene (`src/scenes/GameOverScene.ts`)
+- Shows "GAME OVER" text
+- Displays final score
+- Displays time alive
+- Restart button (starts game with same seed)
+- Back to Title button
+- Keyboard shortcuts (Enter for restart, ESC for title)
+
+#### Scene Transitions
+- When sim enters `GameOver` phase:
+  - GameScene stops update loop
+  - Transitions to GameOverScene with score, timeAlive, seed
+
 ## Function Checklist
 
+- [x] `ui_render_hud` — Implemented as `src/ui/Hud.ts` (simplified HUD with HP, score, weapon name, pause overlay)
 - [ ] `ui_button_update` — TODO (ref: crimsonland:0043e830)
 - [ ] `ui_checkbox_update` — TODO (ref: crimsonland:0043dc80)
 - [ ] `ui_cursor_render` — TODO (ref: crimsonland:0041a040)
@@ -34,10 +65,15 @@ Functions: 37
 - [ ] `ui_profile_menu_update` — TODO (ref: crimsonland:004443c0)
 - [ ] `ui_render_aim_enhancement` — TODO (ref: crimsonland:0041a320)
 - [ ] `ui_render_aim_indicators` — TODO (ref: crimsonland:0040a510)
-- [ ] `ui_render_hud` — TODO (ref: crimsonland:0041aed0)
 - [ ] `ui_render_keybind_help` — TODO (ref: crimsonland:00405160)
 - [ ] `ui_render_loading` — TODO (ref: crimsonland:00402d50)
 - [ ] `ui_scrollbar_update` — TODO (ref: crimsonland:0043def0)
 - [ ] `ui_text_input_render` — TODO (ref: crimsonland:004413a0)
 - [ ] `ui_text_input_update` — TODO (ref: crimsonland:0043ecf0)
 - [ ] `ui_update_notice_update` — TODO (ref: crimsonland:00442150)
+
+## Notes on Missing Menus/Options
+- Main menu system (options, profiles) not yet implemented
+- Only basic title/start flow exists
+- No options/config UI
+- No perk selection UI (when `phase === 'PerkSelect'`)

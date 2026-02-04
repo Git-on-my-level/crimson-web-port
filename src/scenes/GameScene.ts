@@ -3,18 +3,21 @@ import { Sim } from '../sim/sim';
 import { PhaserInputAdapter } from '../adapters/phaser/input';
 import { PhaserRenderAdapter } from '../adapters/phaser/render';
 import { DebugOverlay } from '../adapters/phaser/debugOverlay';
+import { Hud } from '../ui/Hud';
 
 export class GameScene extends Phaser.Scene {
   private sim!: Sim;
   private inputAdapter!: PhaserInputAdapter;
   private renderAdapter!: PhaserRenderAdapter;
   private debugOverlay!: DebugOverlay;
+  private hud!: Hud;
   private seed = 1;
   private readonly pixelsPerUnit = 12;
   private originX = 0;
   private originY = 0;
   private background?: Phaser.GameObjects.Rectangle;
   private gameOverText?: Phaser.GameObjects.Text;
+  private wasGameOver = false;
 
   constructor() {
     super('game');
@@ -46,6 +49,7 @@ export class GameScene extends Phaser.Scene {
     this.inputAdapter = new PhaserInputAdapter(this, () => this.getTransform());
     this.renderAdapter = new PhaserRenderAdapter(this, this.getTransform());
     this.debugOverlay = new DebugOverlay(this);
+    this.hud = new Hud(this, true);
 
     this.scale.on('resize', this.handleResize, this);
   }
@@ -62,7 +66,9 @@ export class GameScene extends Phaser.Scene {
     this.renderAdapter.render(this.sim.state);
     const fps = this.game.loop.actualFps || 0;
     this.debugOverlay.update(this.sim.state, this.seed, fps);
+    this.hud.update(this.sim.state);
     this.syncGameOverOverlay();
+    this.checkGameOverTransition();
   }
 
   private handleResize(gameSize: Phaser.Structs.Size): void {
@@ -100,5 +106,17 @@ export class GameScene extends Phaser.Scene {
     if (!this.gameOverText) return;
     const isGameOver = this.sim.state.phase === 'GameOver';
     this.gameOverText.setVisible(isGameOver);
+  }
+
+  private checkGameOverTransition(): void {
+    const isGameOver = this.sim.state.phase === 'GameOver';
+    if (isGameOver && !this.wasGameOver) {
+      this.scene.start('gameOver', {
+        score: this.sim.state.score,
+        timeAlive: this.sim.state.timeAlive,
+        seed: this.seed,
+      });
+    }
+    this.wasGameOver = isGameOver;
   }
 }
