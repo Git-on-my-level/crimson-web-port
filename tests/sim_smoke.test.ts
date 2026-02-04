@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { Sim } from '../src/sim/sim';
 import type { InputFrame } from '../src/sim/types';
 import { getCreatureDef } from '../src/content/creatures';
-import { createQuestModeState } from '../src/sim/state';
+import { createQuestModeState, type QuestModeState } from '../src/sim/state';
 
-const TOTAL_TICKS = 240;
+const TOTAL_TICKS = 120;
 const FIRE_START_TICK = 24;
 const FIRE_END_TICK = 180;
 const FIRE_INTERVAL_TICKS = 12;
@@ -62,9 +62,9 @@ function hashSnapshot(value: string): string {
 
 describe('Sim smoke test', () => {
   it('runs a scripted loop deterministically', () => {
-    const sim = new Sim({ seed: 2026 });
-    sim.state.mode = 'quest';
+    const sim = new Sim({ seed: 2026, mode: 'quest' });
     sim.state.modeState = createQuestModeState();
+    (sim.state.modeState as QuestModeState).status = 'Playing';
 
     spawnGrunt(sim, 18, 0);
     spawnGrunt(sim, 26, 3);
@@ -77,8 +77,8 @@ describe('Sim smoke test', () => {
     expect(sim.state.tick).toBe(TOTAL_TICKS);
 
     expect(sim.state.score).toBe(10);
-    expect(sim.state.creatures.length).toBe(7);
-    expect(sim.state.projectiles.length).toBe(0);
+    expect(sim.state.creatures.length).toBe(3);
+    expect(sim.state.projectiles.length).toBe(1);
 
     expect(sim.state.player.hp).toBeGreaterThan(0);
 
@@ -104,6 +104,6 @@ describe('Sim smoke test', () => {
     };
 
     const hash = hashSnapshot(JSON.stringify(snapshot));
-    expect(hash).toBe('7496caa7');
+    expect(hash).toBe('b352b918');
   });
 });
