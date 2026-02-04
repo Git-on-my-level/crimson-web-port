@@ -26,6 +26,8 @@ export class PhaserRenderAdapter {
   private readonly creatureSpritePool: Phaser.GameObjects.Arc[] = [];
   private readonly bonusSpritePool: Phaser.GameObjects.Arc[] = [];
   private transform: RenderTransform;
+  private debugCollisionEnabled = false;
+  private debugGraphics?: Phaser.GameObjects.Graphics;
 
   constructor(scene: Phaser.Scene, transform: RenderTransform) {
     this.scene = scene;
@@ -55,6 +57,7 @@ export class PhaserRenderAdapter {
       (entry) => entry.alive,
     );
     this.syncBonuses(state.bonuses);
+    this.renderCollisionDebug(state);
   }
 
   private ensurePlayer(state: SimState): void {
@@ -149,5 +152,47 @@ export class PhaserRenderAdapter {
       x: this.transform.originX + simX * this.transform.pixelsPerUnit,
       y: this.transform.originY + simY * this.transform.pixelsPerUnit,
     };
+  }
+
+  toggleCollisionDebug(): void {
+    this.setCollisionDebugEnabled(!this.debugCollisionEnabled);
+  }
+
+  setCollisionDebugEnabled(enabled: boolean): void {
+    this.debugCollisionEnabled = enabled;
+    if (!enabled && this.debugGraphics) {
+      this.debugGraphics.clear();
+      this.debugGraphics.setVisible(false);
+    }
+  }
+
+  private renderCollisionDebug(state: SimState): void {
+    if (!this.debugCollisionEnabled) {
+      return;
+    }
+    if (!this.debugGraphics) {
+      this.debugGraphics = this.scene.add.graphics();
+      this.debugGraphics.setDepth(950);
+    }
+    this.debugGraphics.setVisible(true);
+    this.debugGraphics.clear();
+    this.debugGraphics.lineStyle(1, 0xf8fafc, 0.6);
+
+    const drawCircle = (x: number, y: number, radius: number) => {
+      const screen = this.toScreen(x, y);
+      this.debugGraphics?.strokeCircle(screen.x, screen.y, radius * this.transform.pixelsPerUnit);
+    };
+
+    drawCircle(state.player.pos.x, state.player.pos.y, state.player.radius);
+    for (const creature of state.creatures) {
+      if (creature.alive) {
+        drawCircle(creature.pos.x, creature.pos.y, creature.radius);
+      }
+    }
+    state.projectilePool.forEachActive((_id, proj) => {
+      if (proj.alive) {
+        drawCircle(proj.pos.x, proj.pos.y, proj.radius);
+      }
+    });
   }
 }

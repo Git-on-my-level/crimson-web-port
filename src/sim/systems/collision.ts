@@ -5,6 +5,13 @@ import { trySpawnBonusOnKill } from './bonuses';
 import { getCreatureDef } from '../../content/creatures';
 import { grantXp } from './progression';
 import { registerQuestKill, setQuestStatus } from './mode_quest';
+import { WORLD_BOUNDS } from '../world';
+
+const CELL_SIZE = 6;
+const GRID_WIDTH = Math.ceil((WORLD_BOUNDS.maxX - WORLD_BOUNDS.minX) / CELL_SIZE);
+const GRID_HEIGHT = Math.ceil((WORLD_BOUNDS.maxY - WORLD_BOUNDS.minY) / CELL_SIZE);
+const collisionGrid = new Map<number, CreatureState[]>();
+const cellPool: CreatureState[][] = [];
 
 export function resolveCollisions(state: SimState, events: SimEvent[]): void {
   const player = state.player;
@@ -15,6 +22,8 @@ export function resolveCollisions(state: SimState, events: SimEvent[]): void {
     }
   }
 
+  rebuildCollisionGrid(state.creatures);
+
   const toRemove: number[] = [];
 
   state.projectilePool.forEachActive((projId, projectile) => {
@@ -22,19 +31,30 @@ export function resolveCollisions(state: SimState, events: SimEvent[]): void {
       return;
     }
 
-    for (const creature of state.creatures) {
-      if (!creature.alive) {
-        continue;
-      }
+    const { cellX, cellY } = getCellCoords(projectile.pos.x, projectile.pos.y);
+    for (let dy = -1; dy <= 1; dy += 1) {
+      const ny = cellY + dy;
+      if (ny < 0 || ny >= GRID_HEIGHT) continue;
+      for (let dx = -1; dx <= 1; dx += 1) {
+        const nx = cellX + dx;
+        if (nx < 0 || nx >= GRID_WIDTH) continue;
+        const cell = collisionGrid.get(getCellKey(nx, ny));
+        if (!cell) continue;
+        for (const creature of cell) {
+          if (!creature.alive) {
+            continue;
+          }
 
-      const dx = projectile.pos.x - creature.pos.x;
-      const dy = projectile.pos.y - creature.pos.y;
-      const radius = projectile.radius + creature.radius;
-      if (dx * dx + dy * dy <= radius * radius) {
-        applyDamageToCreature(state, creature, projectile.damage, events);
-        projectile.alive = false;
-        toRemove.push(projId);
-        break;
+          const dxp = projectile.pos.x - creature.pos.x;
+          const dyp = projectile.pos.y - creature.pos.y;
+          const radius = projectile.radius + creature.radius;
+          if (dxp * dxp + dyp * dyp <= radius * radius) {
+            applyDamageToCreature(state, creature, projectile.damage, events);
+            projectile.alive = false;
+            toRemove.push(projId);
+            return;
+          }
+        }
       }
     }
   });
@@ -56,6 +76,47 @@ export function resolveCollisions(state: SimState, events: SimEvent[]): void {
       creature.touchCooldownTicks = TOUCH_COOLDOWN_TICKS;
     }
   }
+
+  clearCollisionGrid();
+}
+
+function rebuildCollisionGrid(creatures: CreatureState[]): void {
+  clearCollisionGrid();
+  for (const creature of creatures) {
+    if (!creature.alive) {
+      continue;
+    }
+
+    const { cellX, cellY } = getCellCoords(creature.pos.x, creature.pos.y);
+    if (cellX < 0 || cellX >= GRID_WIDTH || cellY < 0 || cellY >= GRID_HEIGHT) {
+      continue;
+    }
+    const key = getCellKey(cellX, cellY);
+    let cell = collisionGrid.get(key);
+    if (!cell) {
+      cell = cellPool.pop() ?? [];
+      collisionGrid.set(key, cell);
+    }
+    cell.push(creature);
+  }
+}
+
+function clearCollisionGrid(): void {
+  for (const cell of collisionGrid.values()) {
+    cell.length = 0;
+    cellPool.push(cell);
+  }
+  collisionGrid.clear();
+}
+
+function getCellCoords(x: number, y: number): { cellX: number; cellY: number } {
+  const cellX = Math.floor((x - WORLD_BOUNDS.minX) / CELL_SIZE);
+  const cellY = Math.floor((y - WORLD_BOUNDS.minY) / CELL_SIZE);
+  return { cellX, cellY };
+}
+
+function getCellKey(cellX: number, cellY: number): number {
+  return cellX + cellY * GRID_WIDTH;
 }
 
 const TOUCH_COOLDOWN_TICKS = 30;

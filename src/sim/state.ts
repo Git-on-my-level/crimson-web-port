@@ -82,7 +82,21 @@ export interface SimState {
   nextEntityId: number;
   projectilePool: ObjectPool<ProjectileState>;
   lastStepTimeMs: number;
+  profile: SimProfile;
   selectedQuestId: QuestId;
+}
+
+export interface SimProfile {
+  inputMs: number;
+  playerMs: number;
+  weaponsMs: number;
+  projectilesMs: number;
+  modeMs: number;
+  creaturesMs: number;
+  collisionMs: number;
+  bonusesMs: number;
+  progressionMs: number;
+  totalMs: number;
 }
 
 export interface SurvivalModeState {
@@ -190,6 +204,18 @@ export function createSimState(
     nextEntityId: 2,
     projectilePool,
     lastStepTimeMs: 0,
+    profile: {
+      inputMs: 0,
+      playerMs: 0,
+      weaponsMs: 0,
+      projectilesMs: 0,
+      modeMs: 0,
+      creaturesMs: 0,
+      collisionMs: 0,
+      bonusesMs: 0,
+      progressionMs: 0,
+      totalMs: 0,
+    },
     selectedQuestId,
   };
 }

@@ -6,6 +6,9 @@ import { DebugOverlay } from '../adapters/phaser/debugOverlay';
 import { TerrainBackground } from '../adapters/phaser/terrainBackground';
 import { Hud } from '../ui/Hud';
 import { PerkPickerOverlay } from '../ui/PerkPickerOverlay';
+import { spawnCreatureAtEdge } from '../sim/systems/creatures';
+import { WEAPON_BY_ID } from '../content/weapons';
+import type { SimEvent } from '../sim/types';
 
 interface GameSceneInitData {
   mode?: 'survival' | 'quest';
@@ -33,6 +36,8 @@ export class GameScene extends Phaser.Scene {
   private wasQuestComplete = false;
   private wasQuestFailed = false;
   private pendingPerkChoice: number | null = null;
+  private debugEnabled = false;
+  private debugKeys: Phaser.Input.Keyboard.Key[] = [];
 
   constructor() {
     super('game');
@@ -41,6 +46,7 @@ export class GameScene extends Phaser.Scene {
   init(data: GameSceneInitData): void {
     this.mode = data.mode ?? 'survival';
     this.seed = data.seed ?? this.readSeedFromQuery();
+    this.debugEnabled = this.getDebugEnabled();
     this.questId = data.questId;
   }
 
@@ -78,7 +84,7 @@ export class GameScene extends Phaser.Scene {
       .setDepth(900)
       .setVisible(false);
 
-    this.sim = new Sim({ seed: this.seed, mode: this.mode, questId: this.questId });
+    this.sim = new Sim({ seed: this.seed, mode: this.mode, questId: this.questId, debug: this.debugEnabled });
     this.inputAdapter = new PhaserInputAdapter(this, () => this.getTransform());
     this.renderAdapter = new PhaserRenderAdapter(this, this.getTransform());
     this.debugOverlay = new DebugOverlay(this);
@@ -87,6 +93,11 @@ export class GameScene extends Phaser.Scene {
     this.perkOverlay.resize(width, height);
 
     this.scale.on('resize', this.handleResize, this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleShutdown, this);
+
+    if (this.debugEnabled) {
+      this.setupDebugControls();
+    }
   }
 
   update(_time: number, delta: number) {
@@ -137,13 +148,31 @@ export class GameScene extends Phaser.Scene {
   }
 
   private readSeedFromQuery(): number {
-    if (typeof window === 'undefined') {
+    const params = this.getQueryParams();
+    if (!params) {
       return 1;
     }
-    const params = new URLSearchParams(window.location.search);
     const seedParam = params.get('seed');
     const parsed = seedParam ? Number.parseInt(seedParam, 10) : NaN;
     return Number.isFinite(parsed) ? parsed : 1;
+  }
+
+  private getDebugEnabled(): boolean {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+    const params = this.getQueryParams();
+    if (!params) {
+      return false;
+    }
+    return Boolean(params.get('debug')) || import.meta.env.DEV;
+  }
+
+  private getQueryParams(): URLSearchParams | null {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+    return new URLSearchParams(window.location.search);
   }
 
   private syncGameOverOverlay(): void {
@@ -215,5 +244,53 @@ export class GameScene extends Phaser.Scene {
 
   private queuePerkChoice(slot: number): void {
     this.pendingPerkChoice = slot;
+  }
+
+  private setupDebugControls(): void {
+    const keyboard = this.input.keyboard;
+    if (!keyboard) {
+      return;
+    }
+
+    const spawnBurstKey = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F2);
+    const rofKey = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F3);
+    const collisionKey = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F4);
+
+    spawnBurstKey.on('down', () => {
+      const events: SimEvent[] = [];
+      for (let i = 0; i < 20; i += 1) {
+        const pick = this.sim.state.rng.nextInt(3);
+        const kind = pick === 0 ? 'grunt' : pick === 1 ? 'runner' : 'tank';
+        spawnCreatureAtEdge(this.sim.state, events, kind);
+      }
+    });
+
+    rofKey.on('down', () => {
+      const player = this.sim.state.player;
+      player.weaponId = 'smg';
+      const def = WEAPON_BY_ID[player.weaponId];
+      if (def && def.ammoMax !== undefined) {
+        player.ammo = def.ammoMax;
+      }
+      player.fireCooldownTicks = 0;
+      player.reloadTicksRemaining = 0;
+      player.perkStats.fireRateMultiplier = Math.max(player.perkStats.fireRateMultiplier, 6);
+    });
+
+    collisionKey.on('down', () => {
+      this.renderAdapter.toggleCollisionDebug();
+    });
+
+    this.debugKeys.push(spawnBurstKey, rofKey, collisionKey);
+  }
+
+  private handleShutdown(): void {
+    this.scale.off('resize', this.handleResize, this);
+    this.debugOverlay?.destroy();
+    for (const key of this.debugKeys) {
+      key.removeAllListeners();
+      key.destroy();
+    }
+    this.debugKeys = [];
   }
 }
