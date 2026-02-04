@@ -1,5 +1,5 @@
 import { WEAPONS, type WeaponId } from '../content/weapons';
-import { DEFAULT_QUEST_ID, type QuestId, type QuestStatus } from '../content/quests';
+import { DEFAULT_QUEST_ID, type QuestId, type QuestSpawnPattern, type QuestStatus } from '../content/quests';
 import { type BonusId } from '../content/bonuses';
 import { EMPTY_INPUT, type InputFrame, type Vec2, vec2 } from './types';
 import { createPerkStats, type PerkStats } from './perks';
@@ -131,9 +131,22 @@ export interface QuestModeState {
   elapsedTicks: number;
   killsByKind: Record<string, number>;
   killsTotal: number;
+  bonusesCollected: number;
+  bonusesCollectedByType: Record<string, number>;
   status: QuestStatus;
   nextTimelineIndex: number;
   messages: { text: string; tick: number }[];
+  spawnStreams: {
+    creatureKind: string;
+    count: number;
+    pattern: QuestSpawnPattern;
+    radius?: number;
+    center?: Vec2;
+    positions?: Vec2[];
+    intervalTicks: number;
+    nextTick: number;
+    endTick: number;
+  }[];
 }
 
 export type ModeState = SurvivalModeState | QuestModeState;
@@ -160,9 +173,12 @@ export function createQuestModeState(questId: QuestId = DEFAULT_QUEST_ID): Quest
     elapsedTicks: 0,
     killsByKind: {},
     killsTotal: 0,
+    bonusesCollected: 0,
+    bonusesCollectedByType: {},
     status: 'Playing',
     nextTimelineIndex: 0,
     messages: [],
+    spawnStreams: [],
   };
 }
 

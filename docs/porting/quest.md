@@ -7,7 +7,7 @@ Functions: 61
 - Quest runtime model implemented in `src/sim/systems/mode_quest.ts` (timeline stepping, objectives, status transitions).
 - Spawn timeline is represented as ordered events with a `nextTimelineIndex` cursor.
 - Quest results/failed phases are represented in sim (`QuestResults`, `QuestFailed`).
-- Quest catalog implemented in `src/content/quests/catalog.ts` with 5 quests from reference.
+- Quest catalog implemented in `src/content/quests/catalog.ts` with 20 quests from reference.
 
 ## Implemented Quests (TICKET-320)
 
@@ -33,38 +33,86 @@ Functions: 61
   - Approximation: Original has complex conditional logic with offset Y positions, simplified to wave pattern with edge spawns
   - Notes: 60 waves total (every ~500ms), heavily truncated for gameplay pacing
 
+## Implemented Quests (TICKET-500)
+
+- [x] `quest_build_land_hostile` — Implemented in catalog.ts (ref: crimsonland:00435bd0)
+  - Translation: Absolute edge/corner positions mapped to world anchors; fixed-point spawns
+  - Notes: Includes bonus collection objective to validate new quest objective tracking
+
+- [x] `quest_build_minor_alien_breach` — Implemented in catalog.ts (ref: crimsonland:00435cc0)
+  - Translation: Position-based spawns with periodic edge reinforcements; brute cameo at mid-point
+
+- [x] `quest_build_target_practice` — Implemented in catalog.ts (ref: crimsonland:00437a00)
+  - Translation: Orbiter spawns approximated via ring stream around map center
+
+- [x] `quest_build_frontline_assault` — Implemented in catalog.ts (ref: crimsonland:00437e10)
+  - Translation: Multi-front stream spawns from bottom and top corners
+
+- [x] `quest_build_alien_dens` — Implemented in catalog.ts (ref: crimsonland:00436720)
+  - Translation: Fixed-point spawner placement (center + diagonals)
+
+- [x] `quest_build_the_random_factor` — Implemented in catalog.ts (ref: crimsonland:00436350)
+  - Translation: Timed edge streams + brute punctuations
+
+- [x] `quest_build_spider_wave_syndrome` — Implemented in catalog.ts (ref: crimsonland:00436440)
+  - Translation: Streamed spider waves from the left edge
+
+- [x] `quest_build_alien_squads` — Implemented in catalog.ts (ref: crimsonland:00435ea0)
+  - Translation: Ring formations centered on offscreen anchors + fixed dual-corner streams
+
+- [x] `quest_build_nesting_grounds` — Implemented in catalog.ts (ref: crimsonland:004364a0)
+  - Translation: Spawner cadence + escalating alien waves
+
+- [x] `quest_build_8_legged_terror` — Implemented in catalog.ts (ref: crimsonland:00436120)
+  - Translation: Boss spawn + repeating corner brood spawns
+
+- [x] `quest_build_everred_pastures` — Implemented in catalog.ts (ref: crimsonland:004375a0)
+  - Translation: Wave ladder on all four edges
+
+- [x] `quest_build_spider_spawns` — Implemented in catalog.ts (ref: crimsonland:00436d70)
+  - Translation: Fixed spawner points + timed reinforcements
+
+- [x] `quest_build_two_fronts` — Implemented in catalog.ts (ref: crimsonland:00436ee0)
+  - Translation: Dual edge streams + mid-quest spawner inserts
+
+- [x] `quest_build_sweep_stakes` — Implemented in catalog.ts (ref: crimsonland:00437810)
+  - Translation: Ring stream around center + bonus collection objective
+
+- [x] `quest_build_evil_zombies_at_large` — Implemented in catalog.ts (ref: crimsonland:004374a0)
+  - Translation: Escalating zombie wave counts from all edges
+
 ## Function Checklist
 
-- [ ] `quest_build_8_legged_terror` — TODO (ref: crimsonland:00436120)
-- [ ] `quest_build_alien_dens` — TODO (ref: crimsonland:00436720)
-- [ ] `quest_build_alien_squads` — TODO (ref: crimsonland:00435ea0)
+- [x] `quest_build_8_legged_terror` — IMPLEMENTED (ref: crimsonland:00436120)
+- [x] `quest_build_alien_dens` — IMPLEMENTED (ref: crimsonland:00436720)
+- [x] `quest_build_alien_squads` — IMPLEMENTED (ref: crimsonland:00435ea0)
 - [ ] `quest_build_arachnoid_farm` — TODO (ref: crimsonland:00436820)
 - [ ] `quest_build_cross_fire` — TODO (ref: crimsonland:00435480)
 - [ ] `quest_build_deja_vu` — TODO (ref: crimsonland:00437920)
-- [ ] `quest_build_everred_pastures` — TODO (ref: crimsonland:004375a0)
-- [ ] `quest_build_evil_zombies_at_large` — TODO (ref: crimsonland:004374a0)
+- [x] `quest_build_everred_pastures` — IMPLEMENTED (ref: crimsonland:004375a0)
+- [x] `quest_build_evil_zombies_at_large` — IMPLEMENTED (ref: crimsonland:004374a0)
 - [ ] `quest_build_fallback` — TODO (ref: crimsonland:004343e0)
-- [ ] `quest_build_frontline_assault` — TODO (ref: crimsonland:00437e10)
+- [x] `quest_build_frontline_assault` — IMPLEMENTED (ref: crimsonland:00437e10)
 - [ ] `quest_build_gauntlet` — TODO (ref: crimsonland:004369a0)
 - [ ] `quest_build_ghost_patrols` — TODO (ref: crimsonland:00436200)
 - [ ] `quest_build_hidden_evil` — TODO (ref: crimsonland:00435a30)
-- [ ] `quest_build_land_hostile` — TODO (ref: crimsonland:00435bd0)
+- [x] `quest_build_land_hostile` — IMPLEMENTED (ref: crimsonland:00435bd0)
 - [ ] `quest_build_land_of_lizards` — TODO (ref: crimsonland:00437ba0)
 - [ ] `quest_build_lizard_kings` — TODO (ref: crimsonland:00437710)
 - [ ] `quest_build_lizard_raze` — TODO (ref: crimsonland:00438840)
 - [ ] `quest_build_lizard_zombie_pact` — TODO (ref: crimsonland:00438700)
 - [ ] `quest_build_major_alien_breach` — TODO (ref: crimsonland:00437af0)
-- [ ] `quest_build_minor_alien_breach` — TODO (ref: crimsonland:00435cc0)
-- [ ] `quest_build_nesting_grounds` — TODO (ref: crimsonland:004364a0)
-- [ ] `quest_build_spider_spawns` — TODO (ref: crimsonland:00436d70)
-- [ ] `quest_build_spider_wave_syndrome` — TODO (ref: crimsonland:00436440)
+- [x] `quest_build_minor_alien_breach` — IMPLEMENTED (ref: crimsonland:00435cc0)
+- [x] `quest_build_nesting_grounds` — IMPLEMENTED (ref: crimsonland:004364a0)
+- [x] `quest_build_spider_spawns` — IMPLEMENTED (ref: crimsonland:00436d70)
+- [x] `quest_build_spider_wave_syndrome` — IMPLEMENTED (ref: crimsonland:00436440)
 - [ ] `quest_build_spideroids` — TODO (ref: crimsonland:004373c0)
 - [ ] `quest_build_spiders_inc` — TODO (ref: crimsonland:004390d0)
 - [ ] `quest_build_surrounded_by_reptiles` — TODO (ref: crimsonland:00438940)
 - [ ] `quest_build_survival_of_the_fastest` — TODO (ref: crimsonland:00437060)
-- [ ] `quest_build_sweep_stakes` — TODO (ref: crimsonland:00437810)
+- [x] `quest_build_sweep_stakes` — IMPLEMENTED (ref: crimsonland:00437810)
 - [ ] `quest_build_syntax_terror` — TODO (ref: crimsonland:00436c10)
-- [ ] `quest_build_target_practice` — TODO (ref: crimsonland:00437a00)
+- [x] `quest_build_target_practice` — IMPLEMENTED (ref: crimsonland:00437a00)
 - [ ] `quest_build_the_annihilation` — TODO (ref: crimsonland:004382c0)
 - [ ] `quest_build_the_beating` — TODO (ref: crimsonland:00435610)
 - [ ] `quest_build_the_blighting` — TODO (ref: crimsonland:00438050)
@@ -75,10 +123,10 @@ Functions: 61
 - [ ] `quest_build_the_killing` — TODO (ref: crimsonland:004384a0)
 - [ ] `quest_build_the_lizquidation` — TODO (ref: crimsonland:00437c70)
 - [ ] `quest_build_the_massacre` — TODO (ref: crimsonland:004383e0)
-- [ ] `quest_build_the_random_factor` — TODO (ref: crimsonland:00436350)
+- [x] `quest_build_the_random_factor` — IMPLEMENTED (ref: crimsonland:00436350)
 - [ ] `quest_build_the_spanking_of_the_dead` — TODO (ref: crimsonland:004358a0)
 - [ ] `quest_build_the_unblitzkrieg` — TODO (ref: crimsonland:00438a40)
-- [ ] `quest_build_two_fronts` — TODO (ref: crimsonland:00436ee0)
+- [x] `quest_build_two_fronts` — IMPLEMENTED (ref: crimsonland:00436ee0)
 - [ ] `quest_build_zombie_masters` — TODO (ref: crimsonland:004360a0)
 - [ ] `quest_build_zombie_time` — TODO (ref: crimsonland:00437d70)
 - [ ] `quest_database_advance_slot` — TODO (ref: crimsonland:004343c0)
@@ -99,7 +147,7 @@ Implemented in TICKET-320:
 - `src/tools/extract_quest_names.ts` — Extracts quest builder function names from reference C file
 - `docs/ref/quest-list.md` — Ordered list of all 51 quests with addresses
 - `src/content/quests/quest_ids.ts` — Generated quest ID constants and titles
-- `src/content/quests/catalog.ts` — Quest definitions with 5 implemented quests
+- `src/content/quests/catalog.ts` — Quest definitions with 20 implemented quests
 - `src/scenes/QuestSelectScene.ts` — UI for quest selection
 
 ## Translation Notes
@@ -114,9 +162,11 @@ The reference C code uses `quest_spawn_entry_t` structures with:
 Our TypeScript implementation simplifies this to:
 - `QuestTimelineEvent` with `atTick` (60fps ticks)
 - `creatureKind` — String identifier mapped from template_id
-- `pattern` — Spawn pattern (edge, ring, random)
+- `pattern` — Spawn pattern (edge, ring, random, fixed)
 - `count` — Number to spawn
 - `radius` — Ring radius (for ring pattern)
+- `center` — Optional center point for ring spawns
+- `positions` — Absolute spawn points (mapped from 1024x1024 reference space)
 
 ### Creature Kind Mapping (Approximation)
 
@@ -143,9 +193,9 @@ Currently implemented:
 - `survive` — Survive for a duration
 - `killCount` — Kill specific number of creatures
 - `score` — Achieve a score target
+- `bonusCollect` — Collect a bonus (any or specific)
 
 Not yet needed but may be required for future quests:
-- Collection objectives
+- Collection objectives (non-bonus)
 - Position-based objectives
 - Time-based completion (reach before time)
-- Bonus collection

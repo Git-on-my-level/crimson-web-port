@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 import { Menu, type MenuItem } from '../ui/Menu';
 import { UI_STYLE } from '../ui/style';
-import { getSurvivalHighscores } from '../persistence/highscores';
+import { QUESTS } from '../content/quests';
+import { getQuestHighscores, getSurvivalHighscores } from '../persistence/highscores';
 import { PhaserAudioAdapter } from '../adapters/phaser/audio';
 import { SFX_KEYS } from '../audio/sfx';
 
@@ -13,6 +14,7 @@ export class HighscoresScene extends Phaser.Scene {
   private tabButtons: Phaser.GameObjects.Container[] = [];
   private tableContainer?: Phaser.GameObjects.Container;
   private audio?: PhaserAudioAdapter;
+  private questIndex = 0;
 
   constructor() {
     super('highscores');
@@ -128,9 +130,54 @@ export class HighscoresScene extends Phaser.Scene {
 
     tableContainer.removeAll(true);
 
-    const records = this.tabMode === 'survival'
+    let records = this.tabMode === 'survival'
       ? getSurvivalHighscores()
       : [];
+
+    if (this.tabMode === 'quest') {
+      const quest = QUESTS[this.questIndex] ?? QUESTS[0];
+      if (quest) {
+        records = getQuestHighscores(quest.id);
+      }
+
+      const label = quest ? `Quest: ${quest.title}` : 'Quest: (none)';
+      const selectorBg = this.add.rectangle(0, -100, 460, 28, 0x0f172a)
+        .setStrokeStyle(1, 0x334155);
+      const selectorText = this.add.text(0, -100, label, {
+        fontFamily: UI_STYLE.fontFamily,
+        fontSize: '14px',
+        color: '#e2e8f0',
+      }).setOrigin(0.5);
+
+      const makeButton = (x: number, labelText: string, onClick: () => void) => {
+        const bg = this.add.rectangle(x, -100, 28, 24, 0x1f2937)
+          .setStrokeStyle(1, 0x475569)
+          .setInteractive({ useHandCursor: true });
+        const txt = this.add.text(x, -100, labelText, {
+          fontFamily: UI_STYLE.fontFamily,
+          fontSize: '14px',
+          color: '#f8fafc',
+        }).setOrigin(0.5);
+        bg.on('pointerdown', () => {
+          this.audio?.playSfx(SFX_KEYS.uiClick);
+          onClick();
+        });
+        return [bg, txt];
+      };
+
+      const [prevBg, prevTxt] = makeButton(-250, '<', () => {
+        if (!QUESTS.length) return;
+        this.questIndex = (this.questIndex - 1 + QUESTS.length) % QUESTS.length;
+        this.updateTable();
+      });
+      const [nextBg, nextTxt] = makeButton(250, '>', () => {
+        if (!QUESTS.length) return;
+        this.questIndex = (this.questIndex + 1) % QUESTS.length;
+        this.updateTable();
+      });
+
+      tableContainer.add([selectorBg, selectorText, prevBg, prevTxt, nextBg, nextTxt]);
+    }
 
     if (records.length === 0) {
       const noScoresText = this.add.text(0, 0, 'No scores yet', {

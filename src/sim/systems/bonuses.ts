@@ -5,7 +5,7 @@ import { clampToWorld, findSpawnPosAwayFromPlayer } from '../world';
 import { assignWeapon, pickRandomWeapon, refreshAvailableWeapons, unlockWeapon } from '../weapons/weaponTable';
 import { getCreatureDef } from '../../content/creatures';
 import { grantXp } from './progression';
-import { registerQuestKill } from './mode_quest';
+import { registerQuestBonusCollected, registerQuestKill } from './mode_quest';
 import { registerSurvivalKill } from './mode_survival';
 
 const BONUS_BASE_DROP_DENOM = 9;
@@ -179,6 +179,9 @@ function applyBonus(state: SimState, bonus: SimState['bonuses'][0], events: SimE
 
   events.push({ type: 'pickup', id: bonus.id, bonusType: bonus.kind });
   events.push({ type: 'playSfx', name: 'pickup' });
+  if (state.mode === 'quest' && state.modeState.kind === 'quest') {
+    registerQuestBonusCollected(state.modeState, bonus.kind);
+  }
 }
 
 function applyTimedBonus(state: SimState, bonusId: BonusId, def: ReturnType<typeof getBonusDef>): void {
