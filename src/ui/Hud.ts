@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { WEAPON_BY_ID } from '../content/weapons';
-import { getBonusDef } from '../content/bonuses';
+import { getBonusDef, type BonusId } from '../content/bonuses';
+import { BONUS_FRAMES } from '../content/atlas';
 import { getPerkDef, type PerkId } from '../content/perks';
 import type { SimState } from '../sim/state';
 
@@ -14,6 +15,9 @@ export class Hud {
   private entityCountText?: Phaser.GameObjects.Text;
   private activeBonusesText: Phaser.GameObjects.Text;
   private perksText: Phaser.GameObjects.Text;
+  private readonly activeBonusIcons: Phaser.GameObjects.Sprite[] = [];
+  private readonly activeBonusIconPool: Phaser.GameObjects.Sprite[] = [];
+  private readonly bonusIconOrigin: { x: number; y: number };
 
   constructor(scene: Phaser.Scene, showDebugInfo = false) {
     const { width, height } = scene.scale;
@@ -80,11 +84,13 @@ export class Hud {
       ...style,
       fontSize: '14px',
     };
-    this.activeBonusesText = scene.add.text(padding, padding + 72, '', bonusStyle)
+    this.bonusIconOrigin = { x: padding, y: padding + 72 };
+
+    this.activeBonusesText = scene.add.text(padding, padding + 96, '', bonusStyle)
       .setScrollFactor(0)
       .setDepth(1000);
 
-    this.perksText = scene.add.text(padding, padding + 96, '', bonusStyle)
+    this.perksText = scene.add.text(padding, padding + 120, '', bonusStyle)
       .setScrollFactor(0)
       .setDepth(1000);
 
@@ -139,6 +145,8 @@ export class Hud {
       this.activeBonusesText.setText('');
     }
 
+    this.updateActiveBonusIcons(state);
+
     const perkEntries = Object.entries(state.player.perks)
       .filter(([_, count]) => (count ?? 0) > 0)
       .map(([perkId, count]) => {
@@ -177,5 +185,48 @@ export class Hud {
     this.entityCountText?.destroy();
     this.activeBonusesText.destroy();
     this.perksText.destroy();
+    this.activeBonusIcons.forEach(icon => icon.destroy());
+    this.activeBonusIconPool.forEach(icon => icon.destroy());
+  }
+
+  private updateActiveBonusIcons(state: SimState): void {
+    const activeBonusIds = Object.entries(state.player.activeEffects)
+      .filter(([_, ticks]) => ticks > 0)
+      .map(([bonusId]) => bonusId as BonusId);
+
+    const iconSize = 18;
+    const iconGap = 4;
+    const maxIcons = 8;
+    const count = Math.min(activeBonusIds.length, maxIcons);
+
+    for (let i = 0; i < count; i += 1) {
+      const bonusId = activeBonusIds[i];
+      const frame = BONUS_FRAMES[bonusId];
+      let icon = this.activeBonusIcons[i];
+
+      if (!icon) {
+        icon = this.activeBonusIconPool.pop() ?? this.hpText.scene.add.sprite(0, 0, 'game-bonuses-grid4', frame);
+        icon.setOrigin(0, 0);
+        icon.setScrollFactor(0);
+        icon.setDepth(1000);
+        this.activeBonusIcons[i] = icon;
+      }
+
+      icon.setTexture('game-bonuses-grid4', frame);
+      icon.setDisplaySize(iconSize, iconSize);
+      icon.setPosition(this.bonusIconOrigin.x + i * (iconSize + iconGap), this.bonusIconOrigin.y);
+      icon.setVisible(true);
+    }
+
+    for (let i = count; i < this.activeBonusIcons.length; i += 1) {
+      const icon = this.activeBonusIcons[i];
+      if (!icon) {
+        continue;
+      }
+      icon.setVisible(false);
+      this.activeBonusIconPool.push(icon);
+    }
+
+    this.activeBonusIcons.length = count;
   }
 }
