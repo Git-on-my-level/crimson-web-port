@@ -6,12 +6,14 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "prepare": "husky install",
     "test": "echo \"No tests yet\"",
     "preview": "vite preview"
   },
   "devDependencies": {
+    "husky": "^9.1.7",
     "typescript": "~5.9.3",
-    "vite": "^7.2.4"
+    "vite": "^5.4.14"
   },
   "dependencies": {
     "phaser": "^3.90.0"
