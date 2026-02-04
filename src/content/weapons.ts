@@ -1,3 +1,5 @@
+import type { ProjectileProfileId } from './projectiles';
+
 export type WeaponId =
   | 'pistol'
   | 'revolver'
@@ -20,6 +22,7 @@ export interface WeaponDef {
   unlockLevel?: number;
   pellets?: number;
   spreadRadians?: number;
+  projectileProfileId?: ProjectileProfileId;
   projectileSpeed: number;
   projectileLifeTicks: number;
   damage: number;
@@ -114,6 +117,7 @@ export const WEAPONS: WeaponDef[] = [
     fireMode: 'single',
     fireRate: 0.8,
     unlockLevel: 6,
+    projectileProfileId: 'piercing',
     projectileSpeed: 40,
     projectileLifeTicks: 120,
     damage: 60,
@@ -153,6 +157,7 @@ export const WEAPONS: WeaponDef[] = [
     fireMode: 'single',
     fireRate: 1.2,
     unlockLevel: 9,
+    projectileProfileId: 'piercing',
     projectileSpeed: 38,
     projectileLifeTicks: 100,
     damage: 70,
@@ -166,6 +171,7 @@ export const WEAPONS: WeaponDef[] = [
     fireMode: 'single',
     fireRate: 0.7,
     unlockLevel: 10,
+    projectileProfileId: 'explosive',
     projectileSpeed: 16,
     projectileLifeTicks: 110,
     damage: 80,

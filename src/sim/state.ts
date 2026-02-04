@@ -58,6 +58,9 @@ export interface ProjectileState {
   lifeTicksRemaining: number;
   owner: 'player' | 'creature';
   kind: string;
+  pierceRemaining: number;
+  explosionRadius: number;
+  explosionDamage: number;
 }
 
 export interface BonusState {
@@ -168,6 +171,9 @@ export function createSimState(
       lifeTicksRemaining: 0,
       owner: 'player',
       kind: '',
+      pierceRemaining: 0,
+      explosionRadius: 0,
+      explosionDamage: 0,
     }),
     50,
     1000,
