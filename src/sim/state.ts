@@ -7,6 +7,7 @@ import type { PerkId } from '../content/perks';
 import { Rng } from './rng';
 import { ObjectPool } from './pool';
 import { refreshAvailableWeapons } from './weapons/weaponTable';
+import { xpToNextForLevel } from './xp';
 
 export interface PlayerState {
   id: number;
@@ -199,7 +200,7 @@ export function createSimState(
     activeEffects: {},
     level: 1,
     xp: 0,
-    xpToNext: 75,
+    xpToNext: xpToNextForLevel(1),
     perks: {},
     perkStats: createPerkStats(),
     unlockedWeapons: new Set<WeaponId>([startingWeapon]),

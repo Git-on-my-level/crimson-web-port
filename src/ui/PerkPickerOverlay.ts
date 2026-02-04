@@ -8,6 +8,7 @@ type OptionView = {
   container: Phaser.GameObjects.Container;
   background: Phaser.GameObjects.Rectangle;
   title: Phaser.GameObjects.Text;
+  rarity: Phaser.GameObjects.Text;
   description: Phaser.GameObjects.Text;
   keyHint: Phaser.GameObjects.Text;
   perkId: PerkId | null;
@@ -60,6 +61,16 @@ export class PerkPickerOverlay {
         .setScrollFactor(0)
         .setDepth(1102);
 
+      const rarity = scene.add.text(0, -64, '', {
+        fontFamily: '"Atkinson Hyperlegible", "Trebuchet MS", sans-serif',
+        fontSize: '12px',
+        color: '#94a3b8',
+        align: 'center',
+      })
+        .setOrigin(0.5)
+        .setScrollFactor(0)
+        .setDepth(1102);
+
       const description = scene.add.text(0, 0, '', {
         fontFamily: '"Atkinson Hyperlegible", "Trebuchet MS", sans-serif',
         fontSize: '14px',
@@ -81,7 +92,7 @@ export class PerkPickerOverlay {
         .setScrollFactor(0)
         .setDepth(1102);
 
-      const container = scene.add.container(0, 0, [background, title, description, keyHint])
+      const container = scene.add.container(0, 0, [background, title, rarity, description, keyHint])
         .setDepth(1101)
         .setVisible(false);
 
@@ -89,6 +100,7 @@ export class PerkPickerOverlay {
         container,
         background,
         title,
+        rarity,
         description,
         keyHint,
         perkId: null,
@@ -114,9 +126,13 @@ export class PerkPickerOverlay {
       }
 
       const def = getPerkDef(perkId);
+      const rarity = getRarityStyle(def.rarity);
       option.title.setText(def.name);
+      option.rarity.setText(rarity.label);
+      option.rarity.setColor(rarity.color);
       option.description.setText(def.description);
       option.keyHint.setText(`Press ${i + 1} or click`);
+      option.background.setStrokeStyle(2, rarity.stroke);
       option.container.setVisible(true);
     }
   }
@@ -142,5 +158,21 @@ export class PerkPickerOverlay {
     for (const option of this.options) {
       option.container.destroy();
     }
+  }
+}
+
+function getRarityStyle(
+  rarity: 'common' | 'uncommon' | 'rare' | 'legendary',
+): { label: string; color: string; stroke: number } {
+  switch (rarity) {
+    case 'legendary':
+      return { label: 'LEGENDARY', color: '#fb7185', stroke: 0xfb7185 };
+    case 'rare':
+      return { label: 'RARE', color: '#f59e0b', stroke: 0xf59e0b };
+    case 'uncommon':
+      return { label: 'UNCOMMON', color: '#38bdf8', stroke: 0x38bdf8 };
+    case 'common':
+    default:
+      return { label: 'COMMON', color: '#94a3b8', stroke: 0x64748b };
   }
 }

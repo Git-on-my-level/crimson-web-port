@@ -4,10 +4,9 @@ import type { PerkId } from '../../content/perks';
 import { generatePerkChoices, recomputePerkStats } from '../perks';
 import { getXpMultiplier } from './bonuses';
 import { refreshAvailableWeapons } from '../weapons/weaponTable';
+import { xpToNextForLevel } from '../xp';
 
-const BASE_XP_TO_NEXT = 75;
-const XP_GROWTH = 1.25;
-const XP_PER_SECOND = 1.5;
+const XP_PER_SECOND = 0;
 
 export function grantXp(state: SimState, events: SimEvent[], amount: number): void {
   if (state.phase !== 'Playing') {
@@ -82,6 +81,9 @@ export function choosePerk(state: SimState, events: SimEvent[], perkId: PerkId):
   state.phase = 'Playing';
 
   events.push({ type: 'perkChosen', perkId, level: player.level });
+  if (player.xp >= player.xpToNext) {
+    levelUp(state, events);
+  }
   return true;
 }
 
@@ -89,7 +91,7 @@ function levelUp(state: SimState, events: SimEvent[]): void {
   const player = state.player;
   player.xp -= player.xpToNext;
   player.level += 1;
-  player.xpToNext = Math.max(1, Math.round(player.xpToNext * XP_GROWTH));
+  player.xpToNext = xpToNextForLevel(player.level);
   refreshAvailableWeapons(player);
   const choices = generatePerkChoices(state.rng, player, 3);
   if (choices.length === 0) {
@@ -106,7 +108,7 @@ function levelUp(state: SimState, events: SimEvent[]): void {
 export function resetProgression(state: SimState): void {
   state.player.level = 1;
   state.player.xp = 0;
-  state.player.xpToNext = BASE_XP_TO_NEXT;
+  state.player.xpToNext = xpToNextForLevel(state.player.level);
   state.player.perks = {};
   recomputePerkStats(state.player);
   refreshAvailableWeapons(state.player);
@@ -114,5 +116,5 @@ export function resetProgression(state: SimState): void {
 }
 
 export function getBaseXpToNext(): number {
-  return BASE_XP_TO_NEXT;
+  return xpToNextForLevel(1);
 }

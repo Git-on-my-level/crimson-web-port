@@ -13,6 +13,7 @@ export type PerkId =
   | 'power_cell';
 
 export type PerkTag = 'offense' | 'defense' | 'mobility' | 'utility';
+export type PerkRarity = 'common' | 'uncommon' | 'rare' | 'legendary';
 
 export type PerkModifiers = {
   damageMultiplier?: number;
@@ -32,7 +33,10 @@ export interface PerkDef {
   description: string;
   maxStacks: number;
   tags: PerkTag[];
-  exclusiveTag?: string;
+  rarity: PerkRarity;
+  weight?: number;
+  prereqs?: PerkId[];
+  exclusiveGroup?: string;
   modifiers: PerkModifiers;
 }
 
@@ -43,6 +47,7 @@ export const PERKS: PerkDef[] = [
     description: '+10% weapon damage per stack.',
     maxStacks: 5,
     tags: ['offense'],
+    rarity: 'common',
     modifiers: { damageMultiplier: 0.1 },
   },
   {
@@ -51,6 +56,7 @@ export const PERKS: PerkDef[] = [
     description: '+10% fire rate per stack.',
     maxStacks: 5,
     tags: ['offense'],
+    rarity: 'common',
     modifiers: { fireRateMultiplier: 0.1 },
   },
   {
@@ -59,6 +65,7 @@ export const PERKS: PerkDef[] = [
     description: '+15% projectile speed per stack.',
     maxStacks: 4,
     tags: ['offense'],
+    rarity: 'uncommon',
     modifiers: { projectileSpeedMultiplier: 0.15 },
   },
   {
@@ -67,6 +74,8 @@ export const PERKS: PerkDef[] = [
     description: '+10% damage and +5% fire rate per stack.',
     maxStacks: 3,
     tags: ['offense'],
+    rarity: 'rare',
+    prereqs: ['damage_up'],
     modifiers: { damageMultiplier: 0.1, fireRateMultiplier: 0.05 },
   },
   {
@@ -75,6 +84,7 @@ export const PERKS: PerkDef[] = [
     description: '+12 max HP per stack.',
     maxStacks: 5,
     tags: ['defense'],
+    rarity: 'common',
     modifiers: { hpMaxBonus: 12 },
   },
   {
@@ -83,6 +93,7 @@ export const PERKS: PerkDef[] = [
     description: '+5% damage reduction per stack (caps at 60%).',
     maxStacks: 6,
     tags: ['defense'],
+    rarity: 'uncommon',
     modifiers: { damageReduction: 0.05 },
   },
   {
@@ -91,6 +102,7 @@ export const PERKS: PerkDef[] = [
     description: 'Regenerate 0.6 HP per second per stack.',
     maxStacks: 3,
     tags: ['defense'],
+    rarity: 'uncommon',
     modifiers: { regenPerSecond: 0.6 },
   },
   {
@@ -99,6 +111,7 @@ export const PERKS: PerkDef[] = [
     description: '+10% movement speed per stack.',
     maxStacks: 5,
     tags: ['mobility'],
+    rarity: 'common',
     modifiers: { moveSpeedMultiplier: 0.1 },
   },
   {
@@ -107,6 +120,7 @@ export const PERKS: PerkDef[] = [
     description: '+0.4 pickup radius per stack.',
     maxStacks: 4,
     tags: ['utility'],
+    rarity: 'common',
     modifiers: { pickupRangeBonus: 0.4 },
   },
   {
@@ -115,6 +129,7 @@ export const PERKS: PerkDef[] = [
     description: '+20% bonus drop chance per stack.',
     maxStacks: 3,
     tags: ['utility'],
+    rarity: 'uncommon',
     modifiers: { bonusDropMultiplier: 0.2 },
   },
   {
@@ -123,7 +138,8 @@ export const PERKS: PerkDef[] = [
     description: '+25% damage and +15% projectile speed (exclusive).',
     maxStacks: 1,
     tags: ['offense'],
-    exclusiveTag: 'style',
+    rarity: 'rare',
+    exclusiveGroup: 'style',
     modifiers: { damageMultiplier: 0.25, projectileSpeedMultiplier: 0.15 },
   },
   {
@@ -132,7 +148,8 @@ export const PERKS: PerkDef[] = [
     description: '+25% fire rate (exclusive).',
     maxStacks: 1,
     tags: ['offense'],
-    exclusiveTag: 'style',
+    rarity: 'rare',
+    exclusiveGroup: 'style',
     modifiers: { fireRateMultiplier: 0.25 },
   },
 ];
