@@ -13,3 +13,4 @@
 ## Notes
 - Pages build sets `BASE_PATH` to `/<repo-name>/` in the workflow.
 - Reference C files are present in `ref/`.
+- `npm run build` passes locally (2026-02-04); Vite reports a large bundle warning (~1.2 MB) which can be addressed later if needed.
