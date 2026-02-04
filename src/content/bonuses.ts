@@ -1,4 +1,11 @@
-export type BonusId = 'medkit' | 'ammo' | 'score' | 'damage_boost' | 'fire_rate_boost' | 'speed_boost';
+export type BonusId =
+  | 'medkit'
+  | 'ammo'
+  | 'score'
+  | 'weapon'
+  | 'damage_boost'
+  | 'fire_rate_boost'
+  | 'speed_boost';
 
 export interface BonusDef {
   id: BonusId;
@@ -30,6 +37,13 @@ export const BONUSES: BonusDef[] = [
     kind: 'instant',
     rarityWeight: 60,
     color: 0xfacc15,
+  },
+  {
+    id: 'weapon',
+    name: 'Weapon Drop',
+    kind: 'instant',
+    rarityWeight: 30,
+    color: 0x94a3b8,
   },
   {
     id: 'damage_boost',

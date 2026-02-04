@@ -3,6 +3,7 @@ import type { SimState } from '../state';
 import type { SimEvent } from '../types';
 import { WEAPON_BY_ID } from '../../content/weapons';
 import { clampToWorld, findSpawnPosAwayFromPlayer } from '../world';
+import { assignWeapon, pickRandomWeapon, refreshAvailableWeapons, unlockWeapon } from '../weapons/weaponTable';
 
 const BONUS_DROP_CHANCE = 0.25;
 const BONUS_DESPAWN_TICKS = 900;
@@ -131,6 +132,15 @@ function applyBonus(state: SimState, bonus: SimState['bonuses'][0], events: SimE
     case 'score':
       state.score += SCORE_BONUS_AMOUNT;
       events.push({ type: 'score', amount: SCORE_BONUS_AMOUNT, total: state.score });
+      break;
+    case 'weapon':
+      {
+        const available = refreshAvailableWeapons(state.player);
+        const nextWeapon = pickRandomWeapon(state.rng, available);
+        unlockWeapon(state.player, nextWeapon);
+        assignWeapon(state.player, nextWeapon);
+        events.push({ type: 'playSfx', name: 'weapon_pickup' });
+      }
       break;
     case 'damage_boost':
     case 'fire_rate_boost':

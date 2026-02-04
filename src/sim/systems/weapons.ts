@@ -1,7 +1,7 @@
 import type { WeaponDef } from '../../content/weapons';
 import type { SimState } from '../state';
 import type { SimEvent } from '../types';
-import { getWeaponById, getWeaponOrder } from '../weapons/weaponTable';
+import { assignWeapon, getWeaponById, getWeaponOrder, isWeaponAvailable } from '../weapons/weaponTable';
 import { spawnProjectile } from './projectiles';
 import { getDamageMultiplier, getFireRateMultiplier } from './bonuses';
 
@@ -147,15 +147,11 @@ function switchWeapon(player: SimState['player'], slot: number): boolean {
     return false;
   }
 
-  player.weaponId = nextWeapon;
-  player.fireCooldownTicks = 0;
-  player.reloadTicksRemaining = 0;
-  const def = getWeaponById(nextWeapon);
-  if (def.ammoMax !== undefined) {
-    player.ammo = def.ammoMax;
-  } else {
-    player.ammo = 0;
+  if (!isWeaponAvailable(player, nextWeapon)) {
+    return false;
   }
+
+  assignWeapon(player, nextWeapon);
   return true;
 }
 

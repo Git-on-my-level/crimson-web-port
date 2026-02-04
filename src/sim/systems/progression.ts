@@ -2,6 +2,7 @@ import type { SimState } from '../state';
 import type { SimEvent } from '../types';
 import type { PerkId } from '../../content/perks';
 import { generatePerkChoices, recomputePerkStats } from '../perks';
+import { refreshAvailableWeapons } from '../weapons/weaponTable';
 
 const BASE_XP_TO_NEXT = 75;
 const XP_GROWTH = 1.25;
@@ -86,6 +87,7 @@ function levelUp(state: SimState, events: SimEvent[]): void {
   player.xp -= player.xpToNext;
   player.level += 1;
   player.xpToNext = Math.max(1, Math.round(player.xpToNext * XP_GROWTH));
+  refreshAvailableWeapons(player);
   const choices = generatePerkChoices(state.rng, player, 3);
   if (choices.length === 0) {
     state.phase = 'Playing';
@@ -104,6 +106,7 @@ export function resetProgression(state: SimState): void {
   state.player.xpToNext = BASE_XP_TO_NEXT;
   state.player.perks = {};
   recomputePerkStats(state.player);
+  refreshAvailableWeapons(state.player);
   state.perkChoices = null;
 }
 

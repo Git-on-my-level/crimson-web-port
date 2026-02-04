@@ -6,6 +6,7 @@ import { createPerkStats, type PerkStats } from './perks';
 import type { PerkId } from '../content/perks';
 import { Rng } from './rng';
 import { ObjectPool } from './pool';
+import { refreshAvailableWeapons } from './weapons/weaponTable';
 
 export interface PlayerState {
   id: number;
@@ -29,6 +30,8 @@ export interface PlayerState {
   xpToNext: number;
   perks: Partial<Record<PerkId, number>>;
   perkStats: PerkStats;
+  unlockedWeapons: Set<WeaponId>;
+  availableWeapons: WeaponId[];
 }
 
 export interface CreatureState {
@@ -170,32 +173,37 @@ export function createSimState(
     1000,
   );
 
-  return {
+  const startingWeapon = WEAPONS[0]?.id ?? 'pistol';
+  const player: PlayerState = {
+    id: 1,
+    pos: vec2(0, 0),
+    vel: vec2(0, 0),
+    radius: 1.2,
+    hp: 100,
+    hpMax: 100,
+    baseHpMax: 100,
+    aimDir: vec2(1, 0),
+    aimAngle: 0,
+    fireCooldownTicks: 0,
+    weaponId: startingWeapon,
+    ammo: WEAPONS[0]?.ammoMax ?? 0,
+    reloadTicksRemaining: 0,
+    input: { ...EMPTY_INPUT },
+    baseSpeed: 6,
+    activeEffects: {},
+    level: 1,
+    xp: 0,
+    xpToNext: 75,
+    perks: {},
+    perkStats: createPerkStats(),
+    unlockedWeapons: new Set<WeaponId>([startingWeapon]),
+    availableWeapons: [],
+  };
+
+  const state: SimState = {
     tick: 0,
     rng,
-    player: {
-      id: 1,
-      pos: vec2(0, 0),
-      vel: vec2(0, 0),
-      radius: 1.2,
-      hp: 100,
-      hpMax: 100,
-      baseHpMax: 100,
-      aimDir: vec2(1, 0),
-      aimAngle: 0,
-      fireCooldownTicks: 0,
-      weaponId: WEAPONS[0]?.id ?? 'pistol',
-      ammo: WEAPONS[0]?.ammoMax ?? 0,
-      reloadTicksRemaining: 0,
-      input: { ...EMPTY_INPUT },
-      baseSpeed: 6,
-      activeEffects: {},
-      level: 1,
-      xp: 0,
-      xpToNext: 75,
-      perks: {},
-      perkStats: createPerkStats(),
-    },
+    player,
     creatures: [],
     projectiles: [],
     bonuses: [],
@@ -222,4 +230,7 @@ export function createSimState(
     },
     selectedQuestId,
   };
+
+  refreshAvailableWeapons(player);
+  return state;
 }

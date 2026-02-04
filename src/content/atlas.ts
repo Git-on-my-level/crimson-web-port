@@ -17,10 +17,17 @@ export const ATLAS_SHEETS: AtlasSheet[] = [
     frameHeight: 32,
     labels: {
       pistol: 0,
+      revolver: 0,
       shotgun: 1,
       smg: 2,
+      burst_rifle: 3,
       rifle: 3,
+      sniper: 3,
+      flamethrower: 2,
       plasma: 4,
+      railgun: 4,
+      rocket: 1,
+      laser: 4,
     },
   },
   {
@@ -50,6 +57,7 @@ export const ATLAS_SHEETS: AtlasSheet[] = [
       medkit: 0,
       ammo: 1,
       score: 2,
+      weapon: 1,
       damage_boost: 3,
       fire_rate_boost: 4,
       speed_boost: 5,
@@ -59,16 +67,24 @@ export const ATLAS_SHEETS: AtlasSheet[] = [
 
 export const PROJECTILE_FRAMES: Record<WeaponId, number> = {
   pistol: 0,
+  revolver: 0,
   shotgun: 1,
   smg: 2,
+  burst_rifle: 3,
   rifle: 3,
+  sniper: 3,
+  flamethrower: 2,
   plasma: 4,
+  railgun: 4,
+  rocket: 1,
+  laser: 4,
 };
 
 export const BONUS_FRAMES: Record<BonusId, number> = {
   medkit: 0,
   ammo: 1,
   score: 2,
+  weapon: 1,
   damage_boost: 3,
   fire_rate_boost: 4,
   speed_boost: 5,
