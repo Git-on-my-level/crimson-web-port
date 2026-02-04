@@ -1,18 +1,40 @@
 import Phaser from 'phaser';
+import { addRunRecord, type RunRecord } from '../persistence/highscores';
+
+interface GameOverSceneInitData {
+  score: number;
+  timeAlive: number;
+  seed: number;
+  level?: number;
+}
 
 export class GameOverScene extends Phaser.Scene {
   private score = 0;
   private timeAlive = 0;
   private seed = 1;
+  private level = 1;
 
   constructor() {
     super('gameOver');
   }
 
-  init(data: { score: number; timeAlive: number; seed: number }): void {
+  init(data: GameOverSceneInitData): void {
     this.score = data.score || 0;
     this.timeAlive = data.timeAlive || 0;
     this.seed = data.seed || 1;
+    this.level = data.level ?? 1;
+
+    const record: RunRecord = {
+      mode: 'survival',
+      score: this.score,
+      timeSeconds: this.timeAlive,
+      kills: 0,
+      level: this.level,
+      seed: this.seed,
+      dateISO: new Date().toISOString(),
+    };
+
+    addRunRecord(record);
   }
 
   create() {

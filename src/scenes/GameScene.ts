@@ -174,6 +174,7 @@ export class GameScene extends Phaser.Scene {
         score: this.sim.state.score,
         timeAlive: this.sim.state.timeAlive,
         seed: this.seed,
+        level: this.sim.state.player.level,
       });
     }
     this.wasGameOver = isGameOver;
@@ -191,6 +192,7 @@ export class GameScene extends Phaser.Scene {
           killsTotal: this.sim.state.modeState.killsTotal,
           killsByKind: this.sim.state.modeState.killsByKind,
           seed: this.seed,
+          level: this.sim.state.player.level,
         });
       }
     }
@@ -203,6 +205,7 @@ export class GameScene extends Phaser.Scene {
           killsTotal: this.sim.state.modeState.killsTotal,
           killsByKind: this.sim.state.modeState.killsByKind,
           seed: this.seed,
+          level: this.sim.state.player.level,
         });
       }
     }

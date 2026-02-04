@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { getQuestDef } from '../content/quests';
+import { addRunRecord, type RunRecord } from '../persistence/highscores';
 
 interface QuestResultsSceneInitData {
   questId: string;
@@ -8,6 +9,7 @@ interface QuestResultsSceneInitData {
   killsTotal: number;
   killsByKind: Record<string, number>;
   seed: number;
+  level?: number;
 }
 
 export class QuestResultsScene extends Phaser.Scene {
@@ -16,6 +18,7 @@ export class QuestResultsScene extends Phaser.Scene {
   private elapsedTicks = 0;
   private killsTotal = 0;
   private seed = 1;
+  private level = 1;
 
   constructor() {
     super('questResults');
@@ -27,6 +30,20 @@ export class QuestResultsScene extends Phaser.Scene {
     this.elapsedTicks = data.elapsedTicks || 0;
     this.killsTotal = data.killsTotal || 0;
     this.seed = data.seed || 1;
+    this.level = data.level ?? 1;
+
+    const record: RunRecord = {
+      mode: 'quest',
+      score: this.score,
+      timeSeconds: Math.round(this.elapsedTicks / 60),
+      kills: this.killsTotal,
+      level: this.level,
+      seed: this.seed,
+      dateISO: new Date().toISOString(),
+      questId: this.questId,
+    };
+
+    addRunRecord(record);
   }
 
   create() {
