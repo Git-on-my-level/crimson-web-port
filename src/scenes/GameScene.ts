@@ -7,6 +7,9 @@ import { TerrainBackground } from '../adapters/phaser/terrainBackground';
 import { TerrainObstacles } from '../adapters/phaser/terrainObstacles';
 import { Hud } from '../ui/Hud';
 import { PerkPickerOverlay } from '../ui/PerkPickerOverlay';
+import { ControlsOverlay } from '../ui/ControlsOverlay';
+import { Menu } from '../ui/Menu';
+import { UI_STYLE } from '../ui/style';
 import { spawnCreatureAtEdge } from '../sim/systems/creatures';
 import { WEAPON_BY_ID } from '../content/weapons';
 import type { SimEvent } from '../sim/types';
@@ -43,6 +46,17 @@ export class GameScene extends Phaser.Scene {
   private pendingPerkChoice: number | null = null;
   private debugEnabled = false;
   private debugKeys: Phaser.Input.Keyboard.Key[] = [];
+  private pauseMenu?: Menu;
+  private pauseBackdrop?: Phaser.GameObjects.Rectangle;
+  private pauseTitle?: Phaser.GameObjects.Text;
+  private pauseHint?: Phaser.GameObjects.Text;
+  private controlsOverlay?: ControlsOverlay;
+  private controlsPausedGame = false;
+  private lastDamageFx = -Infinity;
+  private lastPickupFx = -Infinity;
+  private lastExplosionFx = -Infinity;
+  private controlsKeyHandler?: () => void;
+  private escHandler?: () => void;
 
   constructor() {
     super('game');
@@ -99,9 +113,20 @@ export class GameScene extends Phaser.Scene {
     this.perkOverlay.resize(width, height);
     this.audio = new PhaserAudioAdapter(this);
     this.terrainObstacles = new TerrainObstacles(this, this.getTransform(), this.sim.state.terrain);
+    this.controlsOverlay = new ControlsOverlay(this);
 
     this.scale.on('resize', this.handleResize, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleShutdown, this);
+    this.events.on(Phaser.Scenes.Events.RESUME, this.handleResume, this);
+
+    this.controlsKeyHandler = () => this.toggleControlsOverlay();
+    this.input.keyboard?.on('keydown-H', this.controlsKeyHandler);
+    this.escHandler = () => {
+      if (this.controlsOverlay?.isVisible()) {
+        this.toggleControlsOverlay();
+      }
+    };
+    this.input.keyboard?.on('keydown-ESC', this.escHandler);
 
     if (this.debugEnabled) {
       this.setupDebugControls();
@@ -126,6 +151,7 @@ export class GameScene extends Phaser.Scene {
     this.debugOverlay.update(this.sim.state, this.seed, fps);
     this.hud.update(this.sim.state);
     this.perkOverlay.update(this.sim.state);
+    this.syncPauseMenu();
     this.syncGameOverOverlay();
     this.syncQuestOverlay();
     this.checkGameOverTransition();
@@ -148,6 +174,8 @@ export class GameScene extends Phaser.Scene {
     if (this.perkOverlay) {
       this.perkOverlay.resize(gameSize.width, gameSize.height);
     }
+    this.controlsOverlay?.resize(gameSize.width, gameSize.height);
+    this.updatePauseMenuLayout();
   }
 
   private getTransform() {
@@ -263,6 +291,9 @@ export class GameScene extends Phaser.Scene {
   private handleSimEvents(events: SimEvent[]): void {
     if (!events.length) return;
     const sfxKeys = new Set<string>();
+    let playerDamaged = false;
+    let bigPickup = false;
+    let explosionImpact = false;
 
     for (const event of events) {
       switch (event.type) {
@@ -271,14 +302,27 @@ export class GameScene extends Phaser.Scene {
           if (key) sfxKeys.add(key);
           break;
         }
+        case 'damage':
+          if (event.target === 'player') {
+            playerDamaged = true;
+          }
+          break;
         case 'pickup':
           sfxKeys.add(SFX_KEYS.pickup);
+          if (this.isBigPickup(event.bonusType)) {
+            bigPickup = true;
+          }
           break;
         case 'perkOffered':
           sfxKeys.add(SFX_KEYS.perkOffer);
           break;
         case 'perkChosen':
           sfxKeys.add(SFX_KEYS.perkChoose);
+          break;
+        case 'projectileImpact':
+          if ((event.explosionRadius ?? 0) > 0) {
+            explosionImpact = true;
+          }
           break;
         default:
           break;
@@ -287,6 +331,16 @@ export class GameScene extends Phaser.Scene {
 
     for (const key of sfxKeys) {
       this.audio.playSfx(key);
+    }
+
+    if (playerDamaged) {
+      this.triggerDamageFx();
+    }
+    if (bigPickup) {
+      this.triggerPickupFx();
+    }
+    if (explosionImpact) {
+      this.triggerExplosionFx();
     }
   }
 
@@ -339,8 +393,183 @@ export class GameScene extends Phaser.Scene {
     this.debugKeys.push(spawnBurstKey, rofKey, collisionKey);
   }
 
+  private syncPauseMenu(): void {
+    const isPaused = this.sim.state.phase === 'Paused';
+    const controlsVisible = this.controlsOverlay?.isVisible() ?? false;
+    if (isPaused && !this.pauseMenu && !controlsVisible) {
+      this.showPauseMenu();
+    }
+    if ((!isPaused || controlsVisible) && this.pauseMenu) {
+      this.hidePauseMenu();
+    }
+    this.hud.setPauseMenuActive(Boolean(this.pauseMenu) || controlsVisible);
+  }
+
+  private showPauseMenu(): void {
+    const { width, height } = this.scale;
+    this.pauseBackdrop = this.add.rectangle(width / 2, height / 2, width, height, 0x0b0d12, 0.55)
+      .setDepth(920);
+
+    this.pauseTitle = this.add.text(width / 2, height / 2 - 180, 'Paused', {
+      ...UI_STYLE.text.title,
+      fontFamily: UI_STYLE.fontFamily,
+      fontSize: '40px',
+    }).setOrigin(0.5).setDepth(921);
+
+    this.pauseHint = this.add.text(width / 2, height / 2 + 190, 'Press Esc or P to resume', {
+      ...UI_STYLE.text.small,
+      fontFamily: UI_STYLE.fontFamily,
+    }).setOrigin(0.5).setDepth(921);
+
+    const menuItems = [
+      {
+        label: 'Resume',
+        action: () => {
+          this.audio?.playSfx(SFX_KEYS.uiClick);
+          this.resumeFromPauseMenu();
+        },
+      },
+      {
+        label: 'Options',
+        action: () => {
+          this.audio?.playSfx(SFX_KEYS.uiClick);
+          this.hidePauseMenu();
+          this.scene.pause();
+          this.scene.launch('options', { returnTo: 'game' });
+        },
+      },
+      {
+        label: 'Controls',
+        action: () => {
+          this.audio?.playSfx(SFX_KEYS.uiClick);
+          this.toggleControlsOverlay(true);
+        },
+      },
+      {
+        label: 'Restart',
+        action: () => {
+          this.audio?.playSfx(SFX_KEYS.uiClick);
+          this.scene.start('game', { mode: this.mode, seed: this.seed, questId: this.questId });
+        },
+      },
+      {
+        label: 'Quit to Title',
+        action: () => {
+          this.audio?.playSfx(SFX_KEYS.uiClick);
+          this.scene.start('title');
+        },
+      },
+    ];
+
+    this.pauseMenu = new Menu(this, menuItems);
+    let readyForSound = false;
+    this.pauseMenu.setOnIndexChange(() => {
+      if (!readyForSound) {
+        readyForSound = true;
+        return;
+      }
+      this.audio?.playSfx(SFX_KEYS.uiClick);
+    });
+    this.updatePauseMenuLayout();
+  }
+
+  private hidePauseMenu(): void {
+    this.pauseMenu?.destroy();
+    this.pauseMenu = undefined;
+    this.pauseBackdrop?.destroy();
+    this.pauseBackdrop = undefined;
+    this.pauseTitle?.destroy();
+    this.pauseTitle = undefined;
+    this.pauseHint?.destroy();
+    this.pauseHint = undefined;
+    this.hud.setPauseMenuActive(false);
+  }
+
+  private updatePauseMenuLayout(): void {
+    if (!this.pauseMenu || !this.pauseBackdrop || !this.pauseTitle || !this.pauseHint) return;
+    const { width, height } = this.scale;
+    this.pauseBackdrop.setPosition(width / 2, height / 2);
+    this.pauseBackdrop.setSize(width, height);
+    this.pauseTitle.setPosition(width / 2, height / 2 - 180);
+    this.pauseHint.setPosition(width / 2, height / 2 + 190);
+  }
+
+  private resumeFromPauseMenu(): void {
+    this.sim.state.phase = 'Playing';
+    this.hidePauseMenu();
+  }
+
+  private toggleControlsOverlay(fromPauseMenu = false): void {
+    if (!this.controlsOverlay) return;
+    const wasVisible = this.controlsOverlay.isVisible();
+    this.controlsOverlay.toggle();
+
+    if (!wasVisible) {
+      if (this.sim.state.phase === 'Playing') {
+        this.sim.state.phase = 'Paused';
+        this.controlsPausedGame = true;
+      }
+      if (fromPauseMenu) {
+        this.hidePauseMenu();
+      }
+    } else {
+      if (this.controlsPausedGame) {
+        this.sim.state.phase = 'Playing';
+        this.controlsPausedGame = false;
+      }
+      if (this.sim.state.phase === 'Paused') {
+        this.showPauseMenu();
+      }
+    }
+  }
+
+  private handleResume(): void {
+    this.inputAdapter.reloadKeybinds();
+    this.audio.reloadSettings();
+  }
+
+  private isBigPickup(bonusType: string): boolean {
+    const big = new Set(['nuke', 'fireblast', 'shock_chain', 'weapon_power_up', 'double_xp']);
+    return big.has(bonusType);
+  }
+
+  private triggerDamageFx(): void {
+    const now = this.time.now;
+    if (now - this.lastDamageFx < 180) return;
+    this.lastDamageFx = now;
+    this.cameras.main.shake(120, 0.006);
+    this.cameras.main.flash(120, 120, 20, 20);
+  }
+
+  private triggerPickupFx(): void {
+    const now = this.time.now;
+    if (now - this.lastPickupFx < 220) return;
+    this.lastPickupFx = now;
+    this.cameras.main.flash(140, 255, 210, 80);
+  }
+
+  private triggerExplosionFx(): void {
+    const now = this.time.now;
+    if (now - this.lastExplosionFx < 160) return;
+    this.lastExplosionFx = now;
+    this.cameras.main.shake(140, 0.008);
+    this.cameras.main.flash(100, 255, 100, 40);
+  }
+
   private handleShutdown(): void {
     this.scale.off('resize', this.handleResize, this);
+    this.events.off(Phaser.Scenes.Events.RESUME, this.handleResume, this);
+    if (this.controlsKeyHandler) {
+      this.input.keyboard?.off('keydown-H', this.controlsKeyHandler);
+    }
+    if (this.escHandler) {
+      this.input.keyboard?.off('keydown-ESC', this.escHandler);
+    }
+    this.pauseMenu?.destroy();
+    this.pauseBackdrop?.destroy();
+    this.pauseTitle?.destroy();
+    this.pauseHint?.destroy();
+    this.controlsOverlay?.destroy();
     this.debugOverlay?.destroy();
     for (const key of this.debugKeys) {
       key.removeAllListeners();

@@ -30,13 +30,25 @@ export class OptionsScene extends Phaser.Scene {
   private remapPrompt?: Phaser.GameObjects.Text;
   private volumeDisplay: Phaser.GameObjects.Text[] = [];
   private audio?: PhaserAudioAdapter;
+  private returnTo: 'title' | 'game' = 'title';
+  private tabButtons: Phaser.GameObjects.Container[] = [];
+  private escHandler?: () => void;
+  private isRemapping = false;
 
   constructor() {
     super('options');
   }
 
+  init(data?: { returnTo?: 'title' | 'game' }): void {
+    if (data?.returnTo === 'game') {
+      this.returnTo = 'game';
+    } else {
+      this.returnTo = 'title';
+    }
+  }
+
   create() {
-    const { width, height } = this.scale;
+    const { width } = this.scale;
     this.audio = new PhaserAudioAdapter(this);
 
     this.add.text(width / 2, 50, 'Options', {
@@ -45,11 +57,17 @@ export class OptionsScene extends Phaser.Scene {
       fontFamily: UI_STYLE.fontFamily,
     }).setOrigin(0.5);
 
-    this.createTabs(width, height);
+    this.createTabs(width);
     this.updateTabContent();
+
+    this.escHandler = () => this.handleBack();
+    this.input.keyboard?.on('keydown-ESC', this.escHandler);
   }
 
-  private createTabs(width: number, height: number): void {
+  private createTabs(width: number): void {
+    this.tabButtons.forEach((container) => container.destroy(true));
+    this.tabButtons = [];
+
     const tabButtons = [
       { label: 'Controls', tab: 'keybinds' as const },
       { label: 'Volume', tab: 'volume' as const },
@@ -68,18 +86,24 @@ export class OptionsScene extends Phaser.Scene {
         .setStrokeStyle(isSelected ? 3 : 2, isSelected ? 0x60a5fa : 0x3b82f6)
         .setInteractive({ useHandCursor: true });
 
-      this.add.text(x, tabY, tab.label, {
+      const labelText = this.add.text(x, tabY, tab.label, {
         fontSize: '16px',
         color: isSelected ? '#ffffff' : UI_STYLE.colors.text,
         fontFamily: UI_STYLE.fontFamily,
-      }).setOrigin(0.5);
+      }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
-      bg.on('pointerdown', () => {
+      const handleTabClick = () => {
         this.audio?.playSfx(SFX_KEYS.uiClick);
         this.currentTab = tab.tab;
-        this.createTabs(width, height);
+        this.createTabs(width);
         this.updateTabContent();
-      });
+      };
+
+      bg.on('pointerdown', handleTabClick);
+      labelText.on('pointerdown', handleTabClick);
+
+      const container = this.add.container(0, 0, [bg, labelText]);
+      this.tabButtons.push(container);
     });
   }
 
@@ -104,10 +128,10 @@ export class OptionsScene extends Phaser.Scene {
 
     const menuItems: MenuItem[] = [
       {
-        label: 'Back to Title',
+        label: this.returnTo === 'game' ? 'Back to Game' : 'Back to Title',
         action: () => {
           this.audio?.playSfx(SFX_KEYS.uiClick);
-          this.scene.start('title');
+          this.handleBack();
         },
       },
     ];
@@ -287,6 +311,7 @@ export class OptionsScene extends Phaser.Scene {
   }
 
   private startRemap(action: KeybindAction): void {
+    this.isRemapping = true;
     this.scene.pause();
 
     const overlay = this.add.rectangle(this.scale.width / 2, this.scale.height / 2, this.scale.width, this.scale.height, 0x000000, 0.8);
@@ -316,6 +341,7 @@ export class OptionsScene extends Phaser.Scene {
     this.remapPrompt?.destroy();
     overlay.destroy();
     this.scene.resume();
+    this.isRemapping = false;
     this.updateTabContent();
   }
 
@@ -371,5 +397,23 @@ export class OptionsScene extends Phaser.Scene {
     this.menu?.destroy();
     this.keybindList?.destroy();
     this.volumeSliders?.destroy();
+    this.tabButtons.forEach((container) => container.destroy(true));
+    this.tabButtons = [];
+    if (this.escHandler) {
+      this.input.keyboard?.off('keydown-ESC', this.escHandler);
+    }
+  }
+
+  private handleBack(): void {
+    if (this.isRemapping) {
+      return;
+    }
+    this.audio?.playSfx(SFX_KEYS.uiClick);
+    if (this.returnTo === 'game') {
+      this.scene.stop('options');
+      this.scene.resume('game');
+      return;
+    }
+    this.scene.start('title');
   }
 }

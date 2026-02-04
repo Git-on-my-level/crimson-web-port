@@ -18,6 +18,7 @@ export class Hud {
   private readonly activeBonusIcons: Phaser.GameObjects.Sprite[] = [];
   private readonly activeBonusIconPool: Phaser.GameObjects.Sprite[] = [];
   private readonly bonusIconOrigin: { x: number; y: number };
+  private pauseMenuActive = false;
 
   constructor(scene: Phaser.Scene, showDebugInfo = false) {
     const { width, height } = scene.scale;
@@ -123,7 +124,7 @@ export class Hud {
     }
 
     const isPaused = state.phase === 'Paused';
-    this.pauseText.setVisible(isPaused);
+    this.pauseText.setVisible(isPaused && !this.pauseMenuActive);
 
     if (this.entityCountText) {
       const creatureCount = state.creatures.length;
@@ -187,6 +188,10 @@ export class Hud {
     this.perksText.destroy();
     this.activeBonusIcons.forEach(icon => icon.destroy());
     this.activeBonusIconPool.forEach(icon => icon.destroy());
+  }
+
+  setPauseMenuActive(active: boolean): void {
+    this.pauseMenuActive = active;
   }
 
   private updateActiveBonusIcons(state: SimState): void {

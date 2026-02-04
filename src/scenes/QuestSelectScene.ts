@@ -8,6 +8,7 @@ import { SFX_KEYS } from '../audio/sfx';
 export class QuestSelectScene extends Phaser.Scene {
   private menu?: Menu;
   private audio?: PhaserAudioAdapter;
+  private escHandler?: () => void;
 
   constructor() {
     super('questSelect');
@@ -44,6 +45,12 @@ export class QuestSelectScene extends Phaser.Scene {
     });
 
     this.menu = new Menu(this, menuItems);
+
+    this.escHandler = () => {
+      this.audio?.playSfx(SFX_KEYS.uiClick);
+      this.scene.start('title');
+    };
+    this.input.keyboard?.on('keydown-ESC', this.escHandler);
   }
 
   private startQuest(questId: string): void {
@@ -52,5 +59,8 @@ export class QuestSelectScene extends Phaser.Scene {
 
   shutdown(): void {
     this.menu?.destroy();
+    if (this.escHandler) {
+      this.input.keyboard?.off('keydown-ESC', this.escHandler);
+    }
   }
 }
