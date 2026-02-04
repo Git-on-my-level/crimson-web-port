@@ -3,7 +3,7 @@
 This scorecard lists the highest-impact parity gaps and the next ticket responsible for closing each gap.
 
 ## Known Gaps
-- Weapons: limited catalog and no availability gating. Owner: [TICKET-450](../../.codex-autorunner/tickets/TICKET-450.md)
+- Weapons: expanded to 12 weapons with availability gating (TICKET-450). Future: expand to full catalog (~20+ weapons).
 - Projectiles: only basic bullets (no piercing/explosive/beam archetypes). Owner: [TICKET-460](../../.codex-autorunner/tickets/TICKET-460.md)
 - Bonuses/powerups: small catalog + simplified spawn/stack rules. Owner: [TICKET-470](../../.codex-autorunner/tickets/TICKET-470.md)
 - Perks/level-up: catalog + offer rules + XP curve are not parity. Owner: [TICKET-480](../../.codex-autorunner/tickets/TICKET-480.md)
