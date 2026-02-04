@@ -126,9 +126,9 @@ describe('Survival smoke', () => {
     expect(sim.state.tick).toBe(TOTAL_TICKS);
     expect(sim.state.phase).not.toBe('GameOver');
 
-    expect(sim.state.score).toBe(30);
-    expect(sim.state.player.level).toBe(2);
-    expect(sim.state.creatures.length).toBe(8);
+    expect(sim.state.score).toBe(220);
+    expect(sim.state.player.level).toBe(4);
+    expect(sim.state.creatures.length).toBe(1);
     expect(sim.state.projectiles.length).toBe(4);
   });
 

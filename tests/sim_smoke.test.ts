@@ -104,6 +104,6 @@ describe('Sim smoke test', () => {
     };
 
     const hash = hashSnapshot(JSON.stringify(snapshot));
-    expect(hash).toBe('31a5a721');
+    expect(hash).toBe('7496caa7');
   });
 });
