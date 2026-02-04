@@ -16,6 +16,8 @@ describe('Sim determinism', () => {
   it('advances ticks and player position deterministically', () => {
     const simA = new Sim({ seed: 123 });
     const simB = new Sim({ seed: 123 });
+    simA.state.creatureSpawnCooldownTicks = 999999;
+    simB.state.creatureSpawnCooldownTicks = 999999;
 
     for (let i = 0; i < 300; i += 1) {
       simA.step(constantInput);
@@ -50,6 +52,7 @@ describe('Sim determinism', () => {
 
   it('spawns deterministic projectiles when firing', () => {
     const sim = new Sim({ seed: 7 });
+    sim.state.creatureSpawnCooldownTicks = 999999;
     const firingInput: InputFrame = {
       moveX: 0,
       moveY: 0,

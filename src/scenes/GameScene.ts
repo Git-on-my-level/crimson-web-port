@@ -14,6 +14,7 @@ export class GameScene extends Phaser.Scene {
   private originX = 0;
   private originY = 0;
   private background?: Phaser.GameObjects.Rectangle;
+  private gameOverText?: Phaser.GameObjects.Text;
 
   constructor() {
     super('game');
@@ -26,6 +27,19 @@ export class GameScene extends Phaser.Scene {
 
     this.background = this.add.rectangle(width / 2, height / 2, width * 0.9, height * 0.9, 0x111826)
       .setStrokeStyle(2, 0x1f2937);
+    this.gameOverText = this.add.text(width / 2, height / 2, 'Game Over', {
+      fontFamily: '"Atkinson Hyperlegible", "Trebuchet MS", sans-serif',
+      fontSize: '32px',
+      color: '#f8fafc',
+      align: 'center',
+      stroke: '#0f172a',
+      strokeThickness: 4,
+      backgroundColor: 'rgba(15, 23, 42, 0.65)',
+      padding: { x: 18, y: 14 },
+    })
+      .setOrigin(0.5)
+      .setDepth(900)
+      .setVisible(false);
 
     this.seed = this.readSeedFromQuery();
     this.sim = new Sim({ seed: this.seed });
@@ -48,6 +62,7 @@ export class GameScene extends Phaser.Scene {
     this.renderAdapter.render(this.sim.state);
     const fps = this.game.loop.actualFps || 0;
     this.debugOverlay.update(this.sim.state, this.seed, fps);
+    this.syncGameOverOverlay();
   }
 
   private handleResize(gameSize: Phaser.Structs.Size): void {
@@ -57,6 +72,9 @@ export class GameScene extends Phaser.Scene {
     if (this.background) {
       this.background.setPosition(this.originX, this.originY);
       this.background.setSize(gameSize.width * 0.9, gameSize.height * 0.9);
+    }
+    if (this.gameOverText) {
+      this.gameOverText.setPosition(this.originX, this.originY);
     }
   }
 
@@ -76,5 +94,11 @@ export class GameScene extends Phaser.Scene {
     const seedParam = params.get('seed');
     const parsed = seedParam ? Number.parseInt(seedParam, 10) : NaN;
     return Number.isFinite(parsed) ? parsed : 1;
+  }
+
+  private syncGameOverOverlay(): void {
+    if (!this.gameOverText) return;
+    const isGameOver = this.sim.state.phase === 'GameOver';
+    this.gameOverText.setVisible(isGameOver);
   }
 }

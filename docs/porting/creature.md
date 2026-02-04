@@ -5,11 +5,11 @@ Functions: 16
 ## Function Checklist
 
 - [ ] `creature_alloc_slot` — TODO (ref: crimsonland:00428140)
-- [ ] `creature_apply_damage` — TODO (ref: crimsonland:004207c0)
+- [x] `creature_apply_damage` — Implemented (basic HP + score in `src/sim/systems/collision.ts`).
 - [ ] `creature_find_by_name` — TODO (ref: crimsonland:00445590)
 - [ ] `creature_find_in_radius` — TODO (ref: crimsonland:004206a0)
 - [ ] `creature_find_nearest` — TODO (ref: crimsonland:00420040)
-- [ ] `creature_handle_death` — TODO (ref: crimsonland:0041e910)
+- [x] `creature_handle_death` — Implemented (marks dead + score in `src/sim/systems/collision.ts`).
 - [ ] `creature_is_name_unique` — TODO (ref: crimsonland:00445310)
 - [ ] `creature_name_assign_random` — TODO (ref: crimsonland:00445380)
 - [ ] `creature_name_draw_labels` — TODO (ref: crimsonland:00445600)

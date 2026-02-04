@@ -7,3 +7,6 @@ Functions: 3
 - [ ] `gameplay_render_world` — TODO (ref: crimsonland:00405960)
 - [ ] `gameplay_reset_state` — TODO (ref: crimsonland:00412dc0)
 - [ ] `gameplay_update_and_render` — TODO (ref: crimsonland:0040aab0)
+
+## Notes
+- Sim state now tracks a `phase` (`Playing`/`GameOver`/`Paused`/`PerkSelect`) in `src/sim/state.ts`. The sim step freezes updates when not playing (see `src/sim/sim.ts`).

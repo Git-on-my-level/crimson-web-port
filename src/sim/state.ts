@@ -24,6 +24,7 @@ export interface CreatureState {
   radius: number;
   speed: number;
   touchDamage: number;
+  touchCooldownTicks: number;
   alive: boolean;
   kind: string;
 }
@@ -57,6 +58,7 @@ export interface SimState {
   score: number;
   timeAlive: number;
   mode: 'survival' | 'quest';
+  phase: 'Playing' | 'GameOver' | 'Paused' | 'PerkSelect';
   creatureSpawnCooldownTicks: number;
   nextEntityId: number;
 }
@@ -85,6 +87,7 @@ export function createSimState(seed = 1): SimState {
     score: 0,
     timeAlive: 0,
     mode: 'survival',
+    phase: 'Playing',
     creatureSpawnCooldownTicks: 0,
     nextEntityId: 2,
   };

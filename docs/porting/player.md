@@ -10,7 +10,7 @@ Functions: 8
 - [ ] `player_render_overlays` — TODO (ref: crimsonland:00428390)
 - [ ] `player_reset_all` — TODO (ref: crimsonland:0041fc80)
 - [ ] `player_start_reload` — TODO (ref: crimsonland:00413430)
-- [ ] `player_take_damage` — TODO (ref: crimsonland:00425e50)
+- [x] `player_take_damage` — Implemented (basic HP + game over in `src/sim/systems/collision.ts`).
 - [x] `player_update` — Implemented (ref: crimsonland:004136b0)
 
 ## Notes

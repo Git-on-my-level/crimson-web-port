@@ -10,3 +10,4 @@ Functions: 2
 ## Notes
 
 - Basic `creature_spawn` and `creature_update_all` behavior now lives in `src/sim/systems/creatures.ts` (see `docs/porting/creature.md` for checklist updates).
+- Basic collision damage + death lives in `src/sim/systems/collision.ts`.

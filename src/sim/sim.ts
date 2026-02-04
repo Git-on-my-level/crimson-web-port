@@ -32,6 +32,7 @@ export class Sim {
     this.state.score = fresh.score;
     this.state.timeAlive = fresh.timeAlive;
     this.state.mode = fresh.mode;
+    this.state.phase = fresh.phase;
     this.state.creatureSpawnCooldownTicks = fresh.creatureSpawnCooldownTicks;
     this.state.nextEntityId = fresh.nextEntityId;
   }
@@ -40,6 +41,9 @@ export class Sim {
     const events: SimEvent[] = [];
 
     applyInput(this.state, input);
+    if (this.state.phase !== 'Playing') {
+      return { events };
+    }
     updatePlayer(this.state, this.fixedDeltaSeconds);
     updateWeapons(this.state, events, this.fixedDeltaSeconds);
     updateProjectiles(this.state, events, this.fixedDeltaSeconds);

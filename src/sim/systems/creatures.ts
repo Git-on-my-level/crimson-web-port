@@ -59,6 +59,7 @@ function spawnCreature(state: SimState, events: SimEvent[], kind: string): void 
     radius: def.radius,
     speed: def.speed,
     touchDamage: def.touchDamage,
+    touchCooldownTicks: 0,
   });
 
   events.push({ type: 'spawnCreature', id, pos: { x, y }, kind });

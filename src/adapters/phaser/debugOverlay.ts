@@ -30,12 +30,15 @@ export class DebugOverlay {
     this.text.setText([
       `FPS: ${fps.toFixed(1)}`,
       `Tick: ${state.tick}`,
+      `Phase: ${state.phase}`,
       `Player: ${state.player.pos.x.toFixed(2)}, ${state.player.pos.y.toFixed(2)}`,
+      `HP: ${state.player.hp}/${state.player.hpMax}`,
       `Speed: ${speed.toFixed(2)}`,
       `Aim: ${aimDegrees.toFixed(1)}°`,
       `Creatures: ${state.creatures.length}`,
       `Projectiles: ${state.projectiles.length}`,
       `Bonuses: ${state.bonuses.length}`,
+      `Score: ${state.score}`,
       `Seed: ${seed}`,
     ]);
   }

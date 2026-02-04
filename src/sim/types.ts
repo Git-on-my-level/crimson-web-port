@@ -30,6 +30,8 @@ export type SimEvent =
   | { type: 'spawnCreature'; id: EntityId; pos: Vec2; kind: string }
   | { type: 'damage'; target: 'player' | 'creature'; id: EntityId; amount: number }
   | { type: 'death'; target: 'player' | 'creature'; id: EntityId }
+  | { type: 'gameOver'; id: EntityId }
+  | { type: 'score'; amount: number; total: number }
   | { type: 'playSfx'; name: string }
   | { type: 'pickup'; id: EntityId; bonusType: string };
 
