@@ -5,9 +5,13 @@ export interface PlayerState {
   id: number;
   pos: Vec2;
   vel: Vec2;
-  speed: number;
+  radius: number;
   hp: number;
-  alive: boolean;
+  hpMax: number;
+  aimDir: Vec2;
+  aimAngle: number;
+  fireCooldown: number;
+  weaponId: number;
   input: InputFrame;
 }
 
@@ -56,9 +60,13 @@ export function createSimState(seed = 1): SimState {
       id: 1,
       pos: vec2(0, 0),
       vel: vec2(0, 0),
-      speed: 2,
+      radius: 1.2,
       hp: 100,
-      alive: true,
+      hpMax: 100,
+      aimDir: vec2(1, 0),
+      aimAngle: 0,
+      fireCooldown: 0,
+      weaponId: 0,
       input: { ...EMPTY_INPUT },
     },
     creatures: [],

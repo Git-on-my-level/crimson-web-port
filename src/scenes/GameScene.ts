@@ -1,20 +1,19 @@
 import Phaser from 'phaser';
-
-type CursorKeys = {
-  up?: Phaser.Input.Keyboard.Key;
-  down?: Phaser.Input.Keyboard.Key;
-  left?: Phaser.Input.Keyboard.Key;
-  right?: Phaser.Input.Keyboard.Key;
-  W?: Phaser.Input.Keyboard.Key;
-  A?: Phaser.Input.Keyboard.Key;
-  S?: Phaser.Input.Keyboard.Key;
-  D?: Phaser.Input.Keyboard.Key;
-};
+import { Sim } from '../sim/sim';
+import { PhaserInputAdapter } from '../adapters/phaser/input';
+import { PhaserRenderAdapter } from '../adapters/phaser/render';
+import { DebugOverlay } from '../adapters/phaser/debugOverlay';
 
 export class GameScene extends Phaser.Scene {
-  private player?: Phaser.GameObjects.Rectangle;
-  private cursors?: CursorKeys;
-  private speed = 260;
+  private sim!: Sim;
+  private inputAdapter!: PhaserInputAdapter;
+  private renderAdapter!: PhaserRenderAdapter;
+  private debugOverlay!: DebugOverlay;
+  private seed = 1;
+  private readonly pixelsPerUnit = 12;
+  private originX = 0;
+  private originY = 0;
+  private background?: Phaser.GameObjects.Rectangle;
 
   constructor() {
     super('game');
@@ -22,35 +21,60 @@ export class GameScene extends Phaser.Scene {
 
   create() {
     const { width, height } = this.scale;
+    this.originX = width / 2;
+    this.originY = height / 2;
 
-    this.add.rectangle(width / 2, height / 2, width * 0.9, height * 0.9, 0x111826)
+    this.background = this.add.rectangle(width / 2, height / 2, width * 0.9, height * 0.9, 0x111826)
       .setStrokeStyle(2, 0x1f2937);
 
-    this.player = this.add.rectangle(width / 2, height / 2, 36, 36, 0xf97316);
+    this.seed = this.readSeedFromQuery();
+    this.sim = new Sim({ seed: this.seed });
+    this.inputAdapter = new PhaserInputAdapter(this, () => this.getTransform());
+    this.renderAdapter = new PhaserRenderAdapter(this, this.getTransform());
+    this.debugOverlay = new DebugOverlay(this);
 
-    this.cursors = this.input.keyboard?.addKeys('W,A,S,D,UP,DOWN,LEFT,RIGHT') as CursorKeys;
+    this.scale.on('resize', this.handleResize, this);
   }
 
   update(_time: number, delta: number) {
-    if (!this.player || !this.cursors) return;
+    const deltaSeconds = Math.min(delta / 1000, 0.25);
+    const steps = this.sim.clock.accumulate(deltaSeconds);
 
-    const moveX = (this.cursors.left?.isDown || this.cursors.A?.isDown ? -1 : 0)
-      + (this.cursors.right?.isDown || this.cursors.D?.isDown ? 1 : 0);
-    const moveY = (this.cursors.up?.isDown || this.cursors.W?.isDown ? -1 : 0)
-      + (this.cursors.down?.isDown || this.cursors.S?.isDown ? 1 : 0);
+    for (let i = 0; i < steps; i += 1) {
+      const input = this.inputAdapter.readInput();
+      this.sim.step(input);
+    }
 
-    const length = Math.hypot(moveX, moveY) || 1;
-    const velocityX = (moveX / length) * this.speed;
-    const velocityY = (moveY / length) * this.speed;
+    this.renderAdapter.render(this.sim.state);
+    const fps = this.game.loop.actualFps || 0;
+    this.debugOverlay.update(this.sim.state, this.seed, fps);
+  }
 
-    const dt = delta / 1000;
-    const nextX = this.player.x + velocityX * dt;
-    const nextY = this.player.y + velocityY * dt;
+  private handleResize(gameSize: Phaser.Structs.Size): void {
+    this.originX = gameSize.width / 2;
+    this.originY = gameSize.height / 2;
+    this.renderAdapter.setTransform(this.getTransform());
+    if (this.background) {
+      this.background.setPosition(this.originX, this.originY);
+      this.background.setSize(gameSize.width * 0.9, gameSize.height * 0.9);
+    }
+  }
 
-    const { width, height } = this.scale;
-    const half = this.player.width / 2;
+  private getTransform() {
+    return {
+      originX: this.originX,
+      originY: this.originY,
+      pixelsPerUnit: this.pixelsPerUnit,
+    };
+  }
 
-    this.player.x = Phaser.Math.Clamp(nextX, half, width - half);
-    this.player.y = Phaser.Math.Clamp(nextY, half, height - half);
+  private readSeedFromQuery(): number {
+    if (typeof window === 'undefined') {
+      return 1;
+    }
+    const params = new URLSearchParams(window.location.search);
+    const seedParam = params.get('seed');
+    const parsed = seedParam ? Number.parseInt(seedParam, 10) : NaN;
+    return Number.isFinite(parsed) ? parsed : 1;
   }
 }

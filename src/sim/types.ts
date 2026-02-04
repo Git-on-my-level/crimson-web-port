@@ -18,7 +18,7 @@ export interface InputFrame {
 export const EMPTY_INPUT: InputFrame = {
   moveX: 0,
   moveY: 0,
-  aimX: 1,
+  aimX: 0,
   aimY: 0,
   fire: false,
   reload: false,

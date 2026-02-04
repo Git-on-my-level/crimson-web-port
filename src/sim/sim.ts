@@ -39,7 +39,7 @@ export class Sim {
     const events: SimEvent[] = [];
 
     applyInput(this.state, input);
-    updatePlayer(this.state);
+    updatePlayer(this.state, this.fixedDeltaSeconds);
     updateWeapons(this.state, events);
     updateProjectiles(this.state, events);
     updateCreatures(this.state, events);

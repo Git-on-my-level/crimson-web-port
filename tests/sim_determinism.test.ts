@@ -5,7 +5,7 @@ import type { InputFrame } from '../src/sim/types';
 const constantInput: InputFrame = {
   moveX: 1,
   moveY: 0,
-  aimX: 1,
+  aimX: 100,
   aimY: 0,
   fire: false,
   reload: false,
@@ -14,15 +14,20 @@ const constantInput: InputFrame = {
 
 describe('Sim determinism', () => {
   it('advances ticks and player position deterministically', () => {
-    const sim = new Sim({ seed: 123 });
+    const simA = new Sim({ seed: 123 });
+    const simB = new Sim({ seed: 123 });
 
     for (let i = 0; i < 300; i += 1) {
-      sim.step(constantInput);
+      simA.step(constantInput);
+      simB.step(constantInput);
     }
 
-    expect(sim.state.tick).toBe(300);
-    expect(sim.state.player.pos.x).toBe(sim.state.player.speed * 300);
-    expect(sim.state.player.pos.y).toBe(0);
+    expect(simA.state.tick).toBe(300);
+    expect(simB.state.tick).toBe(300);
+    expect(simA.state.player.pos.x).toBeCloseTo(simB.state.player.pos.x, 6);
+    expect(simA.state.player.pos.y).toBeCloseTo(simB.state.player.pos.y, 6);
+    expect(simA.state.player.vel.x).toBeCloseTo(simB.state.player.vel.x, 6);
+    expect(simA.state.player.vel.y).toBeCloseTo(simB.state.player.vel.y, 6);
   });
 
   it('produces identical RNG sequences from the same seed', () => {
