@@ -5,6 +5,7 @@ import type { SimEvent } from '../types';
 import { spawnCreatureAtEdge, spawnCreatureAtPosition } from './creatures';
 import { spawnBonus } from './bonuses';
 import { clampToWorld, findSpawnPosAwayFromPlayer, pickRandomWorldPos } from '../world';
+import { isTerrainBlocked } from '../terrain';
 
 const RING_DEFAULT_RADIUS = 12;
 const RANDOM_SPAWN_MIN_DISTANCE = 8;
@@ -155,6 +156,7 @@ function spawnCreatures(
       RANDOM_SPAWN_MIN_DISTANCE,
       12,
       (rng) => pickRandomWorldPos(rng, 1),
+      (candidate) => !isTerrainBlocked(state.terrain, candidate.x, candidate.y, 0),
     );
     spawnCreatureAtPosition(state, events, event.creatureKind, spawnPos);
   }

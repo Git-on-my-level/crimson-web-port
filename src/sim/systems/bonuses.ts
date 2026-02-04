@@ -2,6 +2,7 @@ import { getBonusDef, pickRandomBonusType, type BonusId } from '../../content/bo
 import type { SimState } from '../state';
 import type { SimEvent } from '../types';
 import { clampToWorld, findSpawnPosAwayFromPlayer } from '../world';
+import { findOpenTerrainPosition, isTerrainBlocked } from '../terrain';
 import { assignWeapon, pickRandomWeapon, refreshAvailableWeapons, unlockWeapon } from '../weapons/weaponTable';
 import { getCreatureDef } from '../../content/creatures';
 import { grantXp } from './progression';
@@ -57,6 +58,7 @@ export function trySpawnBonusOnKill(state: SimState, events: SimEvent[], pos: { 
       };
       return clampToWorld(candidate, BONUS_RADIUS);
     },
+    (candidate) => !isTerrainBlocked(state.terrain, candidate.x, candidate.y, BONUS_RADIUS),
   );
   spawnBonus(state, events, spawnPos, bonusType);
 }
@@ -67,7 +69,8 @@ export function spawnBonus(
   pos: { x: number; y: number },
   kind: BonusId,
 ): void {
-  const spawnPos = clampToWorld({ x: pos.x, y: pos.y }, BONUS_RADIUS);
+  const clamped = clampToWorld({ x: pos.x, y: pos.y }, BONUS_RADIUS);
+  const spawnPos = findOpenTerrainPosition(state.terrain, state.rng, clamped, BONUS_RADIUS);
   const id = state.nextEntityId++;
   state.bonuses.push({
     id,

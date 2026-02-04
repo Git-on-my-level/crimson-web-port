@@ -62,24 +62,31 @@ export function findSpawnPosAwayFromPlayer(
   minDistance: number,
   attempts = 20,
   pickCandidate?: (rng: Rng) => Vec2,
+  isValid?: (pos: Vec2) => boolean,
 ): Vec2 {
   const minDistSq = minDistance * minDistance;
   const candidateFn = pickCandidate ?? ((nextRng: Rng) => pickRandomWorldEdge(nextRng, 0));
 
   let best = candidateFn(rng);
   let bestDistSq = (best.x - playerPos.x) ** 2 + (best.y - playerPos.y) ** 2;
+  let bestValid = isValid ? isValid(best) : true;
 
   for (let i = 0; i < attempts; i += 1) {
     const candidate = candidateFn(rng);
     const dx = candidate.x - playerPos.x;
     const dy = candidate.y - playerPos.y;
     const distSq = dx * dx + dy * dy;
+    const valid = isValid ? isValid(candidate) : true;
 
-    if (distSq >= minDistSq) {
+    if (valid && distSq >= minDistSq) {
       return candidate;
     }
 
-    if (distSq > bestDistSq) {
+    if (valid && (!bestValid || distSq > bestDistSq)) {
+      best = candidate;
+      bestDistSq = distSq;
+      bestValid = true;
+    } else if (!bestValid && distSq > bestDistSq) {
       best = candidate;
       bestDistSq = distSq;
     }

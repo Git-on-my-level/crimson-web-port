@@ -2,6 +2,7 @@ import { getCreatureDef } from '../../content/creatures';
 import type { SimState } from '../state';
 import type { SimEvent } from '../types';
 import { clampToWorld, findSpawnPosAwayFromPlayer, pickRandomWorldEdge } from '../world';
+import { clampOrSlide, findOpenTerrainPosition, isTerrainBlocked } from '../terrain';
 
 export const CREATURE_SPAWN_MIN_DISTANCE = 10;
 const CREATURE_SPAWN_MAX_DISTANCE = 24;
@@ -14,6 +15,7 @@ export function spawnCreatureAtEdge(state: SimState, events: SimEvent[], kind: s
     CREATURE_SPAWN_MIN_DISTANCE,
     20,
     (rng) => pickRandomWorldEdge(rng, def.radius),
+    (candidate) => !isTerrainBlocked(state.terrain, candidate.x, candidate.y, def.radius),
   );
   spawnCreatureAtPosition(state, events, kind, spawn);
 }
@@ -42,6 +44,7 @@ export function spawnCreatureNearPlayer(
         def.radius,
       );
     },
+    (candidate) => !isTerrainBlocked(state.terrain, candidate.x, candidate.y, def.radius),
   );
   spawnCreatureAtPosition(state, events, kind, spawn);
 }
@@ -53,8 +56,9 @@ export function spawnCreatureAtPosition(
   pos: { x: number; y: number },
 ): void {
   const def = getCreatureDef(kind);
-  const x = pos.x;
-  const y = pos.y;
+  const open = findOpenTerrainPosition(state.terrain, state.rng, pos, def.radius);
+  const x = open.x;
+  const y = open.y;
   const id = state.nextEntityId++;
   state.creatures.push({
     id,
@@ -105,6 +109,9 @@ export function updateCreatures(state: SimState, events: SimEvent[], dt: number)
     const dx = player.pos.x - creature.pos.x;
     const dy = player.pos.y - creature.pos.y;
     const dist = Math.hypot(dx, dy);
+    const prevX = creature.pos.x;
+    const prevY = creature.pos.y;
+
     if (dist > 0.0001) {
       const def = getCreatureDef(creature.kind);
       let dirX = dx / dist;
@@ -138,7 +145,16 @@ export function updateCreatures(state: SimState, events: SimEvent[], dt: number)
       creature.vel.y = 0;
     }
 
+    const desiredX = creature.pos.x;
+    const desiredY = creature.pos.y;
     clampToWorld(creature.pos, creature.radius);
+    clampOrSlide(state.terrain, creature.pos, creature.radius, { x: prevX, y: prevY });
+    if (creature.pos.x !== desiredX) {
+      creature.vel.x = 0;
+    }
+    if (creature.pos.y !== desiredY) {
+      creature.vel.y = 0;
+    }
 
     state.creatures[writeIndex] = creature;
     writeIndex += 1;

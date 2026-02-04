@@ -40,6 +40,7 @@ export class Sim {
     const fresh = createSimState(nextSeed, { mode: options.mode, questId: options.questId });
     this.state.tick = fresh.tick;
     this.state.rng = fresh.rng;
+    this.state.terrain = fresh.terrain;
     this.state.player = fresh.player;
     this.state.creatures = fresh.creatures;
     this.state.projectiles = fresh.projectiles;

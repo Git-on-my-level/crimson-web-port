@@ -8,6 +8,7 @@ import { Rng } from './rng';
 import { ObjectPool } from './pool';
 import { refreshAvailableWeapons } from './weapons/weaponTable';
 import { xpToNextForLevel } from './xp';
+import { terrain_generate, type TerrainGrid } from './terrain';
 
 export interface PlayerState {
   id: number;
@@ -76,6 +77,7 @@ export interface BonusState {
 export interface SimState {
   tick: number;
   rng: Rng;
+  terrain: TerrainGrid;
   player: PlayerState;
   creatures: CreatureState[];
   projectiles: ProjectileState[];
@@ -238,6 +240,7 @@ export function createSimState(
   const state: SimState = {
     tick: 0,
     rng,
+    terrain: terrain_generate(seed),
     player,
     creatures: [],
     projectiles: [],
