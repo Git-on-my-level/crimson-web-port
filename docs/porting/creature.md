@@ -17,6 +17,10 @@ Functions: 16
 - [ ] `creature_render_type` — TODO (ref: crimsonland:00418b60)
 - [x] `creature_spawn` — Implemented (basic edge spawn in `src/sim/systems/creatures.ts`).
 - [ ] `creature_spawn_slot_alloc` — TODO (ref: crimsonland:00430ad0)
-- [ ] `creature_spawn_template` — TODO (ref: crimsonland:00430af0)
+- [x] `creature_spawn_template` — Implemented (data-driven template list in `src/content/creatures.ts` used by survival director).
 - [ ] `creature_spawn_tinted` — TODO (ref: crimsonland:00444810)
 - [x] `creature_update_all` — Implemented (basic seek AI in `src/sim/systems/creatures.ts`).
+
+## Notes
+- Added template metadata (`CREATURE_TEMPLATES`) to drive survival spawn selection.
+- Added behavior variants (strafe/burst) for select creature kinds to reduce "seek-only" feel.

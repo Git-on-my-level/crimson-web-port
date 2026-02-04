@@ -8,6 +8,7 @@ interface GameOverSceneInitData {
   timeAlive: number;
   seed: number;
   level?: number;
+  kills?: number;
 }
 
 export class GameOverScene extends Phaser.Scene {
@@ -15,6 +16,7 @@ export class GameOverScene extends Phaser.Scene {
   private timeAlive = 0;
   private seed = 1;
   private level = 1;
+  private kills = 0;
   private audio?: PhaserAudioAdapter;
 
   constructor() {
@@ -26,12 +28,13 @@ export class GameOverScene extends Phaser.Scene {
     this.timeAlive = data.timeAlive || 0;
     this.seed = data.seed || 1;
     this.level = data.level ?? 1;
+    this.kills = data.kills ?? 0;
 
     const record: RunRecord = {
       mode: 'survival',
       score: this.score,
       timeSeconds: this.timeAlive,
-      kills: 0,
+      kills: this.kills,
       level: this.level,
       seed: this.seed,
       dateISO: new Date().toISOString(),
@@ -74,6 +77,13 @@ export class GameOverScene extends Phaser.Scene {
       color: '#94a3b8',
     }).setOrigin(0.5);
 
+    const killsText = `Kills: ${Math.round(this.kills)}`;
+    this.add.text(centerX, centerY + 40, killsText, {
+      ...textStyle,
+      fontSize: '20px',
+      color: '#cbd5f5',
+    }).setOrigin(0.5);
+
     const buttonStyle = {
       fontFamily: '"Atkinson Hyperlegible", "Trebuchet MS", sans-serif',
       fontSize: '18px',
@@ -109,11 +119,11 @@ export class GameOverScene extends Phaser.Scene {
       return { bg, txt };
     };
 
-    createButton(centerY + 80, 'Restart', () => {
+    createButton(centerY + 100, 'Restart', () => {
       this.scene.start('game', { seed: this.seed });
     });
 
-    createButton(centerY + 140, 'Back to Title', () => {
+    createButton(centerY + 160, 'Back to Title', () => {
       this.scene.start('title');
     });
 

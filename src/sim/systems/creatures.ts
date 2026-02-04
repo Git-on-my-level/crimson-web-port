@@ -73,6 +73,24 @@ export function spawnCreatureAtPosition(
   events.push({ type: 'spawnCreature', id, pos: { x, y }, kind });
 }
 
+export function spawnCreatureInRing(
+  state: SimState,
+  events: SimEvent[],
+  kind: string,
+  radius: number,
+): void {
+  const def = getCreatureDef(kind);
+  const angle = state.rng.nextFloat01() * Math.PI * 2;
+  const pos = clampToWorld(
+    {
+      x: state.player.pos.x + Math.cos(angle) * radius,
+      y: state.player.pos.y + Math.sin(angle) * radius,
+    },
+    def.radius,
+  );
+  spawnCreatureAtPosition(state, events, kind, pos);
+}
+
 export function updateCreatures(state: SimState, events: SimEvent[], dt: number): void {
   void events;
 
@@ -88,9 +106,31 @@ export function updateCreatures(state: SimState, events: SimEvent[], dt: number)
     const dy = player.pos.y - creature.pos.y;
     const dist = Math.hypot(dx, dy);
     if (dist > 0.0001) {
-      const inv = creature.speed / dist;
-      creature.vel.x = dx * inv;
-      creature.vel.y = dy * inv;
+      const def = getCreatureDef(creature.kind);
+      let dirX = dx / dist;
+      let dirY = dy / dist;
+      let speedMultiplier = 1;
+
+      if (def.behavior === 'strafe') {
+        const phase = Math.sin((state.tick + creature.id) * 0.18);
+        const strafeStrength = 0.45 * phase;
+        const perpX = -dirY;
+        const perpY = dirX;
+        dirX += perpX * strafeStrength;
+        dirY += perpY * strafeStrength;
+        const norm = Math.hypot(dirX, dirY) || 1;
+        dirX /= norm;
+        dirY /= norm;
+      } else if (def.behavior === 'burst') {
+        const burstTick = (state.tick + creature.id * 17) % 120;
+        if (burstTick < 18) {
+          speedMultiplier = 1.6;
+        }
+      }
+
+      const speed = creature.speed * speedMultiplier;
+      creature.vel.x = dirX * speed;
+      creature.vel.y = dirY * speed;
       creature.pos.x += creature.vel.x * dt;
       creature.pos.y += creature.vel.y * dt;
     } else {

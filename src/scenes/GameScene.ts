@@ -206,11 +206,14 @@ export class GameScene extends Phaser.Scene {
   private checkGameOverTransition(): void {
     const isGameOver = this.sim.state.phase === 'GameOver';
     if (isGameOver && !this.wasGameOver) {
+      const kills =
+        this.sim.state.modeState.kind === 'survival' ? this.sim.state.modeState.killsTotal : 0;
       this.scene.start('gameOver', {
         score: this.sim.state.score,
         timeAlive: this.sim.state.timeAlive,
         seed: this.seed,
         level: this.sim.state.player.level,
+        kills,
       });
     }
     this.wasGameOver = isGameOver;

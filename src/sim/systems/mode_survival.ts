@@ -1,86 +1,91 @@
 import type { SimState, SurvivalModeState } from '../state';
 import type { SimEvent } from '../types';
-import { spawnCreatureNearPlayer } from './creatures';
+import { CREATURE_TEMPLATES, type CreatureTemplate } from '../../content/creatures';
+import { spawnCreatureAtEdge, spawnCreatureInRing, spawnCreatureNearPlayer } from './creatures';
 
-type SpawnWeight = {
-  kind: string;
-  weight: number;
-};
-
-type SurvivalTier = {
+type SurvivalPhase = {
   minSeconds: number;
   spawnRatePerSecond: number;
   maxCreatures: number;
-  weights: SpawnWeight[];
+  templateIds: string[];
 };
 
 const TICKS_PER_SECOND = 60;
 
-const SURVIVAL_TIERS: SurvivalTier[] = [
+const SURVIVAL_PHASES: SurvivalPhase[] = [
   {
     minSeconds: 0,
-    spawnRatePerSecond: 0.5,
-    maxCreatures: 6,
-    weights: [{ kind: 'grunt', weight: 1 }],
-  },
-  {
-    minSeconds: 30,
-    spawnRatePerSecond: 0.8,
+    spawnRatePerSecond: 0.7,
     maxCreatures: 8,
-    weights: [
-      { kind: 'grunt', weight: 4 },
-      { kind: 'runner', weight: 1 },
-    ],
+    templateIds: ['grunt', 'zombie', 'spider'],
   },
   {
-    minSeconds: 60,
-    spawnRatePerSecond: 1.1,
-    maxCreatures: 10,
-    weights: [
-      { kind: 'grunt', weight: 3 },
-      { kind: 'runner', weight: 2 },
-    ],
+    minSeconds: 40,
+    spawnRatePerSecond: 0.95,
+    maxCreatures: 11,
+    templateIds: ['grunt', 'runner', 'zombie', 'spider'],
   },
   {
-    minSeconds: 90,
-    spawnRatePerSecond: 1.4,
-    maxCreatures: 12,
-    weights: [
-      { kind: 'grunt', weight: 3 },
-      { kind: 'runner', weight: 2 },
-      { kind: 'tank', weight: 1 },
-    ],
+    minSeconds: 80,
+    spawnRatePerSecond: 1.25,
+    maxCreatures: 14,
+    templateIds: ['grunt', 'runner', 'zombie', 'spider', 'alien'],
   },
   {
     minSeconds: 120,
-    spawnRatePerSecond: 1.8,
-    maxCreatures: 14,
-    weights: [
-      { kind: 'grunt', weight: 2 },
-      { kind: 'runner', weight: 2 },
-      { kind: 'tank', weight: 1 },
-    ],
+    spawnRatePerSecond: 1.6,
+    maxCreatures: 18,
+    templateIds: ['runner', 'zombie', 'spider', 'alien', 'tank'],
   },
   {
-    minSeconds: 180,
-    spawnRatePerSecond: 2.3,
-    maxCreatures: 16,
-    weights: [
-      { kind: 'grunt', weight: 2 },
-      { kind: 'runner', weight: 3 },
-      { kind: 'tank', weight: 2 },
+    minSeconds: 150,
+    spawnRatePerSecond: 2.05,
+    maxCreatures: 22,
+    templateIds: ['runner', 'zombie_elite', 'spider_elite', 'alien', 'alien_elite', 'tank', 'brute'],
+  },
+];
+
+type SurvivalWaveEntry = {
+  kind: string;
+  count: number;
+  pattern: 'edge' | 'near' | 'ring';
+  intervalTicks: number;
+};
+
+type SurvivalWave = {
+  startSeconds: number;
+  entries: SurvivalWaveEntry[];
+};
+
+const SURVIVAL_WAVES: SurvivalWave[] = [
+  {
+    startSeconds: 45,
+    entries: [{ kind: 'spider', count: 8, pattern: 'ring', intervalTicks: 4 }],
+  },
+  {
+    startSeconds: 90,
+    entries: [{ kind: 'alien', count: 10, pattern: 'edge', intervalTicks: 3 }],
+  },
+  {
+    startSeconds: 135,
+    entries: [{ kind: 'zombie_elite', count: 5, pattern: 'ring', intervalTicks: 6 }],
+  },
+  {
+    startSeconds: 180,
+    entries: [{ kind: 'spider_elite', count: 8, pattern: 'near', intervalTicks: 4 }],
+  },
+  {
+    startSeconds: 220,
+    entries: [
+      { kind: 'brute', count: 1, pattern: 'edge', intervalTicks: 10 },
+      { kind: 'tank', count: 4, pattern: 'edge', intervalTicks: 6 },
     ],
   },
 ];
 
-const CREATURE_COST: Record<string, number> = {
-  grunt: 1,
-  runner: 1.4,
-  tank: 3,
-};
-
-const DEFAULT_COST = 1;
 const MAX_SPAWNS_PER_TICK = 4;
+const MAX_WAVE_SPAWNS_PER_TICK = 3;
+const WAVE_RING_RADIUS = 14;
 
 export function updateSurvivalMode(state: SimState, events: SimEvent[]): void {
   if (state.mode !== 'survival') {
@@ -91,28 +96,41 @@ export function updateSurvivalMode(state: SimState, events: SimEvent[]): void {
   modeState.elapsedTicks += 1;
 
   const elapsedSeconds = modeState.elapsedTicks / TICKS_PER_SECOND;
-  const tierIndex = getTierIndex(elapsedSeconds);
-  const tier = SURVIVAL_TIERS[tierIndex];
+  const phaseIndex = getPhaseIndex(elapsedSeconds);
+  const phase = SURVIVAL_PHASES[phaseIndex];
 
-  modeState.difficultyLevel = tierIndex;
-  modeState.maxCreaturesSoftCap = tier.maxCreatures;
-  modeState.spawnBudget += tier.spawnRatePerSecond / TICKS_PER_SECOND;
+  modeState.difficultyLevel = phaseIndex;
+  modeState.maxCreaturesSoftCap = phase.maxCreatures;
+  modeState.spawnBudget += phase.spawnRatePerSecond / TICKS_PER_SECOND;
 
   let aliveCount = 0;
+  const activeByKind: Record<string, number> = {};
   for (const creature of state.creatures) {
     if (creature.alive) {
       aliveCount += 1;
+      activeByKind[creature.kind] = (activeByKind[creature.kind] ?? 0) + 1;
     }
   }
 
-  const minCost = getMinCost(tier.weights);
+  while (
+    modeState.nextWaveIndex < SURVIVAL_WAVES.length &&
+    elapsedSeconds >= SURVIVAL_WAVES[modeState.nextWaveIndex].startSeconds
+  ) {
+    queueSurvivalWave(modeState, SURVIVAL_WAVES[modeState.nextWaveIndex]);
+    modeState.nextWaveIndex += 1;
+  }
+
+  aliveCount = processWaveQueue(state, events, modeState, activeByKind, aliveCount);
+
+  const templates = getTemplatesForPhase(phase, elapsedSeconds);
+  const minCost = getMinCost(templates, activeByKind);
   let spawnsThisTick = 0;
   while (
     spawnsThisTick < MAX_SPAWNS_PER_TICK &&
     aliveCount < modeState.maxCreaturesSoftCap &&
     modeState.spawnBudget >= minCost
   ) {
-    const pick = pickAffordableKind(state, tier.weights, modeState.spawnBudget);
+    const pick = pickAffordableTemplate(state, templates, activeByKind, modeState.spawnBudget);
     if (!pick) {
       break;
     }
@@ -125,6 +143,7 @@ export function updateSurvivalMode(state: SimState, events: SimEvent[]): void {
     );
     modeState.spawnBudget -= pick.cost;
     aliveCount += 1;
+    activeByKind[pick.kind] = (activeByKind[pick.kind] ?? 0) + 1;
     spawnsThisTick += 1;
   }
 }
@@ -138,18 +157,21 @@ function ensureSurvivalState(state: SimState): SurvivalModeState {
     elapsedTicks: 0,
     spawnBudget: 0,
     difficultyLevel: 0,
-    maxCreaturesSoftCap: SURVIVAL_TIERS[0]?.maxCreatures ?? 6,
+    maxCreaturesSoftCap: SURVIVAL_PHASES[0]?.maxCreatures ?? 6,
     spawnMinDistance: 10,
     spawnMaxDistance: 24,
+    killsTotal: 0,
+    nextWaveIndex: 0,
+    spawnQueue: [],
   };
   state.modeState = next;
   return next;
 }
 
-function getTierIndex(elapsedSeconds: number): number {
+function getPhaseIndex(elapsedSeconds: number): number {
   let index = 0;
-  for (let i = 0; i < SURVIVAL_TIERS.length; i += 1) {
-    if (elapsedSeconds >= SURVIVAL_TIERS[i].minSeconds) {
+  for (let i = 0; i < SURVIVAL_PHASES.length; i += 1) {
+    if (elapsedSeconds >= SURVIVAL_PHASES[i].minSeconds) {
       index = i;
     } else {
       break;
@@ -158,26 +180,37 @@ function getTierIndex(elapsedSeconds: number): number {
   return index;
 }
 
-function getMinCost(weights: SpawnWeight[]): number {
-  let min = Number.POSITIVE_INFINITY;
-  for (const entry of weights) {
-    const cost = CREATURE_COST[entry.kind] ?? DEFAULT_COST;
-    if (cost < min) {
-      min = cost;
-    }
-  }
-  return min === Number.POSITIVE_INFINITY ? DEFAULT_COST : min;
+function getTemplatesForPhase(phase: SurvivalPhase, elapsedSeconds: number): CreatureTemplate[] {
+  const templateSet = new Set(phase.templateIds);
+  return CREATURE_TEMPLATES.filter(
+    (template) => templateSet.has(template.id) && elapsedSeconds >= template.minSeconds,
+  );
 }
 
-function pickAffordableKind(
+function getMinCost(templates: CreatureTemplate[], activeByKind: Record<string, number>): number {
+  let min = Number.POSITIVE_INFINITY;
+  for (const entry of templates) {
+    const active = activeByKind[entry.kind] ?? 0;
+    if (active >= entry.maxActive || entry.cost <= 0) {
+      continue;
+    }
+    if (entry.cost < min) {
+      min = entry.cost;
+    }
+  }
+  return min === Number.POSITIVE_INFINITY ? 1 : min;
+}
+
+function pickAffordableTemplate(
   state: SimState,
-  weights: SpawnWeight[],
+  templates: CreatureTemplate[],
+  activeByKind: Record<string, number>,
   budget: number,
 ): { kind: string; cost: number } | null {
   let totalWeight = 0;
-  for (const entry of weights) {
-    const cost = CREATURE_COST[entry.kind] ?? DEFAULT_COST;
-    if (cost <= budget && entry.weight > 0) {
+  for (const entry of templates) {
+    const active = activeByKind[entry.kind] ?? 0;
+    if (entry.cost <= budget && entry.weight > 0 && active < entry.maxActive) {
       totalWeight += entry.weight;
     }
   }
@@ -187,20 +220,97 @@ function pickAffordableKind(
   }
 
   let roll = state.rng.nextFloat01() * totalWeight;
-  for (const entry of weights) {
-    const cost = CREATURE_COST[entry.kind] ?? DEFAULT_COST;
-    if (cost > budget || entry.weight <= 0) {
+  for (const entry of templates) {
+    const active = activeByKind[entry.kind] ?? 0;
+    if (entry.cost > budget || entry.weight <= 0 || active >= entry.maxActive) {
       continue;
     }
     roll -= entry.weight;
     if (roll <= 0) {
-      return { kind: entry.kind, cost };
+      return { kind: entry.kind, cost: entry.cost };
     }
   }
 
-  const fallback = weights.find((entry) => (CREATURE_COST[entry.kind] ?? DEFAULT_COST) <= budget);
+  const fallback = templates.find(
+    (entry) => entry.cost <= budget && (activeByKind[entry.kind] ?? 0) < entry.maxActive,
+  );
   if (!fallback) {
     return null;
   }
-  return { kind: fallback.kind, cost: CREATURE_COST[fallback.kind] ?? DEFAULT_COST };
+  return { kind: fallback.kind, cost: fallback.cost };
+}
+
+function queueSurvivalWave(modeState: SurvivalModeState, wave: SurvivalWave): void {
+  for (const entry of wave.entries) {
+    modeState.spawnQueue.push({
+      kind: entry.kind,
+      remaining: entry.count,
+      pattern: entry.pattern,
+      intervalTicks: Math.max(1, entry.intervalTicks),
+      nextTick: modeState.elapsedTicks,
+    });
+  }
+}
+
+function processWaveQueue(
+  state: SimState,
+  events: SimEvent[],
+  modeState: SurvivalModeState,
+  activeByKind: Record<string, number>,
+  aliveCount: number,
+): number {
+  let spawnsThisTick = 0;
+  for (let i = 0; i < modeState.spawnQueue.length && spawnsThisTick < MAX_WAVE_SPAWNS_PER_TICK; i += 1) {
+    const entry = modeState.spawnQueue[i];
+    if (entry.remaining <= 0 || modeState.elapsedTicks < entry.nextTick) {
+      continue;
+    }
+    if (aliveCount >= modeState.maxCreaturesSoftCap) {
+      break;
+    }
+    const active = activeByKind[entry.kind] ?? 0;
+    const template = CREATURE_TEMPLATES.find((t) => t.kind === entry.kind);
+    if (template && active >= template.maxActive) {
+      entry.remaining = 0;
+      continue;
+    }
+    spawnWaveCreature(state, events, entry);
+    entry.remaining -= 1;
+    entry.nextTick = modeState.elapsedTicks + entry.intervalTicks;
+    aliveCount += 1;
+    activeByKind[entry.kind] = active + 1;
+    spawnsThisTick += 1;
+  }
+
+  modeState.spawnQueue = modeState.spawnQueue.filter((entry) => entry.remaining > 0);
+  return aliveCount;
+}
+
+function spawnWaveCreature(
+  state: SimState,
+  events: SimEvent[],
+  entry: SurvivalModeState['spawnQueue'][0],
+): void {
+  switch (entry.pattern) {
+    case 'edge':
+      spawnCreatureAtEdge(state, events, entry.kind);
+      break;
+    case 'ring':
+      spawnCreatureInRing(state, events, entry.kind, WAVE_RING_RADIUS);
+      break;
+    case 'near':
+    default:
+      spawnCreatureNearPlayer(
+        state,
+        events,
+        entry.kind,
+        state.modeState.kind === 'survival' ? state.modeState.spawnMinDistance : 10,
+        state.modeState.kind === 'survival' ? state.modeState.spawnMaxDistance : 24,
+      );
+      break;
+  }
+}
+
+export function registerSurvivalKill(modeState: SurvivalModeState): void {
+  modeState.killsTotal += 1;
 }

@@ -5,6 +5,7 @@ import { trySpawnBonusOnKill } from './bonuses';
 import { getCreatureDef } from '../../content/creatures';
 import { grantXp } from './progression';
 import { registerQuestKill, setQuestStatus } from './mode_quest';
+import { registerSurvivalKill } from './mode_survival';
 import { WORLD_BOUNDS } from '../world';
 
 const CELL_SIZE = 6;
@@ -208,6 +209,8 @@ function applyDamageToCreature(
   events.push({ type: 'death', target: 'creature', id: creature.id });
   if (state.mode === 'quest' && state.modeState.kind === 'quest') {
     registerQuestKill(state.modeState, creature.kind);
+  } else if (state.mode === 'survival' && state.modeState.kind === 'survival') {
+    registerSurvivalKill(state.modeState);
   }
   const def = getCreatureDef(creature.kind);
   state.score += def.scoreValue;

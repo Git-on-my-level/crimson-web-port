@@ -143,50 +143,62 @@ export class HighscoresScene extends Phaser.Scene {
       return;
     }
 
-    const headerBg = this.add.rectangle(0, -60, 500, 30, 0x1f2937);
-    const rankText = this.add.text(-200, -60, '#', {
+    const headerBg = this.add.rectangle(0, -60, 560, 30, 0x1f2937);
+    const rankText = this.add.text(-230, -60, '#', {
       fontFamily: UI_STYLE.fontFamily,
       fontSize: '14px',
       color: '#f3f4f6',
     }).setOrigin(0, 0.5);
 
-    const scoreText = this.add.text(-80, -60, 'Score', {
+    const scoreText = this.add.text(-140, -60, 'Score', {
       fontFamily: UI_STYLE.fontFamily,
       fontSize: '14px',
       color: '#f3f4f6',
     }).setOrigin(0, 0.5);
 
-    const timeText = this.add.text(50, -60, 'Time', {
+    const killsText = this.add.text(-20, -60, 'Kills', {
       fontFamily: UI_STYLE.fontFamily,
       fontSize: '14px',
       color: '#f3f4f6',
     }).setOrigin(0, 0.5);
 
-    const dateText = this.add.text(150, -60, 'Date', {
+    const timeText = this.add.text(60, -60, 'Time', {
       fontFamily: UI_STYLE.fontFamily,
       fontSize: '14px',
       color: '#f3f4f6',
     }).setOrigin(0, 0.5);
 
-    tableContainer.add([headerBg, rankText, scoreText, timeText, dateText]);
+    const dateText = this.add.text(170, -60, 'Date', {
+      fontFamily: UI_STYLE.fontFamily,
+      fontSize: '14px',
+      color: '#f3f4f6',
+    }).setOrigin(0, 0.5);
+
+    tableContainer.add([headerBg, rankText, scoreText, killsText, timeText, dateText]);
 
     records.forEach((record, index) => {
       const rowY = -30 + index * 25;
-      const rowBg = this.add.rectangle(0, rowY, 500, 22, index % 2 === 0 ? 0x111827 : 0x0f1219);
+      const rowBg = this.add.rectangle(0, rowY, 560, 22, index % 2 === 0 ? 0x111827 : 0x0f1219);
 
-      const rank = this.add.text(-200, rowY, `${index + 1}.`, {
+      const rank = this.add.text(-230, rowY, `${index + 1}.`, {
         fontFamily: UI_STYLE.fontFamily,
         fontSize: '14px',
         color: index < 3 ? '#fbbf24' : '#e5e7eb',
       }).setOrigin(0, 0.5);
 
-      const score = this.add.text(-80, rowY, Math.round(record.score).toLocaleString(), {
+      const score = this.add.text(-140, rowY, Math.round(record.score).toLocaleString(), {
         fontFamily: UI_STYLE.fontFamily,
         fontSize: '14px',
         color: '#e5e7eb',
       }).setOrigin(0, 0.5);
 
-      const time = this.add.text(50, rowY, `${Math.round(record.timeSeconds)}s`, {
+      const kills = this.add.text(-20, rowY, `${Math.round(record.kills ?? 0)}`, {
+        fontFamily: UI_STYLE.fontFamily,
+        fontSize: '14px',
+        color: '#e5e7eb',
+      }).setOrigin(0, 0.5);
+
+      const time = this.add.text(60, rowY, `${Math.round(record.timeSeconds)}s`, {
         fontFamily: UI_STYLE.fontFamily,
         fontSize: '14px',
         color: '#9ca3af',
@@ -194,13 +206,13 @@ export class HighscoresScene extends Phaser.Scene {
 
       const date = new Date(record.dateISO);
       const dateStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' });
-      const dateTxt = this.add.text(150, rowY, dateStr, {
+      const dateTxt = this.add.text(170, rowY, dateStr, {
         fontFamily: UI_STYLE.fontFamily,
         fontSize: '14px',
         color: '#9ca3af',
       }).setOrigin(0, 0.5);
 
-      tableContainer.add([rowBg, rank, score, time, dateTxt]);
+      tableContainer.add([rowBg, rank, score, kills, time, dateTxt]);
     });
   }
 

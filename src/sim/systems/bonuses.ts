@@ -6,6 +6,7 @@ import { assignWeapon, pickRandomWeapon, refreshAvailableWeapons, unlockWeapon }
 import { getCreatureDef } from '../../content/creatures';
 import { grantXp } from './progression';
 import { registerQuestKill } from './mode_quest';
+import { registerSurvivalKill } from './mode_survival';
 
 const BONUS_BASE_DROP_DENOM = 9;
 const BONUS_DESPAWN_TICKS = 900;
@@ -283,6 +284,8 @@ function applyBonusDamageToCreature(
   events.push({ type: 'death', target: 'creature', id: creature.id });
   if (state.mode === 'quest' && state.modeState.kind === 'quest') {
     registerQuestKill(state.modeState, creature.kind);
+  } else if (state.mode === 'survival' && state.modeState.kind === 'survival') {
+    registerSurvivalKill(state.modeState);
   }
   const def = getCreatureDef(creature.kind);
   state.score += def.scoreValue;

@@ -114,6 +114,15 @@ export interface SurvivalModeState {
   maxCreaturesSoftCap: number;
   spawnMinDistance: number;
   spawnMaxDistance: number;
+  killsTotal: number;
+  nextWaveIndex: number;
+  spawnQueue: {
+    kind: string;
+    remaining: number;
+    pattern: 'edge' | 'near' | 'ring';
+    intervalTicks: number;
+    nextTick: number;
+  }[];
 }
 
 export interface QuestModeState {
@@ -138,6 +147,9 @@ export function createSurvivalModeState(): SurvivalModeState {
     maxCreaturesSoftCap: 6,
     spawnMinDistance: 10,
     spawnMaxDistance: 24,
+    killsTotal: 0,
+    nextWaveIndex: 0,
+    spawnQueue: [],
   };
 }
 
