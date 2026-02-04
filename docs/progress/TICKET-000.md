@@ -12,4 +12,4 @@
 
 ## Notes
 - Pages build sets `BASE_PATH` to `/<repo-name>/` in the workflow.
-- Reference C files are not yet present in `ref/` and still need to be copied in.
+- Reference C files are present in `ref/`.
