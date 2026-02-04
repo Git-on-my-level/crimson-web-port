@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { ATLAS_SHEETS } from '../content/atlas';
+import { SFX_PRELOAD_KEYS } from '../audio/sfx';
 
 export class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -33,10 +34,16 @@ export class PreloadScene extends Phaser.Scene {
 
     if (useRealAssets) {
       this.load.audio('music-intro', 'assets/music/intro.ogg');
-      this.load.audio('sfx-ui-click', 'assets/sfx/ui_buttonClick.ogg');
+      const sfxPath = 'assets/sfx/ui_buttonClick.ogg';
+      for (const key of SFX_PRELOAD_KEYS) {
+        this.load.audio(key, sfxPath);
+      }
     } else {
       this.load.audio('music-intro', 'assets/music/intro.wav');
-      this.load.audio('sfx-ui-click', 'assets/sfx/ui_buttonClick.wav');
+      const sfxPath = 'assets/sfx/ui_buttonClick.wav';
+      for (const key of SFX_PRELOAD_KEYS) {
+        this.load.audio(key, sfxPath);
+      }
     }
   }
 

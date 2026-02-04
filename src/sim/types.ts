@@ -34,6 +34,7 @@ export const EMPTY_INPUT: InputFrame = {
 
 export type SimEvent =
   | { type: 'spawnProjectile'; id: EntityId; pos: Vec2; vel: Vec2; kind: string }
+  | { type: 'projectileImpact'; id: EntityId; pos: Vec2; kind: string; explosionRadius?: number }
   | { type: 'spawnCreature'; id: EntityId; pos: Vec2; kind: string }
   | { type: 'spawnBonus'; id: EntityId; pos: Vec2; kind: BonusId }
   | { type: 'damage'; target: 'player' | 'creature'; id: EntityId; amount: number }

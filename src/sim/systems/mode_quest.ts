@@ -1,10 +1,11 @@
-import type { QuestTimelineEvent } from '../../content/quests';
+import type { QuestSpawnPattern, QuestTimelineEvent } from '../../content/quests';
 import { getQuestDef } from '../../content/quests';
 import type { QuestModeState, SimState } from '../state';
 import type { SimEvent } from '../types';
 import { spawnCreatureAtEdge, spawnCreatureAtPosition } from './creatures';
 import { spawnBonus } from './bonuses';
 import { clampToWorld, findSpawnPosAwayFromPlayer, pickRandomWorldPos } from '../world';
+import { isTerrainBlocked } from '../terrain';
 
 const RING_DEFAULT_RADIUS = 12;
 const RANDOM_SPAWN_MIN_DISTANCE = 8;
@@ -23,6 +24,7 @@ export function updateQuestMode(state: SimState, events: SimEvent[]): void {
 
   const quest = getQuestDef(modeState.questId);
   processTimeline(state, modeState, quest.timeline, events);
+  updateSpawnStreams(state, modeState, events);
   evaluateObjectives(state, modeState, quest, events);
 }
 
@@ -37,9 +39,12 @@ function ensureQuestState(state: SimState): QuestModeState {
     elapsedTicks: 0,
     killsByKind: {},
     killsTotal: 0,
+    bonusesCollected: 0,
+    bonusesCollectedByType: {},
     status: 'Playing',
     nextTimelineIndex: 0,
     messages: [],
+    spawnStreams: [],
   };
   state.modeState = next;
   return next;
@@ -70,6 +75,22 @@ function handleTimelineEvent(
   switch (event.type) {
     case 'spawn': {
       spawnCreatures(state, events, event);
+      break;
+    }
+    case 'spawnStream': {
+      const intervalTicks = Math.max(1, event.intervalTicks);
+      const durationTicks = Math.max(1, event.durationTicks);
+      modeState.spawnStreams.push({
+        creatureKind: event.creatureKind,
+        count: Math.max(1, event.count),
+        pattern: event.pattern ?? 'edge',
+        radius: event.radius,
+        center: event.center,
+        positions: event.positions ?? (event.position ? [event.position] : undefined),
+        intervalTicks,
+        nextTick: modeState.elapsedTicks,
+        endTick: modeState.elapsedTicks + durationTicks,
+      });
       break;
     }
     case 'message': {
@@ -103,14 +124,25 @@ function spawnCreatures(
     return;
   }
 
+  if (pattern === 'fixed') {
+    const positions = event.positions ?? (event.position ? [event.position] : []);
+    for (const pos of positions) {
+      for (let i = 0; i < count; i += 1) {
+        spawnCreatureAtPosition(state, events, event.creatureKind, clampToWorld({ ...pos }, 0));
+      }
+    }
+    return;
+  }
+
   if (pattern === 'ring') {
     const radius = event.radius ?? RING_DEFAULT_RADIUS;
+    const center = event.center ?? state.player.pos;
     const baseAngle = state.rng.nextFloat01() * Math.PI * 2;
     for (let i = 0; i < count; i += 1) {
       const angle = baseAngle + (i / count) * Math.PI * 2;
       const pos = {
-        x: state.player.pos.x + Math.cos(angle) * radius,
-        y: state.player.pos.y + Math.sin(angle) * radius,
+        x: center.x + Math.cos(angle) * radius,
+        y: center.y + Math.sin(angle) * radius,
       };
       spawnCreatureAtPosition(state, events, event.creatureKind, clampToWorld(pos, 0));
     }
@@ -124,6 +156,7 @@ function spawnCreatures(
       RANDOM_SPAWN_MIN_DISTANCE,
       12,
       (rng) => pickRandomWorldPos(rng, 1),
+      (candidate) => !isTerrainBlocked(state.terrain, candidate.x, candidate.y, 0),
     );
     spawnCreatureAtPosition(state, events, event.creatureKind, spawnPos);
   }
@@ -142,6 +175,12 @@ function evaluateObjectives(state: SimState, modeState: QuestModeState, quest: R
       }
       case 'score':
         return state.score >= objective.score;
+      case 'bonusCollect': {
+        if (objective.bonusType) {
+          return (modeState.bonusesCollectedByType[objective.bonusType] ?? 0) >= objective.count;
+        }
+        return modeState.bonusesCollected >= objective.count;
+      }
       default:
         return false;
     }
@@ -175,4 +214,41 @@ export function setQuestStatus(
     state.phase = 'QuestFailed';
   }
   events.push({ type: 'questStatusChanged', status });
+}
+
+function updateSpawnStreams(state: SimState, modeState: QuestModeState, events: SimEvent[]): void {
+  if (modeState.spawnStreams.length === 0) {
+    return;
+  }
+
+  let writeIndex = 0;
+  for (const stream of modeState.spawnStreams) {
+    if (modeState.elapsedTicks > stream.endTick) {
+      continue;
+    }
+
+    if (modeState.elapsedTicks >= stream.nextTick) {
+      const spawnEvent: Extract<QuestTimelineEvent, { type: 'spawn' }> = {
+        atTick: modeState.elapsedTicks,
+        type: 'spawn',
+        creatureKind: stream.creatureKind,
+        count: stream.count,
+        pattern: stream.pattern as QuestSpawnPattern,
+        radius: stream.radius,
+        center: stream.center,
+        positions: stream.positions,
+      };
+      spawnCreatures(state, events, spawnEvent);
+      stream.nextTick += stream.intervalTicks;
+    }
+
+    modeState.spawnStreams[writeIndex] = stream;
+    writeIndex += 1;
+  }
+  modeState.spawnStreams.length = writeIndex;
+}
+
+export function registerQuestBonusCollected(modeState: QuestModeState, bonusType: string): void {
+  modeState.bonusesCollected += 1;
+  modeState.bonusesCollectedByType[bonusType] = (modeState.bonusesCollectedByType[bonusType] ?? 0) + 1;
 }

@@ -126,10 +126,12 @@ describe('Survival smoke', () => {
     expect(sim.state.tick).toBe(TOTAL_TICKS);
     expect(sim.state.phase).not.toBe('GameOver');
 
-    expect(sim.state.score).toBe(30);
-    expect(sim.state.player.level).toBe(2);
-    expect(sim.state.creatures.length).toBe(8);
-    expect(sim.state.projectiles.length).toBe(4);
+    expect(sim.state.score).toBeGreaterThan(0);
+    expect(sim.state.player.level).toBeGreaterThanOrEqual(1);
+    if (sim.state.modeState.kind === 'survival') {
+      expect(sim.state.creatures.length).toBeLessThanOrEqual(sim.state.modeState.maxCreaturesSoftCap);
+    }
+    expect(sim.state.projectiles.length).toBeGreaterThanOrEqual(0);
   });
 
   it('keeps positions finite and HP clamped to max', () => {

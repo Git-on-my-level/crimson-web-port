@@ -17,7 +17,9 @@ Functions: 37
 - Toggle with ESC or P key
 - Toggles sim phase between `Playing` and `Paused`
 - Sim stepping stops when paused
-- Shows overlay text when paused
+- Shows overlay text when paused (HUD)
+- Pause menu overlay with Resume / Options / Controls / Restart / Quit-to-Title
+- ESC/P resumes from pause menu
 
 #### GameOver Scene (`src/scenes/GameOverScene.ts`)
 - Shows "GAME OVER" text
@@ -50,23 +52,26 @@ Functions: 37
 - Text styles (title, subtitle, button)
 
 #### TitleScene (`src/scenes/TitleScene.ts`)
-- Main menu with 4 options:
+- Main menu with 5 options:
   - Survival (starts game in survival mode)
-  - Quest (shows stub scene, TODO in TICKET-310)
+  - Quest (opens quest selection)
+  - Controls (keybind help overlay)
   - Options (navigates to OptionsScene)
   - Highscores (navigates to HighscoresScene)
 - Uses generic Menu component
 - Title and subtitle text
+- Controls overlay accessible via `H`
 
 #### OptionsScene (`src/scenes/OptionsScene.ts`)
-- Stub scene for options
-- "Coming soon..." subtitle
-- Back to Title button
+- Full options UI (controls + volume tabs)
+- Keybind remapping with reset defaults
+- Volume sliders (master/sfx/music) with reset defaults
+- Back behavior (returns to title or game)
 
 #### HighscoresScene (`src/scenes/HighscoresScene.ts`)
-- Stub scene for highscores
-- "Coming soon..." subtitle
-- Back to Title button
+- Highscores UI with survival/quest tabs
+- Quest selector paging
+- Back to Title button + ESC shortcut
 
 #### QuestStubScene (`src/scenes/QuestStubScene.ts`)
 - Stub scene for quest mode
@@ -83,7 +88,7 @@ Functions: 37
 - [x] `ui_render_hud` — Implemented as `src/ui/Hud.ts` (simplified HUD with HP, score, weapon name, pause overlay)
 - [x] `ui_button_update` — Implemented as `src/ui/Menu.ts` (generic menu with hover/keyboard support)
 - [ ] `ui_checkbox_update` — TODO (ref: crimsonland:0043dc80)
-- [ ] `ui_cursor_render` — TODO (ref: crimsonland:0041a040)
+- [x] `ui_cursor_render` — Implemented (rendered via `ui-cursor` sprite in game scene)
 - [ ] `ui_draw_clock_gauge` — TODO (ref: crimsonland:004061e0)
 - [ ] `ui_draw_clock_gauge_at` — TODO (ref: crimsonland:0040a4c0)
 - [ ] `ui_draw_progress_bar` — TODO (ref: crimsonland:0041a6d0)
@@ -109,9 +114,9 @@ Functions: 37
 - [ ] `ui_menu_main_click_quit` — TODO (Quit button, if needed for web)
 - [ ] `ui_mouse_inside_rect` — Implemented via Phaser input events in Menu component
 - [ ] `ui_profile_menu_update` — TODO (ref: crimsonland:004443c0)
-- [ ] `ui_render_aim_enhancement` — TODO (ref: crimsonland:0041a320)
-- [ ] `ui_render_aim_indicators` — TODO (ref: crimsonland:0040a510)
-- [ ] `ui_render_keybind_help` — TODO (ref: crimsonland:00405160)
+- [x] `ui_render_aim_enhancement` — Implemented (basic `ui-aim` sprite along aim vector)
+- [x] `ui_render_aim_indicators` — Implemented (aim indicator sprite; web adaptation)
+- [x] `ui_render_keybind_help` — Implemented (Controls overlay with keybind hints)
 - [ ] `ui_render_loading` — TODO (ref: crimsonland:00402d50)
 - [ ] `ui_scrollbar_update` — TODO (ref: crimsonland:0043def0)
 - [ ] `ui_text_input_render` — TODO (ref: crimsonland:004413a0)

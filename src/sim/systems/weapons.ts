@@ -1,7 +1,8 @@
 import type { WeaponDef } from '../../content/weapons';
+import { getProjectileProfile } from '../../content/projectiles';
 import type { SimState } from '../state';
 import type { SimEvent } from '../types';
-import { getWeaponById, getWeaponOrder } from '../weapons/weaponTable';
+import { assignWeapon, getWeaponById, getWeaponOrder, isWeaponAvailable } from '../weapons/weaponTable';
 import { spawnProjectile } from './projectiles';
 import { getDamageMultiplier, getFireRateMultiplier } from './bonuses';
 
@@ -58,6 +59,13 @@ export function updateWeapons(state: SimState, events: SimEvent[], dt: number): 
   const muzzleOffset = weapon.muzzleOffset;
   const lifeTicks = Math.max(1, weapon.projectileLifeTicks);
   const projectileSpeed = weapon.projectileSpeed * player.perkStats.projectileSpeedMultiplier;
+  const projectileProfile = getProjectileProfile(weapon.projectileProfileId);
+  const projectileRadius = projectileProfile.projectileRadius ?? DEFAULT_PROJECTILE_RADIUS;
+  const pierceRemaining = projectileProfile.pierceCount ?? 0;
+  const explosionRadius = projectileProfile.explosionRadius ?? 0;
+  const explosionDamage = explosionRadius
+    ? weapon.damage * damageMultiplier * (projectileProfile.explosionDamageMultiplier ?? 1)
+    : 0;
 
   for (let i = 0; i < pellets; i += 1) {
     const spreadOffset = spread > 0 ? (state.rng.nextFloat01() - 0.5) * spread : 0;
@@ -79,7 +87,12 @@ export function updateWeapons(state: SimState, events: SimEvent[], dt: number): 
       weapon.damage * damageMultiplier,
       lifeTicks,
       'player',
-      DEFAULT_PROJECTILE_RADIUS,
+      projectileRadius,
+      {
+        pierceRemaining,
+        explosionRadius,
+        explosionDamage,
+      },
     );
   }
 
@@ -109,6 +122,13 @@ export function fireSpiralPattern(
   const lifeTicks = Math.max(1, weapon.projectileLifeTicks);
   const damageMultiplier = getDamageMultiplier(player);
   const projectileSpeed = weapon.projectileSpeed * player.perkStats.projectileSpeedMultiplier;
+  const projectileProfile = getProjectileProfile(weapon.projectileProfileId);
+  const projectileRadius = projectileProfile.projectileRadius ?? DEFAULT_PROJECTILE_RADIUS;
+  const pierceRemaining = projectileProfile.pierceCount ?? 0;
+  const explosionRadius = projectileProfile.explosionRadius ?? 0;
+  const explosionDamage = explosionRadius
+    ? weapon.damage * damageMultiplier * (projectileProfile.explosionDamageMultiplier ?? 1)
+    : 0;
 
   for (let i = 0; i < projectilesPerTick; i++) {
     const angleOffset = (i / projectilesPerTick) * Math.PI * 2;
@@ -132,7 +152,12 @@ export function fireSpiralPattern(
       weapon.damage * damageMultiplier,
       lifeTicks,
       'player',
-      DEFAULT_PROJECTILE_RADIUS,
+      projectileRadius,
+      {
+        pierceRemaining,
+        explosionRadius,
+        explosionDamage,
+      },
     );
   }
 
@@ -147,15 +172,11 @@ function switchWeapon(player: SimState['player'], slot: number): boolean {
     return false;
   }
 
-  player.weaponId = nextWeapon;
-  player.fireCooldownTicks = 0;
-  player.reloadTicksRemaining = 0;
-  const def = getWeaponById(nextWeapon);
-  if (def.ammoMax !== undefined) {
-    player.ammo = def.ammoMax;
-  } else {
-    player.ammo = 0;
+  if (!isWeaponAvailable(player, nextWeapon)) {
+    return false;
   }
+
+  assignWeapon(player, nextWeapon);
   return true;
 }
 

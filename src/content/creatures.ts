@@ -7,7 +7,10 @@ export type CreatureDef = {
   xpValue: number;
   scoreValue: number;
   color?: number;
+  behavior?: CreatureBehavior;
 };
+
+export type CreatureBehavior = 'seek' | 'strafe' | 'burst';
 
 export const CREATURES: CreatureDef[] = [
   {
@@ -40,10 +43,114 @@ export const CREATURES: CreatureDef[] = [
     scoreValue: 25,
     color: 0xf97316,
   },
+  {
+    id: 'zombie',
+    hp: 38,
+    speed: 2.6,
+    radius: 1.1,
+    touchDamage: 7,
+    xpValue: 22,
+    scoreValue: 12,
+    color: 0x84cc16,
+  },
+  {
+    id: 'zombie_elite',
+    hp: 80,
+    speed: 2.2,
+    radius: 1.3,
+    touchDamage: 12,
+    xpValue: 45,
+    scoreValue: 30,
+    color: 0x65a30d,
+  },
+  {
+    id: 'alien',
+    hp: 26,
+    speed: 4.2,
+    radius: 1.0,
+    touchDamage: 7,
+    xpValue: 20,
+    scoreValue: 14,
+    color: 0x22d3ee,
+    behavior: 'burst',
+  },
+  {
+    id: 'alien_elite',
+    hp: 60,
+    speed: 3.4,
+    radius: 1.2,
+    touchDamage: 12,
+    xpValue: 46,
+    scoreValue: 30,
+    color: 0x0891b2,
+    behavior: 'burst',
+  },
+  {
+    id: 'spider',
+    hp: 20,
+    speed: 4.6,
+    radius: 0.8,
+    touchDamage: 5,
+    xpValue: 14,
+    scoreValue: 10,
+    color: 0xa855f7,
+    behavior: 'strafe',
+  },
+  {
+    id: 'spider_elite',
+    hp: 45,
+    speed: 3.9,
+    radius: 1.0,
+    touchDamage: 9,
+    xpValue: 32,
+    scoreValue: 22,
+    color: 0x7c3aed,
+    behavior: 'strafe',
+  },
+  {
+    id: 'brute',
+    hp: 140,
+    speed: 1.6,
+    radius: 1.7,
+    touchDamage: 16,
+    xpValue: 70,
+    scoreValue: 45,
+    color: 0xfb923c,
+  },
 ];
 
 const CREATURES_BY_ID = new Map<string, CreatureDef>(CREATURES.map((def) => [def.id, def]));
 
 export function getCreatureDef(id: string): CreatureDef {
   return CREATURES_BY_ID.get(id) ?? CREATURES[0];
+}
+
+export type CreatureTemplate = {
+  id: string;
+  kind: string;
+  minSeconds: number;
+  weight: number;
+  cost: number;
+  maxActive: number;
+};
+
+export const CREATURE_TEMPLATES: CreatureTemplate[] = [
+  { id: 'grunt', kind: 'grunt', minSeconds: 0, weight: 6, cost: 1, maxActive: 12 },
+  { id: 'runner', kind: 'runner', minSeconds: 25, weight: 4, cost: 1.2, maxActive: 10 },
+  { id: 'tank', kind: 'tank', minSeconds: 70, weight: 2, cost: 3, maxActive: 4 },
+  { id: 'zombie', kind: 'zombie', minSeconds: 0, weight: 5, cost: 1.1, maxActive: 10 },
+  { id: 'zombie_elite', kind: 'zombie_elite', minSeconds: 110, weight: 2, cost: 2.4, maxActive: 5 },
+  { id: 'alien', kind: 'alien', minSeconds: 45, weight: 4, cost: 1.3, maxActive: 9 },
+  { id: 'alien_elite', kind: 'alien_elite', minSeconds: 150, weight: 2, cost: 2.6, maxActive: 4 },
+  { id: 'spider', kind: 'spider', minSeconds: 15, weight: 4, cost: 1.0, maxActive: 10 },
+  { id: 'spider_elite', kind: 'spider_elite', minSeconds: 130, weight: 2, cost: 2.2, maxActive: 5 },
+  { id: 'brute', kind: 'brute', minSeconds: 200, weight: 1, cost: 4.2, maxActive: 2 },
+];
+
+const CREATURE_TEMPLATES_BY_ID = new Map<string, CreatureTemplate>(
+  CREATURE_TEMPLATES.map((template) => [template.id, template]),
+);
+
+export function getCreatureTemplate(id: string): CreatureTemplate {
+  return CREATURE_TEMPLATES_BY_ID.get(id) ?? CREATURE_TEMPLATES[0];
 }

@@ -34,6 +34,11 @@ This workbook tracks progress porting functions from the Crimsonland decompiled 
 | [ui](./ui.md) | 37 |
 | [weapon](./weapon.md) | 5 |
 
+## Notes
+
+- Parity harness: `src/tools/sim_trace.ts` for deterministic sim traces + `tests/parity/` for golden scenarios.
+- Parity scorecard lives at `docs/parity/scorecard.md`.
+
 ## Survival Parity (M2)
 
 Implemented reference functions (name parity):
@@ -59,6 +64,17 @@ Implemented reference functions (name parity):
 - `perks_generate_choices`
 - `perk_apply`
 - `perks_update_effects`
+
+## Weapon Catalog + Availability (M5.1)
+
+Implemented features:
+- Weapon availability model with level-based gating and session unlocks
+- Expanded catalog to 12 weapons (pistol through laser)
+- Weapon pickup bonus integration
+- Deterministic availability unit tests
+
+See TICKET-450 documentation: `docs/progress/TICKET-450.md`
+See `weapon_refresh_available` checklist: `docs/porting/weapon.md`
 
 Intentionally skipped for now:
 - Survival boss/elite wave logic and scripted wave banners.

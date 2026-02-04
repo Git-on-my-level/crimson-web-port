@@ -1,7 +1,10 @@
 import Phaser from 'phaser';
 import { Menu, type MenuItem } from '../ui/Menu';
 import { UI_STYLE } from '../ui/style';
-import { getSurvivalHighscores } from '../persistence/highscores';
+import { QUESTS } from '../content/quests';
+import { getQuestHighscores, getSurvivalHighscores } from '../persistence/highscores';
+import { PhaserAudioAdapter } from '../adapters/phaser/audio';
+import { SFX_KEYS } from '../audio/sfx';
 
 type TabMode = 'survival' | 'quest';
 
@@ -10,6 +13,8 @@ export class HighscoresScene extends Phaser.Scene {
   private tabMode: TabMode = 'survival';
   private tabButtons: Phaser.GameObjects.Container[] = [];
   private tableContainer?: Phaser.GameObjects.Container;
+  private audio?: PhaserAudioAdapter;
+  private questIndex = 0;
 
   constructor() {
     super('highscores');
@@ -17,6 +22,7 @@ export class HighscoresScene extends Phaser.Scene {
 
   create() {
     const { width, height } = this.scale;
+    this.audio = new PhaserAudioAdapter(this);
 
     this.add.text(width / 2, height / 2 - 200, 'Highscores', {
       ...UI_STYLE.text.title,
@@ -29,13 +35,17 @@ export class HighscoresScene extends Phaser.Scene {
     const menuItems: MenuItem[] = [
       {
         label: 'Back to Title',
-        action: () => this.scene.start('title'),
+        action: () => {
+          this.audio?.playSfx(SFX_KEYS.uiClick);
+          this.scene.start('title');
+        },
       },
     ];
 
     this.menu = new Menu(this, menuItems);
 
     this.input.keyboard?.once('keydown-ESC', () => {
+      this.audio?.playSfx(SFX_KEYS.uiClick);
       this.scene.start('title');
     });
   }
@@ -65,6 +75,7 @@ export class HighscoresScene extends Phaser.Scene {
       }).setOrigin(0.5);
 
       bg.on('pointerdown', () => {
+        this.audio?.playSfx(SFX_KEYS.uiClick);
         this.setTabMode(tab.mode);
       });
 
@@ -119,9 +130,54 @@ export class HighscoresScene extends Phaser.Scene {
 
     tableContainer.removeAll(true);
 
-    const records = this.tabMode === 'survival'
+    let records = this.tabMode === 'survival'
       ? getSurvivalHighscores()
       : [];
+
+    if (this.tabMode === 'quest') {
+      const quest = QUESTS[this.questIndex] ?? QUESTS[0];
+      if (quest) {
+        records = getQuestHighscores(quest.id);
+      }
+
+      const label = quest ? `Quest: ${quest.title}` : 'Quest: (none)';
+      const selectorBg = this.add.rectangle(0, -100, 460, 28, 0x0f172a)
+        .setStrokeStyle(1, 0x334155);
+      const selectorText = this.add.text(0, -100, label, {
+        fontFamily: UI_STYLE.fontFamily,
+        fontSize: '14px',
+        color: '#e2e8f0',
+      }).setOrigin(0.5);
+
+      const makeButton = (x: number, labelText: string, onClick: () => void) => {
+        const bg = this.add.rectangle(x, -100, 28, 24, 0x1f2937)
+          .setStrokeStyle(1, 0x475569)
+          .setInteractive({ useHandCursor: true });
+        const txt = this.add.text(x, -100, labelText, {
+          fontFamily: UI_STYLE.fontFamily,
+          fontSize: '14px',
+          color: '#f8fafc',
+        }).setOrigin(0.5);
+        bg.on('pointerdown', () => {
+          this.audio?.playSfx(SFX_KEYS.uiClick);
+          onClick();
+        });
+        return [bg, txt];
+      };
+
+      const [prevBg, prevTxt] = makeButton(-250, '<', () => {
+        if (!QUESTS.length) return;
+        this.questIndex = (this.questIndex - 1 + QUESTS.length) % QUESTS.length;
+        this.updateTable();
+      });
+      const [nextBg, nextTxt] = makeButton(250, '>', () => {
+        if (!QUESTS.length) return;
+        this.questIndex = (this.questIndex + 1) % QUESTS.length;
+        this.updateTable();
+      });
+
+      tableContainer.add([selectorBg, selectorText, prevBg, prevTxt, nextBg, nextTxt]);
+    }
 
     if (records.length === 0) {
       const noScoresText = this.add.text(0, 0, 'No scores yet', {
@@ -134,50 +190,62 @@ export class HighscoresScene extends Phaser.Scene {
       return;
     }
 
-    const headerBg = this.add.rectangle(0, -60, 500, 30, 0x1f2937);
-    const rankText = this.add.text(-200, -60, '#', {
+    const headerBg = this.add.rectangle(0, -60, 560, 30, 0x1f2937);
+    const rankText = this.add.text(-230, -60, '#', {
       fontFamily: UI_STYLE.fontFamily,
       fontSize: '14px',
       color: '#f3f4f6',
     }).setOrigin(0, 0.5);
 
-    const scoreText = this.add.text(-80, -60, 'Score', {
+    const scoreText = this.add.text(-140, -60, 'Score', {
       fontFamily: UI_STYLE.fontFamily,
       fontSize: '14px',
       color: '#f3f4f6',
     }).setOrigin(0, 0.5);
 
-    const timeText = this.add.text(50, -60, 'Time', {
+    const killsText = this.add.text(-20, -60, 'Kills', {
       fontFamily: UI_STYLE.fontFamily,
       fontSize: '14px',
       color: '#f3f4f6',
     }).setOrigin(0, 0.5);
 
-    const dateText = this.add.text(150, -60, 'Date', {
+    const timeText = this.add.text(60, -60, 'Time', {
       fontFamily: UI_STYLE.fontFamily,
       fontSize: '14px',
       color: '#f3f4f6',
     }).setOrigin(0, 0.5);
 
-    tableContainer.add([headerBg, rankText, scoreText, timeText, dateText]);
+    const dateText = this.add.text(170, -60, 'Date', {
+      fontFamily: UI_STYLE.fontFamily,
+      fontSize: '14px',
+      color: '#f3f4f6',
+    }).setOrigin(0, 0.5);
+
+    tableContainer.add([headerBg, rankText, scoreText, killsText, timeText, dateText]);
 
     records.forEach((record, index) => {
       const rowY = -30 + index * 25;
-      const rowBg = this.add.rectangle(0, rowY, 500, 22, index % 2 === 0 ? 0x111827 : 0x0f1219);
+      const rowBg = this.add.rectangle(0, rowY, 560, 22, index % 2 === 0 ? 0x111827 : 0x0f1219);
 
-      const rank = this.add.text(-200, rowY, `${index + 1}.`, {
+      const rank = this.add.text(-230, rowY, `${index + 1}.`, {
         fontFamily: UI_STYLE.fontFamily,
         fontSize: '14px',
         color: index < 3 ? '#fbbf24' : '#e5e7eb',
       }).setOrigin(0, 0.5);
 
-      const score = this.add.text(-80, rowY, Math.round(record.score).toLocaleString(), {
+      const score = this.add.text(-140, rowY, Math.round(record.score).toLocaleString(), {
         fontFamily: UI_STYLE.fontFamily,
         fontSize: '14px',
         color: '#e5e7eb',
       }).setOrigin(0, 0.5);
 
-      const time = this.add.text(50, rowY, `${Math.round(record.timeSeconds)}s`, {
+      const kills = this.add.text(-20, rowY, `${Math.round(record.kills ?? 0)}`, {
+        fontFamily: UI_STYLE.fontFamily,
+        fontSize: '14px',
+        color: '#e5e7eb',
+      }).setOrigin(0, 0.5);
+
+      const time = this.add.text(60, rowY, `${Math.round(record.timeSeconds)}s`, {
         fontFamily: UI_STYLE.fontFamily,
         fontSize: '14px',
         color: '#9ca3af',
@@ -185,13 +253,13 @@ export class HighscoresScene extends Phaser.Scene {
 
       const date = new Date(record.dateISO);
       const dateStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' });
-      const dateTxt = this.add.text(150, rowY, dateStr, {
+      const dateTxt = this.add.text(170, rowY, dateStr, {
         fontFamily: UI_STYLE.fontFamily,
         fontSize: '14px',
         color: '#9ca3af',
       }).setOrigin(0, 0.5);
 
-      tableContainer.add([rowBg, rank, score, time, dateTxt]);
+      tableContainer.add([rowBg, rank, score, kills, time, dateTxt]);
     });
   }
 

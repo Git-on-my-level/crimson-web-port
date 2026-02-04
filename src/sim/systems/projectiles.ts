@@ -1,7 +1,6 @@
 import type { SimState } from '../state';
 import type { SimEvent, Vec2 } from '../types';
 import { WORLD_BOUNDS } from '../world';
-
 const OUT_OF_BOUNDS_MARGIN = 6;
 
 export function spawnProjectile(
@@ -14,6 +13,11 @@ export function spawnProjectile(
   lifeTicks: number,
   owner: 'player' | 'creature' = 'player',
   radius: number = 0.4,
+  options: {
+    pierceRemaining?: number;
+    explosionRadius?: number;
+    explosionDamage?: number;
+  } = {},
 ): number | null {
   const id = state.projectilePool.alloc((proj) => {
     proj.pos.x = pos.x;
@@ -26,6 +30,9 @@ export function spawnProjectile(
     proj.owner = owner;
     proj.radius = radius;
     proj.alive = true;
+    proj.pierceRemaining = options.pierceRemaining ?? 0;
+    proj.explosionRadius = options.explosionRadius ?? 0;
+    proj.explosionDamage = options.explosionDamage ?? 0;
   }, state.nextEntityId++);
 
   if (id !== null) {

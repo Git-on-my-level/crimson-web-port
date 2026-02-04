@@ -1,4 +1,4 @@
-import { PERKS, type PerkDef, type PerkId, type PerkModifiers } from '../content/perks';
+import { PERKS, type PerkDef, type PerkId, type PerkModifiers, type PerkRarity } from '../content/perks';
 import type { Rng } from './rng';
 
 export type PerkStats = {
@@ -76,9 +76,17 @@ export function perkCanOffer(perk: PerkDef, player: PerkCarrier): boolean {
     return false;
   }
 
-  if (perk.exclusiveTag) {
+  if (perk.prereqs && perk.prereqs.length > 0) {
+    for (const prereq of perk.prereqs) {
+      if (perkCountGet(player, prereq) <= 0) {
+        return false;
+      }
+    }
+  }
+
+  if (perk.exclusiveGroup) {
     for (const other of PERKS) {
-      if (other.exclusiveTag !== perk.exclusiveTag) {
+      if (other.exclusiveGroup !== perk.exclusiveGroup) {
         continue;
       }
       if (other.id === perk.id) {
@@ -104,14 +112,47 @@ export function generatePerkChoices(rng: Rng, player: PerkCarrier, count = 3): P
   const choices: PerkId[] = [];
 
   while (choices.length < count && pool.length > 0) {
-    const index = rng.nextInt(pool.length);
-    const [picked] = pool.splice(index, 1);
+    const totalWeight = pool.reduce((sum, perk) => sum + getPerkWeight(perk), 0);
+    const roll = rng.nextFloat01() * totalWeight;
+    let cursor = 0;
+    let pickedIndex = 0;
+
+    for (let i = 0; i < pool.length; i += 1) {
+      cursor += getPerkWeight(pool[i]);
+      if (roll <= cursor) {
+        pickedIndex = i;
+        break;
+      }
+    }
+
+    const [picked] = pool.splice(pickedIndex, 1);
     if (picked) {
       choices.push(picked.id);
     }
   }
 
   return choices;
+}
+
+function getPerkWeight(perk: PerkDef): number {
+  if (perk.weight && perk.weight > 0) {
+    return perk.weight;
+  }
+  return getRarityWeight(perk.rarity);
+}
+
+function getRarityWeight(rarity: PerkRarity): number {
+  switch (rarity) {
+    case 'legendary':
+      return 1;
+    case 'rare':
+      return 3;
+    case 'uncommon':
+      return 6;
+    case 'common':
+    default:
+      return 10;
+  }
 }
 
 function applyModifiers(stats: PerkStats, modifiers: PerkModifiers, stacks: number): void {

@@ -2,9 +2,13 @@ import Phaser from 'phaser';
 import { Menu, type MenuItem } from '../ui/Menu';
 import { UI_STYLE } from '../ui/style';
 import { QUESTS } from '../content/quests/catalog';
+import { PhaserAudioAdapter } from '../adapters/phaser/audio';
+import { SFX_KEYS } from '../audio/sfx';
 
 export class QuestSelectScene extends Phaser.Scene {
   private menu?: Menu;
+  private audio?: PhaserAudioAdapter;
+  private escHandler?: () => void;
 
   constructor() {
     super('questSelect');
@@ -12,6 +16,7 @@ export class QuestSelectScene extends Phaser.Scene {
 
   create() {
     const { width } = this.scale;
+    this.audio = new PhaserAudioAdapter(this);
 
     this.add.text(width / 2, 60, 'Select Quest', {
       ...UI_STYLE.text.title,
@@ -25,15 +30,27 @@ export class QuestSelectScene extends Phaser.Scene {
 
     const menuItems: MenuItem[] = QUESTS.map((quest) => ({
       label: quest.title,
-      action: () => this.startQuest(quest.id),
+      action: () => {
+        this.audio?.playSfx(SFX_KEYS.uiClick);
+        this.startQuest(quest.id);
+      },
     }));
 
     menuItems.push({
       label: 'Back to Title',
-      action: () => this.scene.start('title'),
+      action: () => {
+        this.audio?.playSfx(SFX_KEYS.uiClick);
+        this.scene.start('title');
+      },
     });
 
     this.menu = new Menu(this, menuItems);
+
+    this.escHandler = () => {
+      this.audio?.playSfx(SFX_KEYS.uiClick);
+      this.scene.start('title');
+    };
+    this.input.keyboard?.on('keydown-ESC', this.escHandler);
   }
 
   private startQuest(questId: string): void {
@@ -42,5 +59,8 @@ export class QuestSelectScene extends Phaser.Scene {
 
   shutdown(): void {
     this.menu?.destroy();
+    if (this.escHandler) {
+      this.input.keyboard?.off('keydown-ESC', this.escHandler);
+    }
   }
 }

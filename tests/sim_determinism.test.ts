@@ -17,12 +17,8 @@ const constantInput: InputFrame = {
 
 describe('Sim determinism', () => {
   it('advances ticks and player position deterministically', () => {
-    const simA = new Sim({ seed: 123 });
-    const simB = new Sim({ seed: 123 });
-    simA.state.mode = 'quest';
-    simA.state.modeState = createQuestModeState();
-    simB.state.mode = 'quest';
-    simB.state.modeState = createQuestModeState();
+    const simA = new Sim({ seed: 123, mode: 'survival' });
+    const simB = new Sim({ seed: 123, mode: 'survival' });
 
     for (let i = 0; i < 300; i += 1) {
       simA.step(constantInput);
@@ -56,9 +52,7 @@ describe('Sim determinism', () => {
   });
 
   it('spawns deterministic projectiles when firing', () => {
-    const sim = new Sim({ seed: 7 });
-    sim.state.mode = 'quest';
-    sim.state.modeState = createQuestModeState();
+    const sim = new Sim({ seed: 7, mode: 'survival' });
     const firingInput: InputFrame = {
       moveX: 0,
       moveY: 0,

@@ -11,28 +11,32 @@ export type RenderTransform = {
   pixelsPerUnit: number;
 };
 
-const COLORS = {
-  player: 0xf97316,
-  creature: 0x22c55e,
-  projectile: 0x60a5fa,
-  bonus: 0xfacc15,
-};
-
 const PROJECTILE_SPRITE_KEY = 'game-projs-grid4';
 const BONUS_SPRITE_KEY = 'game-bonuses-grid4';
+const PLAYER_SPRITE_KEY = 'game-trooper';
+const UI_CURSOR_KEY = 'ui-cursor';
+const UI_AIM_KEY = 'ui-aim';
+
+const CREATURE_SPRITE_BY_KIND: Record<string, string> = {
+  grunt: 'game-zombie',
+  runner: 'game-alien',
+  tank: 'game-bodyset',
+};
 
 const PROJECTILE_FRAME_BY_WEAPON: Record<WeaponId, number> = PROJECTILE_FRAMES;
 const BONUS_FRAME_BY_KIND: Record<BonusId, number> = BONUS_FRAMES;
 
 export class PhaserRenderAdapter {
   private readonly scene: Phaser.Scene;
-  private player?: Phaser.GameObjects.Arc;
-  private readonly creatures = new Map<EntityId, Phaser.GameObjects.Arc>();
+  private player?: Phaser.GameObjects.Sprite;
+  private readonly creatures = new Map<EntityId, Phaser.GameObjects.Sprite>();
   private readonly projectiles = new Map<EntityId, Phaser.GameObjects.Sprite>();
   private readonly bonuses = new Map<EntityId, Phaser.GameObjects.Sprite>();
   private readonly projectileSpritePool: Phaser.GameObjects.Sprite[] = [];
-  private readonly creatureSpritePool: Phaser.GameObjects.Arc[] = [];
+  private readonly creatureSpritePool: Phaser.GameObjects.Sprite[] = [];
   private readonly bonusSpritePool: Phaser.GameObjects.Sprite[] = [];
+  private cursorSprite?: Phaser.GameObjects.Image;
+  private aimSprite?: Phaser.GameObjects.Image;
   private transform: RenderTransform;
   private debugCollisionEnabled = false;
   private debugGraphics?: Phaser.GameObjects.Graphics;
@@ -48,12 +52,12 @@ export class PhaserRenderAdapter {
 
   render(state: SimState): void {
     this.ensurePlayer(state);
+    this.ensureAimIndicators(state);
     this.syncEntities(
       state.creatures,
       this.creatures,
       this.creatureSpritePool,
-      COLORS.creature,
-      10,
+      (entry) => entry.radius ?? 1,
       (entry) => entry.alive,
     );
     this.syncProjectiles(state.projectiles);
@@ -63,19 +67,22 @@ export class PhaserRenderAdapter {
 
   private ensurePlayer(state: SimState): void {
     if (!this.player) {
-      this.player = this.scene.add.circle(0, 0, 14, COLORS.player);
+      this.player = this.scene.add.sprite(0, 0, PLAYER_SPRITE_KEY);
+      this.player.setOrigin(0.5);
+      this.player.setDepth(500);
       this.scene.cameras.main.startFollow(this.player, true, 0.12, 0.12);
     }
     const { x, y } = this.toScreen(state.player.pos.x, state.player.pos.y);
     this.player.setPosition(x, y);
+    const size = state.player.radius * 2 * this.transform.pixelsPerUnit;
+    this.player.setDisplaySize(size, size);
   }
 
   private syncEntities<T extends { id: EntityId; pos: { x: number; y: number } }>(
     entries: T[],
-    map: Map<EntityId, Phaser.GameObjects.Arc>,
-    pool: Phaser.GameObjects.Arc[],
-    color: number,
-    radius: number,
+    map: Map<EntityId, Phaser.GameObjects.Sprite>,
+    pool: Phaser.GameObjects.Sprite[],
+    radius: number | ((entry: T) => number),
     isActive: (entry: T) => boolean,
   ): void {
     const seen = new Set<EntityId>();
@@ -85,9 +92,11 @@ export class PhaserRenderAdapter {
         continue;
       }
       seen.add(entry.id);
-      const obj = map.get(entry.id) ?? this.createCircle(map, pool, entry.id, radius, color);
+      const obj = map.get(entry.id) ?? this.createCreatureSprite(map, pool, entry.id, entry as { kind?: string });
       const { x, y } = this.toScreen(entry.pos.x, entry.pos.y);
       obj.setPosition(x, y);
+      const entryRadius = typeof radius === 'function' ? radius(entry) : radius;
+      obj.setDisplaySize(entryRadius * 2 * this.transform.pixelsPerUnit, entryRadius * 2 * this.transform.pixelsPerUnit);
       obj.setVisible(true);
     }
 
@@ -156,25 +165,26 @@ export class PhaserRenderAdapter {
     }
   }
 
-  private createCircle(
-    map: Map<EntityId, Phaser.GameObjects.Arc>,
-    pool: Phaser.GameObjects.Arc[],
+  private createCreatureSprite(
+    map: Map<EntityId, Phaser.GameObjects.Sprite>,
+    pool: Phaser.GameObjects.Sprite[],
     id: EntityId,
-    radius: number,
-    color: number,
-  ): Phaser.GameObjects.Arc {
-    let circle: Phaser.GameObjects.Arc;
+    entry: { kind?: string },
+  ): Phaser.GameObjects.Sprite {
+    let sprite: Phaser.GameObjects.Sprite;
+    const textureKey = CREATURE_SPRITE_BY_KIND[entry.kind ?? ''] ?? 'game-zombie';
 
     if (pool.length > 0) {
-      circle = pool.pop()!;
-      circle.setRadius(radius);
-      circle.setFillStyle(color);
+      sprite = pool.pop()!;
+      sprite.setTexture(textureKey);
     } else {
-      circle = this.scene.add.circle(0, 0, radius, color);
+      sprite = this.scene.add.sprite(0, 0, textureKey);
+      sprite.setOrigin(0.5);
+      sprite.setDepth(400);
     }
 
-    map.set(id, circle);
-    return circle;
+    map.set(id, sprite);
+    return sprite;
   }
 
   private createSprite(
@@ -196,6 +206,33 @@ export class PhaserRenderAdapter {
 
     map.set(id, sprite);
     return sprite;
+  }
+
+  private ensureAimIndicators(state: SimState): void {
+    if (!this.cursorSprite) {
+      this.scene.input.setDefaultCursor('none');
+      this.cursorSprite = this.scene.add.image(0, 0, UI_CURSOR_KEY);
+      this.cursorSprite.setOrigin(0.5);
+      this.cursorSprite.setScrollFactor(0);
+      this.cursorSprite.setDepth(1100);
+    }
+
+    if (!this.aimSprite) {
+      this.aimSprite = this.scene.add.image(0, 0, UI_AIM_KEY);
+      this.aimSprite.setOrigin(0.5);
+      this.aimSprite.setScrollFactor(0);
+      this.aimSprite.setDepth(1090);
+    }
+
+    const pointer = this.scene.input.activePointer;
+    this.cursorSprite.setPosition(pointer.x, pointer.y);
+
+    const aimDistance = 3;
+    const aimX = state.player.pos.x + state.player.aimDir.x * aimDistance;
+    const aimY = state.player.pos.y + state.player.aimDir.y * aimDistance;
+    const aimScreen = this.toScreen(aimX, aimY);
+    this.aimSprite.setPosition(aimScreen.x, aimScreen.y);
+    this.aimSprite.setRotation(state.player.aimAngle);
   }
 
   private toScreen(simX: number, simY: number): { x: number; y: number } {

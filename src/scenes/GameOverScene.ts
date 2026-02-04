@@ -1,11 +1,14 @@
 import Phaser from 'phaser';
 import { addRunRecord, type RunRecord } from '../persistence/highscores';
+import { PhaserAudioAdapter } from '../adapters/phaser/audio';
+import { SFX_KEYS } from '../audio/sfx';
 
 interface GameOverSceneInitData {
   score: number;
   timeAlive: number;
   seed: number;
   level?: number;
+  kills?: number;
 }
 
 export class GameOverScene extends Phaser.Scene {
@@ -13,6 +16,8 @@ export class GameOverScene extends Phaser.Scene {
   private timeAlive = 0;
   private seed = 1;
   private level = 1;
+  private kills = 0;
+  private audio?: PhaserAudioAdapter;
 
   constructor() {
     super('gameOver');
@@ -23,12 +28,13 @@ export class GameOverScene extends Phaser.Scene {
     this.timeAlive = data.timeAlive || 0;
     this.seed = data.seed || 1;
     this.level = data.level ?? 1;
+    this.kills = data.kills ?? 0;
 
     const record: RunRecord = {
       mode: 'survival',
       score: this.score,
       timeSeconds: this.timeAlive,
-      kills: 0,
+      kills: this.kills,
       level: this.level,
       seed: this.seed,
       dateISO: new Date().toISOString(),
@@ -41,6 +47,7 @@ export class GameOverScene extends Phaser.Scene {
     const { width, height } = this.scale;
     const centerX = width / 2;
     const centerY = height / 2;
+    this.audio = new PhaserAudioAdapter(this);
 
     const textStyle = {
       fontFamily: '"Atkinson Hyperlegible", "Trebuchet MS", sans-serif',
@@ -70,6 +77,13 @@ export class GameOverScene extends Phaser.Scene {
       color: '#94a3b8',
     }).setOrigin(0.5);
 
+    const killsText = `Kills: ${Math.round(this.kills)}`;
+    this.add.text(centerX, centerY + 40, killsText, {
+      ...textStyle,
+      fontSize: '20px',
+      color: '#cbd5f5',
+    }).setOrigin(0.5);
+
     const buttonStyle = {
       fontFamily: '"Atkinson Hyperlegible", "Trebuchet MS", sans-serif',
       fontSize: '18px',
@@ -97,24 +111,29 @@ export class GameOverScene extends Phaser.Scene {
 
       txt.on('pointerover', hoverOver);
       txt.on('pointerout', hoverOut);
-      txt.on('pointerdown', onClick);
+      txt.on('pointerdown', () => {
+        this.audio?.playSfx(SFX_KEYS.uiClick);
+        onClick();
+      });
 
       return { bg, txt };
     };
 
-    createButton(centerY + 80, 'Restart', () => {
+    createButton(centerY + 100, 'Restart', () => {
       this.scene.start('game', { seed: this.seed });
     });
 
-    createButton(centerY + 140, 'Back to Title', () => {
+    createButton(centerY + 160, 'Back to Title', () => {
       this.scene.start('title');
     });
 
     this.input.keyboard?.once('keydown-ENTER', () => {
+      this.audio?.playSfx(SFX_KEYS.uiClick);
       this.scene.start('game', { seed: this.seed });
     });
 
     this.input.keyboard?.once('keydown-ESC', () => {
+      this.audio?.playSfx(SFX_KEYS.uiClick);
       this.scene.start('title');
     });
   }

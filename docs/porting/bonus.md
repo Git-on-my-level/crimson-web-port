@@ -20,19 +20,28 @@ Functions: 12
 ## Implementation Notes
 
 ### Bonus Types Implemented
-1. **Medkit** (instant) - Heals 30 HP
-2. **Ammo** (instant) - Refills current weapon ammo
-3. **Score Bonus** (instant) - Adds 50 points
-4. **Damage Boost** (timed, 10s) - 1.5x damage multiplier
-5. **Fire Rate Boost** (timed, 10s) - 1.5x fire rate multiplier
-6. **Speed Boost** (timed, 10s) - 1.5x speed multiplier
+1. **Points** (instant) - Adds 500 score
+2. **Energizer** (timed, 8s) - Timed effect placeholder (no behavior yet)
+3. **Weapon** (instant) - Grants a random available weapon
+4. **Weapon Power Up** (timed, 10s) - 1.5x fire rate multiplier
+5. **Nuke** (instant) - Large AoE damage pulse
+6. **Double XP** (timed, 10s) - Doubles XP gain
+7. **Shock Chain** (instant) - Damages nearby creatures
+8. **Fireblast** (instant) - Radial AoE damage
+9. **Reflex Boost** (timed, 3s) - Timed effect placeholder (no behavior yet)
+10. **Shield** (timed, 7s) - Timed effect placeholder (no behavior yet)
+11. **Freeze** (timed, 5s) - Timed effect placeholder (no behavior yet)
+12. **MediKit** (instant) - Heals 10 HP
+13. **Speed** (timed, 8s) - 1.5x speed multiplier
+14. **Fire Bullets** (timed, 4s) - 1.25x damage multiplier
 
 ### Key Implementation Details
 
-- **Drop chance**: 25% chance on creature death (configurable via `BONUS_DROP_CHANCE`)
+- **Drop chance**: 1/9 base chance on creature death, with perk multiplier overage adding an extra roll
 - **Despawn time**: 15 seconds (900 ticks at 60Hz)
 - **Effect tracking**: PlayerState.activeEffects tracks timed bonus effects
-- **Multipliers**: Applied in weapons.ts for damage/fire rate, player.ts for speed
+- **Multipliers**: Fire rate via `weapon_power_up`, damage via `fire_bullets`, speed via `speed`
+- **Stacking**: `double_xp` stacks duration; others refresh to max duration
 - **Collision detection**: Handled in bonuses.ts checkBonusPickup()
 
 ### Integration Points
@@ -41,10 +50,15 @@ Functions: 12
 - **Weapon system**: weapons.ts uses getDamageMultiplier() and getFireRateMultiplier()
 - **Player movement**: player.ts uses getPlayerMaxSpeed() which respects speed boost
 - **UI**: Hud.ts displays active timed bonuses with remaining time
-- **Rendering**: render.ts syncBonuses() shows colored circles per bonus type
+- **Rendering**: render.ts syncBonuses() shows bonus sprites by atlas frame
 
 ### State Management
 
 - BonusState includes: id, pos, active, kind (BonusId), radius, lifeTicksRemaining
 - PlayerState includes: baseSpeed, activeEffects (Partial<Record<BonusId, number>>)
 - Timed effects tick down each sim step in updateBonusEffects()
+
+### Parity Notes
+
+- Reroll gates exist for Freeze/Shield/Shock Chain while active; quest-mode gates not yet implemented.
+- Several timed bonuses are tracked but do not yet implement their full original behavior (Energizer/Reflex/Shield/Freeze/Fire Bullets projectile override).

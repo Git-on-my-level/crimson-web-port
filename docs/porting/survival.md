@@ -9,6 +9,7 @@ Functions: 3
 - [x] `survival_gameplay_update_and_render` — Implemented by `Sim.step()` mode branching in `src/sim/sim.ts`.
 
 ## Notes
-- Survival pacing uses a spawn budget that increases per tick based on tiered rates.
-- Difficulty ramps every 30 seconds, altering spawn weights and soft caps.
+- Survival pacing now uses phase-based escalation with template-driven weights + per-kind caps.
+- Special wave queue injects timed bursts (ring/edge/near spawns) while remaining deterministic.
+- Kill totals are tracked in survival mode state for highscores/UX.
 - The sim remains deterministic by routing all randomness through `state.rng`.

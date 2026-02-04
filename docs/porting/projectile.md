@@ -35,3 +35,15 @@ Functions: 4
 
 - Standard: single pellets with optional spread (shotgun)
 - Spiral: `fireSpiralPattern()` in weapons.ts for rotating patterns
+
+### Projectile Archetypes (TICKET-460)
+
+- Data-driven profiles in `src/content/projectiles.ts` (default, piercing, explosive)
+- Weapon defs reference `projectileProfileId` for per-weapon behavior
+- Projectile state tracks `pierceRemaining`, `explosionRadius`, `explosionDamage`
+
+### Collision Nuance (TICKET-460)
+
+- Piercing projectiles can hit multiple creatures before despawning
+- Explosive projectiles apply AoE damage on impact
+- Impact events emitted for VFX hooks (`projectileImpact`)

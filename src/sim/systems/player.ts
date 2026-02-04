@@ -1,11 +1,12 @@
 import type { SimState } from '../state';
 import { vec2AddInplace, vec2Length, vec2Scale } from '../types';
+import { clampOrSlide } from '../terrain';
 import { clampToWorld } from '../world';
 
 const PLAYER_ACCEL = 18;
 const PLAYER_DAMPING = 10;
 function getPlayerMaxSpeed(player: SimState['player']): number {
-  const speedBoostTicks = player.activeEffects['speed_boost'] ?? 0;
+  const speedBoostTicks = player.activeEffects['speed'] ?? 0;
   const bonusMultiplier = speedBoostTicks > 0 ? 1.5 : 1.0;
   return player.baseSpeed * player.perkStats.moveSpeedMultiplier * bonusMultiplier;
 }
@@ -33,16 +34,20 @@ export function updatePlayer(state: SimState, dt: number): void {
     state.player.vel.y *= clamped;
   }
 
-  vec2AddInplace(state.player.pos, vec2Scale(state.player.vel, dt));
-
   const prevX = state.player.pos.x;
   const prevY = state.player.pos.y;
-  clampToWorld(state.player.pos, state.player.radius);
 
-  if (state.player.pos.x !== prevX) {
+  vec2AddInplace(state.player.pos, vec2Scale(state.player.vel, dt));
+  const desiredX = state.player.pos.x;
+  const desiredY = state.player.pos.y;
+
+  clampToWorld(state.player.pos, state.player.radius);
+  clampOrSlide(state.terrain, state.player.pos, state.player.radius, { x: prevX, y: prevY });
+
+  if (state.player.pos.x !== desiredX) {
     state.player.vel.x = 0;
   }
-  if (state.player.pos.y !== prevY) {
+  if (state.player.pos.y !== desiredY) {
     state.player.vel.y = 0;
   }
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Sim } from '../src/sim/sim';
 import { CREATURE_SPAWN_MIN_DISTANCE, spawnCreatureAtEdge } from '../src/sim/systems/creatures';
+import { isTerrainBlocked } from '../src/sim/terrain';
 import { WORLD_BOUNDS } from '../src/sim/world';
 import type { SimEvent } from '../src/sim/types';
 
@@ -23,6 +24,7 @@ describe('Spawn avoidance', () => {
     for (const creature of sim.state.creatures) {
       const dist = distance(creature.pos, sim.state.player.pos);
       expect(dist).toBeGreaterThanOrEqual(CREATURE_SPAWN_MIN_DISTANCE - 0.01);
+      expect(isTerrainBlocked(sim.state.terrain, creature.pos.x, creature.pos.y, creature.radius)).toBe(false);
     }
   });
 });

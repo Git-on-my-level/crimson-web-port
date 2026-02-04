@@ -1,11 +1,14 @@
 import { WEAPONS, type WeaponId } from '../content/weapons';
-import { DEFAULT_QUEST_ID, type QuestId, type QuestStatus } from '../content/quests';
+import { DEFAULT_QUEST_ID, type QuestId, type QuestSpawnPattern, type QuestStatus } from '../content/quests';
 import { type BonusId } from '../content/bonuses';
 import { EMPTY_INPUT, type InputFrame, type Vec2, vec2 } from './types';
 import { createPerkStats, type PerkStats } from './perks';
 import type { PerkId } from '../content/perks';
 import { Rng } from './rng';
 import { ObjectPool } from './pool';
+import { refreshAvailableWeapons } from './weapons/weaponTable';
+import { xpToNextForLevel } from './xp';
+import { terrain_generate, type TerrainGrid } from './terrain';
 
 export interface PlayerState {
   id: number;
@@ -29,6 +32,8 @@ export interface PlayerState {
   xpToNext: number;
   perks: Partial<Record<PerkId, number>>;
   perkStats: PerkStats;
+  unlockedWeapons: Set<WeaponId>;
+  availableWeapons: WeaponId[];
 }
 
 export interface CreatureState {
@@ -55,6 +60,9 @@ export interface ProjectileState {
   lifeTicksRemaining: number;
   owner: 'player' | 'creature';
   kind: string;
+  pierceRemaining: number;
+  explosionRadius: number;
+  explosionDamage: number;
 }
 
 export interface BonusState {
@@ -69,6 +77,7 @@ export interface BonusState {
 export interface SimState {
   tick: number;
   rng: Rng;
+  terrain: TerrainGrid;
   player: PlayerState;
   creatures: CreatureState[];
   projectiles: ProjectileState[];
@@ -107,6 +116,15 @@ export interface SurvivalModeState {
   maxCreaturesSoftCap: number;
   spawnMinDistance: number;
   spawnMaxDistance: number;
+  killsTotal: number;
+  nextWaveIndex: number;
+  spawnQueue: {
+    kind: string;
+    remaining: number;
+    pattern: 'edge' | 'near' | 'ring';
+    intervalTicks: number;
+    nextTick: number;
+  }[];
 }
 
 export interface QuestModeState {
@@ -115,9 +133,22 @@ export interface QuestModeState {
   elapsedTicks: number;
   killsByKind: Record<string, number>;
   killsTotal: number;
+  bonusesCollected: number;
+  bonusesCollectedByType: Record<string, number>;
   status: QuestStatus;
   nextTimelineIndex: number;
   messages: { text: string; tick: number }[];
+  spawnStreams: {
+    creatureKind: string;
+    count: number;
+    pattern: QuestSpawnPattern;
+    radius?: number;
+    center?: Vec2;
+    positions?: Vec2[];
+    intervalTicks: number;
+    nextTick: number;
+    endTick: number;
+  }[];
 }
 
 export type ModeState = SurvivalModeState | QuestModeState;
@@ -131,6 +162,9 @@ export function createSurvivalModeState(): SurvivalModeState {
     maxCreaturesSoftCap: 6,
     spawnMinDistance: 10,
     spawnMaxDistance: 24,
+    killsTotal: 0,
+    nextWaveIndex: 0,
+    spawnQueue: [],
   };
 }
 
@@ -141,9 +175,12 @@ export function createQuestModeState(questId: QuestId = DEFAULT_QUEST_ID): Quest
     elapsedTicks: 0,
     killsByKind: {},
     killsTotal: 0,
+    bonusesCollected: 0,
+    bonusesCollectedByType: {},
     status: 'Playing',
     nextTimelineIndex: 0,
     messages: [],
+    spawnStreams: [],
   };
 }
 
@@ -165,37 +202,46 @@ export function createSimState(
       lifeTicksRemaining: 0,
       owner: 'player',
       kind: '',
+      pierceRemaining: 0,
+      explosionRadius: 0,
+      explosionDamage: 0,
     }),
     50,
     1000,
   );
 
-  return {
+  const startingWeapon = WEAPONS[0]?.id ?? 'pistol';
+  const player: PlayerState = {
+    id: 1,
+    pos: vec2(0, 0),
+    vel: vec2(0, 0),
+    radius: 1.2,
+    hp: 100,
+    hpMax: 100,
+    baseHpMax: 100,
+    aimDir: vec2(1, 0),
+    aimAngle: 0,
+    fireCooldownTicks: 0,
+    weaponId: startingWeapon,
+    ammo: WEAPONS[0]?.ammoMax ?? 0,
+    reloadTicksRemaining: 0,
+    input: { ...EMPTY_INPUT },
+    baseSpeed: 6,
+    activeEffects: {},
+    level: 1,
+    xp: 0,
+    xpToNext: xpToNextForLevel(1),
+    perks: {},
+    perkStats: createPerkStats(),
+    unlockedWeapons: new Set<WeaponId>([startingWeapon]),
+    availableWeapons: [],
+  };
+
+  const state: SimState = {
     tick: 0,
     rng,
-    player: {
-      id: 1,
-      pos: vec2(0, 0),
-      vel: vec2(0, 0),
-      radius: 1.2,
-      hp: 100,
-      hpMax: 100,
-      baseHpMax: 100,
-      aimDir: vec2(1, 0),
-      aimAngle: 0,
-      fireCooldownTicks: 0,
-      weaponId: WEAPONS[0]?.id ?? 'pistol',
-      ammo: WEAPONS[0]?.ammoMax ?? 0,
-      reloadTicksRemaining: 0,
-      input: { ...EMPTY_INPUT },
-      baseSpeed: 6,
-      activeEffects: {},
-      level: 1,
-      xp: 0,
-      xpToNext: 75,
-      perks: {},
-      perkStats: createPerkStats(),
-    },
+    terrain: terrain_generate(seed),
+    player,
     creatures: [],
     projectiles: [],
     bonuses: [],
@@ -222,4 +268,7 @@ export function createSimState(
     },
     selectedQuestId,
   };
+
+  refreshAvailableWeapons(player);
+  return state;
 }
