@@ -12,6 +12,7 @@ export interface InputFrame {
   aimY: number;
   fire: boolean;
   reload: boolean;
+  weaponSwitch: number | null;
   pause: boolean;
 }
 
@@ -22,6 +23,7 @@ export const EMPTY_INPUT: InputFrame = {
   aimY: 0,
   fire: false,
   reload: false,
+  weaponSwitch: null,
   pause: false,
 };
 

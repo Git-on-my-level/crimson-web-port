@@ -44,6 +44,7 @@ function scriptedInput(sim: Sim, tick: number): InputFrame {
     aimY: sim.state.player.pos.y,
     fire,
     reload: false,
+    weaponSwitch: null,
     pause: false,
   };
 }
@@ -72,9 +73,9 @@ describe('Sim smoke test', () => {
 
     expect(sim.state.tick).toBe(TOTAL_TICKS);
 
-    expect(sim.state.score).toBe(20);
-    expect(sim.state.creatures.length).toBe(0);
-    expect(sim.state.projectiles.length).toBe(1);
+    expect(sim.state.score).toBe(10);
+    expect(sim.state.creatures.length).toBe(1);
+    expect(sim.state.projectiles.length).toBe(0);
 
     expect(sim.state.player.hp).toBeGreaterThan(0);
 
@@ -100,6 +101,6 @@ describe('Sim smoke test', () => {
     };
 
     const hash = hashSnapshot(JSON.stringify(snapshot));
-    expect(hash).toBe('a781c8a7');
+    expect(hash).toBe('c6fb9395');
   });
 });

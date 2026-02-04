@@ -9,6 +9,7 @@ const constantInput: InputFrame = {
   aimY: 0,
   fire: false,
   reload: false,
+  weaponSwitch: null,
   pause: false,
 };
 
@@ -60,6 +61,7 @@ describe('Sim determinism', () => {
       aimY: 0,
       fire: true,
       reload: false,
+      weaponSwitch: null,
       pause: false,
     };
 

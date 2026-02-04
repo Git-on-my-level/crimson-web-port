@@ -1,3 +1,4 @@
+import { WEAPONS, type WeaponId } from '../content/weapons';
 import { EMPTY_INPUT, type InputFrame, type Vec2, vec2 } from './types';
 import { Rng } from './rng';
 
@@ -10,8 +11,10 @@ export interface PlayerState {
   hpMax: number;
   aimDir: Vec2;
   aimAngle: number;
-  fireCooldown: number;
-  weaponId: number;
+  fireCooldownTicks: number;
+  weaponId: WeaponId;
+  ammo: number;
+  reloadTicksRemaining: number;
   input: InputFrame;
 }
 
@@ -77,8 +80,10 @@ export function createSimState(seed = 1): SimState {
       hpMax: 100,
       aimDir: vec2(1, 0),
       aimAngle: 0,
-      fireCooldown: 0,
-      weaponId: 0,
+      fireCooldownTicks: 0,
+      weaponId: WEAPONS[0]?.id ?? 'pistol',
+      ammo: WEAPONS[0]?.ammoMax ?? 0,
+      reloadTicksRemaining: 0,
       input: { ...EMPTY_INPUT },
     },
     creatures: [],

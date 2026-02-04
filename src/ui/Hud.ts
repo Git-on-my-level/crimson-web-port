@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { WEAPON_BY_ID } from '../content/weapons';
 import type { SimState } from '../sim/state';
 
 export class Hud {
@@ -71,8 +72,18 @@ export class Hud {
     const scoreDisplay = Math.round(state.score);
     this.scoreText.setText(`Score: ${scoreDisplay}`);
 
-    const weaponName = state.player.weaponId === 0 ? 'Pistol' : 'Unknown';
-    this.weaponText.setText(weaponName);
+    const weapon = WEAPON_BY_ID[state.player.weaponId];
+    if (weapon) {
+      if (weapon.ammoMax !== undefined) {
+        const ammo = Math.max(0, state.player.ammo);
+        const reloadTag = state.player.reloadTicksRemaining > 0 ? ' (Reloading)' : '';
+        this.weaponText.setText(`${weapon.name} ${ammo}/${weapon.ammoMax}${reloadTag}`);
+      } else {
+        this.weaponText.setText(weapon.name);
+      }
+    } else {
+      this.weaponText.setText('Weapon');
+    }
 
     const isPaused = state.phase === 'Paused';
     this.pauseText.setVisible(isPaused);
