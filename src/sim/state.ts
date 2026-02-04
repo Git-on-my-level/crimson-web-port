@@ -28,6 +28,10 @@ export interface ProjectileState {
   pos: Vec2;
   vel: Vec2;
   alive: boolean;
+  radius: number;
+  damage: number;
+  lifeTicksRemaining: number;
+  owner: 'player' | 'creature';
   kind: string;
 }
 

@@ -47,4 +47,27 @@ describe('Sim determinism', () => {
 
     expect(sequenceA).toEqual(sequenceB);
   });
+
+  it('spawns deterministic projectiles when firing', () => {
+    const sim = new Sim({ seed: 7 });
+    const firingInput: InputFrame = {
+      moveX: 0,
+      moveY: 0,
+      aimX: 100,
+      aimY: 0,
+      fire: true,
+      reload: false,
+      pause: false,
+    };
+
+    for (let i = 0; i < 30; i += 1) {
+      sim.step(firingInput);
+    }
+
+    expect(sim.state.projectiles.length).toBe(3);
+    for (const projectile of sim.state.projectiles) {
+      expect(projectile.owner).toBe('player');
+      expect(projectile.alive).toBe(true);
+    }
+  });
 });

@@ -40,8 +40,8 @@ export class Sim {
 
     applyInput(this.state, input);
     updatePlayer(this.state, this.fixedDeltaSeconds);
-    updateWeapons(this.state, events);
-    updateProjectiles(this.state, events);
+    updateWeapons(this.state, events, this.fixedDeltaSeconds);
+    updateProjectiles(this.state, events, this.fixedDeltaSeconds);
     updateCreatures(this.state, events);
     resolveCollisions(this.state, events);
     updateBonuses(this.state, events);
