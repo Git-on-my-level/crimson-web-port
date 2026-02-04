@@ -10,6 +10,6 @@ This scorecard lists the highest-impact parity gaps and the next ticket responsi
 - Survival pacing: simplified tiers, no template-driven spawns/waves. Owner: [TICKET-490](../../.codex-autorunner/tickets/TICKET-490.md)
 - Quests: only a few quests/objective types implemented. Owner: [TICKET-500](../../.codex-autorunner/tickets/TICKET-500.md)
 - Terrain: no gameplay terrain/collision/spawn constraints yet. Owner: [TICKET-510](../../.codex-autorunner/tickets/TICKET-510.md)
-- Sim event routing + audio feedback missing. Owner: [TICKET-430](../../.codex-autorunner/tickets/TICKET-430.md)
+ - Sim event routing + audio feedback implemented. See TICKET-430 for details.
 - Render/UI assets (sprites, cursor/aim indicator) still placeholder. Owner: [TICKET-440](../../.codex-autorunner/tickets/TICKET-440.md)
 - UX polish (menus/HUD feedback/sound surfacing) incomplete. Owner: [TICKET-520](../../.codex-autorunner/tickets/TICKET-520.md)
