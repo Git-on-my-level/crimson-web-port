@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "check:types": "tsc --noEmit",
+    "check:build": "vite build --emptyOutDir",
+    "verify": "npm run check:types && npm run check:build",
     "prepare": "husky install",
     "test": "echo \"No tests yet\"",
     "preview": "vite preview"
