@@ -28,6 +28,7 @@ This workbook tracks progress porting functions from the Crimsonland decompiled 
 | [projectile](./projectile.md) | 4 |
 | [quest](./quest.md) | 61 |
 | [sfx](./sfx.md) | 20 |
+| [survival](./survival.md) | 3 |
 | [terrain](./terrain.md) | 3 |
 | [texture](./texture.md) | 2 |
 | [ui](./ui.md) | 37 |

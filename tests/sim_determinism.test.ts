@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Sim } from '../src/sim/sim';
 import type { InputFrame } from '../src/sim/types';
+import { createQuestModeState } from '../src/sim/state';
 
 const constantInput: InputFrame = {
   moveX: 1,
@@ -18,8 +19,10 @@ describe('Sim determinism', () => {
   it('advances ticks and player position deterministically', () => {
     const simA = new Sim({ seed: 123 });
     const simB = new Sim({ seed: 123 });
-    simA.state.creatureSpawnCooldownTicks = 999999;
-    simB.state.creatureSpawnCooldownTicks = 999999;
+    simA.state.mode = 'quest';
+    simA.state.modeState = createQuestModeState();
+    simB.state.mode = 'quest';
+    simB.state.modeState = createQuestModeState();
 
     for (let i = 0; i < 300; i += 1) {
       simA.step(constantInput);
@@ -54,7 +57,8 @@ describe('Sim determinism', () => {
 
   it('spawns deterministic projectiles when firing', () => {
     const sim = new Sim({ seed: 7 });
-    sim.state.creatureSpawnCooldownTicks = 999999;
+    sim.state.mode = 'quest';
+    sim.state.modeState = createQuestModeState();
     const firingInput: InputFrame = {
       moveX: 0,
       moveY: 0,

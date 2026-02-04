@@ -58,7 +58,6 @@ export function resolveCollisions(state: SimState, events: SimEvent[]): void {
 }
 
 const TOUCH_COOLDOWN_TICKS = 30;
-const CREATURE_SCORE_VALUE = 10;
 
 function applyDamageToCreature(
   state: SimState,
@@ -79,9 +78,9 @@ function applyDamageToCreature(
 
   creature.alive = false;
   events.push({ type: 'death', target: 'creature', id: creature.id });
-  state.score += CREATURE_SCORE_VALUE;
-  events.push({ type: 'score', amount: CREATURE_SCORE_VALUE, total: state.score });
   const def = getCreatureDef(creature.kind);
+  state.score += def.scoreValue;
+  events.push({ type: 'score', amount: def.scoreValue, total: state.score });
   grantXp(state, events, def.xpValue);
   trySpawnBonusOnKill(state, events, creature.pos);
 }

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Sim } from '../src/sim/sim';
 import type { InputFrame } from '../src/sim/types';
 import { getCreatureDef } from '../src/content/creatures';
+import { createQuestModeState } from '../src/sim/state';
 
 const TOTAL_TICKS = 240;
 const FIRE_START_TICK = 24;
@@ -62,7 +63,8 @@ function hashSnapshot(value: string): string {
 describe('Sim smoke test', () => {
   it('runs a scripted loop deterministically', () => {
     const sim = new Sim({ seed: 2026 });
-    sim.state.creatureSpawnCooldownTicks = 999999;
+    sim.state.mode = 'quest';
+    sim.state.modeState = createQuestModeState();
 
     spawnGrunt(sim, 18, 0);
     spawnGrunt(sim, 26, 3);

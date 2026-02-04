@@ -2,27 +2,14 @@ import { getCreatureDef } from '../../content/creatures';
 import type { SimState } from '../state';
 import type { SimEvent } from '../types';
 
-const WORLD_BOUNDS = {
+export const WORLD_BOUNDS = {
   minX: -50,
   maxX: 50,
   minY: -50,
   maxY: 50,
 };
 
-const SPAWN_INTERVAL_TICKS = {
-  min: 60,
-  max: 120,
-};
-
-const DEFAULT_CREATURE_KIND = 'grunt';
-
-function resetSpawnCooldown(state: SimState): void {
-  const spread = SPAWN_INTERVAL_TICKS.max - SPAWN_INTERVAL_TICKS.min;
-  const offset = state.rng.nextInt(spread + 1);
-  state.creatureSpawnCooldownTicks = SPAWN_INTERVAL_TICKS.min + offset;
-}
-
-function spawnCreature(state: SimState, events: SimEvent[], kind: string): void {
+export function spawnCreatureAtEdge(state: SimState, events: SimEvent[], kind: string): void {
   const def = getCreatureDef(kind);
   const side = state.rng.nextInt(4);
   const minX = WORLD_BOUNDS.minX + def.radius;
@@ -66,12 +53,7 @@ function spawnCreature(state: SimState, events: SimEvent[], kind: string): void 
 }
 
 export function updateCreatures(state: SimState, events: SimEvent[], dt: number): void {
-  if (state.creatureSpawnCooldownTicks <= 0) {
-    spawnCreature(state, events, DEFAULT_CREATURE_KIND);
-    resetSpawnCooldown(state);
-  } else {
-    state.creatureSpawnCooldownTicks -= 1;
-  }
+  void events;
 
   const player = state.player;
   const minX = WORLD_BOUNDS.minX;

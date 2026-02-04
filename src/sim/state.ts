@@ -75,12 +75,44 @@ export interface SimState {
   score: number;
   timeAlive: number;
   mode: 'survival' | 'quest';
+  modeState: ModeState;
   phase: 'Playing' | 'GameOver' | 'Paused' | 'PerkSelect';
   perkChoices: PerkId[] | null;
-  creatureSpawnCooldownTicks: number;
   nextEntityId: number;
   projectilePool: ObjectPool<ProjectileState>;
   lastStepTimeMs: number;
+}
+
+export interface SurvivalModeState {
+  kind: 'survival';
+  elapsedTicks: number;
+  spawnBudget: number;
+  difficultyLevel: number;
+  maxCreaturesSoftCap: number;
+}
+
+export interface QuestModeState {
+  kind: 'quest';
+  elapsedTicks: number;
+}
+
+export type ModeState = SurvivalModeState | QuestModeState;
+
+export function createSurvivalModeState(): SurvivalModeState {
+  return {
+    kind: 'survival',
+    elapsedTicks: 0,
+    spawnBudget: 0,
+    difficultyLevel: 0,
+    maxCreaturesSoftCap: 6,
+  };
+}
+
+export function createQuestModeState(): QuestModeState {
+  return {
+    kind: 'quest',
+    elapsedTicks: 0,
+  };
 }
 
 export function createSimState(seed = 1): SimState {
@@ -133,9 +165,9 @@ export function createSimState(seed = 1): SimState {
     score: 0,
     timeAlive: 0,
     mode: 'survival',
+    modeState: createSurvivalModeState(),
     phase: 'Playing',
     perkChoices: null,
-    creatureSpawnCooldownTicks: 0,
     nextEntityId: 2,
     projectilePool,
     lastStepTimeMs: 0,

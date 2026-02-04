@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Sim } from '../src/sim/sim';
 import { grantXp } from '../src/sim/systems/progression';
 import type { SimEvent } from '../src/sim/types';
+import { createQuestModeState } from '../src/sim/state';
 
 const NO_INPUT = {
   moveX: 0,
@@ -18,7 +19,8 @@ const NO_INPUT = {
 describe('Perk progression', () => {
   it('offers deterministic perk choices for a seed', () => {
     const sim = new Sim({ seed: 1337 });
-    sim.state.creatureSpawnCooldownTicks = 999999;
+    sim.state.mode = 'quest';
+    sim.state.modeState = createQuestModeState();
 
     const events: SimEvent[] = [];
     grantXp(sim.state, events, sim.state.player.xpToNext);
@@ -29,7 +31,8 @@ describe('Perk progression', () => {
 
   it('resumes play after choosing a perk', () => {
     const sim = new Sim({ seed: 42 });
-    sim.state.creatureSpawnCooldownTicks = 999999;
+    sim.state.mode = 'quest';
+    sim.state.modeState = createQuestModeState();
 
     const events: SimEvent[] = [];
     grantXp(sim.state, events, sim.state.player.xpToNext);
