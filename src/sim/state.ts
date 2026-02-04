@@ -1,4 +1,5 @@
 import { WEAPONS, type WeaponId } from '../content/weapons';
+import { type BonusId } from '../content/bonuses';
 import { EMPTY_INPUT, type InputFrame, type Vec2, vec2 } from './types';
 import { Rng } from './rng';
 import { ObjectPool } from './pool';
@@ -17,6 +18,8 @@ export interface PlayerState {
   ammo: number;
   reloadTicksRemaining: number;
   input: InputFrame;
+  baseSpeed: number;
+  activeEffects: Partial<Record<BonusId, number>>;
 }
 
 export interface CreatureState {
@@ -49,7 +52,9 @@ export interface BonusState {
   id: number;
   pos: Vec2;
   active: boolean;
-  kind: string;
+  kind: BonusId;
+  radius: number;
+  lifeTicksRemaining: number;
 }
 
 export interface SimState {
@@ -104,6 +109,8 @@ export function createSimState(seed = 1): SimState {
       ammo: WEAPONS[0]?.ammoMax ?? 0,
       reloadTicksRemaining: 0,
       input: { ...EMPTY_INPUT },
+      baseSpeed: 6,
+      activeEffects: {},
     },
     creatures: [],
     projectiles: [],

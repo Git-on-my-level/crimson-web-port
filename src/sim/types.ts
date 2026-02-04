@@ -1,3 +1,5 @@
+import type { BonusId } from '../content/bonuses';
+
 export type EntityId = number;
 
 export interface Vec2 {
@@ -30,6 +32,7 @@ export const EMPTY_INPUT: InputFrame = {
 export type SimEvent =
   | { type: 'spawnProjectile'; id: EntityId; pos: Vec2; vel: Vec2; kind: string }
   | { type: 'spawnCreature'; id: EntityId; pos: Vec2; kind: string }
+  | { type: 'spawnBonus'; id: EntityId; pos: Vec2; kind: BonusId }
   | { type: 'damage'; target: 'player' | 'creature'; id: EntityId; amount: number }
   | { type: 'death'; target: 'player' | 'creature'; id: EntityId }
   | { type: 'gameOver'; id: EntityId }

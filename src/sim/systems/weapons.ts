@@ -3,6 +3,7 @@ import type { SimState } from '../state';
 import type { SimEvent } from '../types';
 import { getWeaponById, getWeaponOrder } from '../weapons/weaponTable';
 import { spawnProjectile } from './projectiles';
+import { getDamageMultiplier, getFireRateMultiplier } from './bonuses';
 
 const DEFAULT_PROJECTILE_RADIUS = 0.4;
 
@@ -43,6 +44,8 @@ export function updateWeapons(state: SimState, events: SimEvent[], dt: number): 
     return;
   }
 
+  const damageMultiplier = getDamageMultiplier(player);
+
   if (weapon.ammoMax !== undefined && player.ammo <= 0) {
     if (weapon.reloadTicks !== undefined) {
       player.reloadTicksRemaining = weapon.reloadTicks;
@@ -72,7 +75,7 @@ export function updateWeapons(state: SimState, events: SimEvent[], dt: number): 
       { x: posX, y: posY },
       { x: velX, y: velY },
       weapon.id,
-      weapon.damage,
+      weapon.damage * damageMultiplier,
       lifeTicks,
       'player',
       DEFAULT_PROJECTILE_RADIUS,
@@ -85,7 +88,8 @@ export function updateWeapons(state: SimState, events: SimEvent[], dt: number): 
 
   events.push({ type: 'playSfx', name: `${weapon.id}_shot` });
 
-  let cooldownTicks = Math.max(1, Math.round((1 / weapon.fireRate) / dt));
+  const fireRateMultiplier = getFireRateMultiplier(player);
+  let cooldownTicks = Math.max(1, Math.round((1 / (weapon.fireRate * fireRateMultiplier)) / dt));
   if (weapon.fireMode === 'burst') {
     cooldownTicks = Math.max(cooldownTicks, BURST_COOLDOWN);
   }
@@ -102,6 +106,7 @@ export function fireSpiralPattern(
 ): void {
   const player = state.player;
   const lifeTicks = Math.max(1, weapon.projectileLifeTicks);
+  const damageMultiplier = getDamageMultiplier(player);
 
   for (let i = 0; i < projectilesPerTick; i++) {
     const angleOffset = (i / projectilesPerTick) * Math.PI * 2;
@@ -122,7 +127,7 @@ export function fireSpiralPattern(
       { x: posX, y: posY },
       { x: velX, y: velY },
       weapon.id,
-      weapon.damage,
+      weapon.damage * damageMultiplier,
       lifeTicks,
       'player',
       DEFAULT_PROJECTILE_RADIUS,

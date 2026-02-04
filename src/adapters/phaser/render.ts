@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { SimState } from '../../sim/state';
 import type { EntityId } from '../../sim/types';
+import { getBonusDef } from '../../content/bonuses';
 
 export type RenderTransform = {
   originX: number;
@@ -53,14 +54,7 @@ export class PhaserRenderAdapter {
       4,
       (entry) => entry.alive,
     );
-    this.syncEntities(
-      state.bonuses,
-      this.bonuses,
-      this.bonusSpritePool,
-      COLORS.bonus,
-      6,
-      (entry) => entry.active,
-    );
+    this.syncBonuses(state.bonuses);
   }
 
   private ensurePlayer(state: SimState): void {
@@ -98,6 +92,33 @@ export class PhaserRenderAdapter {
         obj.setVisible(false);
         map.delete(id);
         pool.push(obj);
+      }
+    }
+  }
+
+  private syncBonuses(bonuses: SimState['bonuses']): void {
+    const seen = new Set<EntityId>();
+    const defaultColor = COLORS.bonus;
+    const radius = 6;
+
+    for (const bonus of bonuses) {
+      if (!bonus.active) {
+        continue;
+      }
+      seen.add(bonus.id);
+      const def = getBonusDef(bonus.kind);
+      const color = def.color ?? defaultColor;
+      const obj = this.bonuses.get(bonus.id) ?? this.createCircle(this.bonuses, this.bonusSpritePool, bonus.id, radius, color);
+      const { x, y } = this.toScreen(bonus.pos.x, bonus.pos.y);
+      obj.setPosition(x, y);
+      obj.setVisible(true);
+    }
+
+    for (const [id, obj] of this.bonuses) {
+      if (!seen.has(id)) {
+        obj.setVisible(false);
+        this.bonuses.delete(id);
+        this.bonusSpritePool.push(obj);
       }
     }
   }

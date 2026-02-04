@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { WEAPON_BY_ID } from '../content/weapons';
+import { getBonusDef } from '../content/bonuses';
 import type { SimState } from '../sim/state';
 
 export class Hud {
@@ -8,6 +9,7 @@ export class Hud {
   private weaponText: Phaser.GameObjects.Text;
   private pauseText: Phaser.GameObjects.Text;
   private entityCountText?: Phaser.GameObjects.Text;
+  private activeBonusesText: Phaser.GameObjects.Text;
 
   constructor(scene: Phaser.Scene, showDebugInfo = false) {
     const { width, height } = scene.scale;
@@ -62,6 +64,14 @@ export class Hud {
         .setDepth(1000);
     }
 
+    const bonusStyle = {
+      ...style,
+      fontSize: '14px',
+    };
+    this.activeBonusesText = scene.add.text(padding, padding * 2 + 24, '', bonusStyle)
+      .setScrollFactor(0)
+      .setDepth(1000);
+
     scene.scale.on('resize', this.handleResize, this);
   }
 
@@ -93,6 +103,20 @@ export class Hud {
       const projectileCount = state.projectiles.length;
       this.entityCountText.setText(`Enemies: ${creatureCount} | Projectiles: ${projectileCount}`);
     }
+
+    const activeBonuses = Object.entries(state.player.activeEffects)
+      .filter(([_, ticks]) => ticks > 0)
+      .map(([bonusId, ticks]) => {
+        const def = getBonusDef(bonusId as any);
+        const secondsRemaining = Math.ceil(ticks / 60);
+        return `${def.name} (${secondsRemaining}s)`;
+      });
+
+    if (activeBonuses.length > 0) {
+      this.activeBonusesText.setText(activeBonuses.join(' | '));
+    } else {
+      this.activeBonusesText.setText('');
+    }
   }
 
   private handleResize(gameSize: Phaser.Structs.Size): void {
@@ -115,5 +139,6 @@ export class Hud {
     this.weaponText.destroy();
     this.pauseText.destroy();
     this.entityCountText?.destroy();
+    this.activeBonusesText.destroy();
   }
 }

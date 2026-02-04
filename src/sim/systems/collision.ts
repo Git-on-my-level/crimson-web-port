@@ -1,6 +1,7 @@
 import type { CreatureState, SimState } from '../state';
 import type { SimEvent } from '../types';
 import { despawnProjectile } from './projectiles';
+import { trySpawnBonusOnKill } from './bonuses';
 
 export function resolveCollisions(state: SimState, events: SimEvent[]): void {
   const player = state.player;
@@ -78,6 +79,7 @@ function applyDamageToCreature(
   events.push({ type: 'death', target: 'creature', id: creature.id });
   state.score += CREATURE_SCORE_VALUE;
   events.push({ type: 'score', amount: CREATURE_SCORE_VALUE, total: state.score });
+  trySpawnBonusOnKill(state, events, creature.pos);
 }
 
 function applyDamageToPlayer(state: SimState, amount: number, events: SimEvent[]): void {

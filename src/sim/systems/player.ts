@@ -2,7 +2,6 @@ import type { SimState } from '../state';
 import { vec2AddInplace, vec2Length, vec2Scale } from '../types';
 
 const PLAYER_ACCEL = 18;
-const PLAYER_MAX_SPEED = 6;
 const PLAYER_DAMPING = 10;
 const WORLD_BOUNDS = {
   minX: -50,
@@ -10,6 +9,14 @@ const WORLD_BOUNDS = {
   minY: -50,
   maxY: 50,
 };
+
+function getPlayerMaxSpeed(player: SimState['player']): number {
+  const speedBoostTicks = player.activeEffects['speed_boost'] ?? 0;
+  if (speedBoostTicks > 0) {
+    return player.baseSpeed * 1.5;
+  }
+  return player.baseSpeed;
+}
 
 export function updatePlayer(state: SimState, dt: number): void {
   const input = state.player.input;
@@ -27,8 +34,9 @@ export function updatePlayer(state: SimState, dt: number): void {
   }
 
   const speed = vec2Length(state.player.vel);
-  if (speed > PLAYER_MAX_SPEED) {
-    const clamped = PLAYER_MAX_SPEED / speed;
+  const maxSpeed = getPlayerMaxSpeed(state.player);
+  if (speed > maxSpeed) {
+    const clamped = maxSpeed / speed;
     state.player.vel.x *= clamped;
     state.player.vel.y *= clamped;
   }
