@@ -5,7 +5,7 @@ import { clampToWorld } from '../world';
 const PLAYER_ACCEL = 18;
 const PLAYER_DAMPING = 10;
 function getPlayerMaxSpeed(player: SimState['player']): number {
-  const speedBoostTicks = player.activeEffects['speed_boost'] ?? 0;
+  const speedBoostTicks = player.activeEffects['speed'] ?? 0;
   const bonusMultiplier = speedBoostTicks > 0 ? 1.5 : 1.0;
   return player.baseSpeed * player.perkStats.moveSpeedMultiplier * bonusMultiplier;
 }

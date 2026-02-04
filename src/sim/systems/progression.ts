@@ -2,6 +2,7 @@ import type { SimState } from '../state';
 import type { SimEvent } from '../types';
 import type { PerkId } from '../../content/perks';
 import { generatePerkChoices, recomputePerkStats } from '../perks';
+import { getXpMultiplier } from './bonuses';
 import { refreshAvailableWeapons } from '../weapons/weaponTable';
 
 const BASE_XP_TO_NEXT = 75;
@@ -17,8 +18,10 @@ export function grantXp(state: SimState, events: SimEvent[], amount: number): vo
   }
 
   const player = state.player;
-  player.xp += amount;
-  events.push({ type: 'xp', amount, total: player.xp, level: player.level });
+  const multiplier = getXpMultiplier(player);
+  const gained = amount * multiplier;
+  player.xp += gained;
+  events.push({ type: 'xp', amount: gained, total: player.xp, level: player.level });
 
   if (player.xp < player.xpToNext) {
     return;
