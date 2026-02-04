@@ -4,6 +4,7 @@ import { PhaserInputAdapter } from '../adapters/phaser/input';
 import { PhaserRenderAdapter } from '../adapters/phaser/render';
 import { DebugOverlay } from '../adapters/phaser/debugOverlay';
 import { Hud } from '../ui/Hud';
+import { PerkPickerOverlay } from '../ui/PerkPickerOverlay';
 
 export class GameScene extends Phaser.Scene {
   private sim!: Sim;
@@ -11,6 +12,7 @@ export class GameScene extends Phaser.Scene {
   private renderAdapter!: PhaserRenderAdapter;
   private debugOverlay!: DebugOverlay;
   private hud!: Hud;
+  private perkOverlay!: PerkPickerOverlay;
   private seed = 1;
   private readonly pixelsPerUnit = 12;
   private originX = 0;
@@ -18,6 +20,7 @@ export class GameScene extends Phaser.Scene {
   private background?: Phaser.GameObjects.Rectangle;
   private gameOverText?: Phaser.GameObjects.Text;
   private wasGameOver = false;
+  private pendingPerkChoice: number | null = null;
 
   constructor() {
     super('game');
@@ -50,6 +53,8 @@ export class GameScene extends Phaser.Scene {
     this.renderAdapter = new PhaserRenderAdapter(this, this.getTransform());
     this.debugOverlay = new DebugOverlay(this);
     this.hud = new Hud(this, true);
+    this.perkOverlay = new PerkPickerOverlay(this, (slot) => this.queuePerkChoice(slot));
+    this.perkOverlay.resize(width, height);
 
     this.scale.on('resize', this.handleResize, this);
   }
@@ -59,7 +64,9 @@ export class GameScene extends Phaser.Scene {
     const steps = this.sim.clock.accumulate(deltaSeconds);
 
     for (let i = 0; i < steps; i += 1) {
-      const input = this.inputAdapter.readInput();
+      const rawInput = this.inputAdapter.readInput();
+      const input = { ...rawInput, perkChoice: this.pendingPerkChoice ?? rawInput.perkChoice };
+      this.pendingPerkChoice = null;
       this.sim.step(input);
     }
 
@@ -67,6 +74,7 @@ export class GameScene extends Phaser.Scene {
     const fps = this.game.loop.actualFps || 0;
     this.debugOverlay.update(this.sim.state, this.seed, fps);
     this.hud.update(this.sim.state);
+    this.perkOverlay.update(this.sim.state);
     this.syncGameOverOverlay();
     this.checkGameOverTransition();
   }
@@ -81,6 +89,9 @@ export class GameScene extends Phaser.Scene {
     }
     if (this.gameOverText) {
       this.gameOverText.setPosition(this.originX, this.originY);
+    }
+    if (this.perkOverlay) {
+      this.perkOverlay.resize(gameSize.width, gameSize.height);
     }
   }
 
@@ -118,5 +129,9 @@ export class GameScene extends Phaser.Scene {
       });
     }
     this.wasGameOver = isGameOver;
+  }
+
+  private queuePerkChoice(slot: number): void {
+    this.pendingPerkChoice = slot;
   }
 }

@@ -10,6 +10,7 @@ import { resolveCollisions } from './systems/collision';
 import { updateBonuses } from './systems/bonuses';
 import { updateSurvivalMode } from './systems/mode_survival';
 import { updateQuestMode } from './systems/mode_quest';
+import { updatePerkSelection, updateProgression } from './systems/progression';
 
 export class Sim {
   readonly state: SimState;
@@ -37,6 +38,7 @@ export class Sim {
     this.state.nextEntityId = fresh.nextEntityId;
     this.state.projectilePool = fresh.projectilePool;
     this.state.lastStepTimeMs = 0;
+    this.state.perkChoices = fresh.perkChoices;
   }
 
   step(input: InputFrame): { events: SimEvent[] } {
@@ -44,6 +46,11 @@ export class Sim {
     const events: SimEvent[] = [];
 
     applyInput(this.state, input);
+    if (this.state.phase === 'PerkSelect') {
+      updatePerkSelection(this.state, events);
+      this.state.lastStepTimeMs = performance.now() - startTime;
+      return { events };
+    }
     if (this.state.phase !== 'Playing') {
       this.state.lastStepTimeMs = performance.now() - startTime;
       return { events };
@@ -60,6 +67,7 @@ export class Sim {
     } else {
       updateQuestMode(this.state, events);
     }
+    updateProgression(this.state, events, this.fixedDeltaSeconds);
 
     this.state.tick += 1;
     this.state.timeAlive += this.fixedDeltaSeconds;

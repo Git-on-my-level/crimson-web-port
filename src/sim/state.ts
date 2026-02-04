@@ -1,6 +1,8 @@
 import { WEAPONS, type WeaponId } from '../content/weapons';
 import { type BonusId } from '../content/bonuses';
 import { EMPTY_INPUT, type InputFrame, type Vec2, vec2 } from './types';
+import { createPerkStats, type PerkStats } from './perks';
+import type { PerkId } from '../content/perks';
 import { Rng } from './rng';
 import { ObjectPool } from './pool';
 
@@ -11,6 +13,7 @@ export interface PlayerState {
   radius: number;
   hp: number;
   hpMax: number;
+  baseHpMax: number;
   aimDir: Vec2;
   aimAngle: number;
   fireCooldownTicks: number;
@@ -20,6 +23,11 @@ export interface PlayerState {
   input: InputFrame;
   baseSpeed: number;
   activeEffects: Partial<Record<BonusId, number>>;
+  level: number;
+  xp: number;
+  xpToNext: number;
+  perks: Partial<Record<PerkId, number>>;
+  perkStats: PerkStats;
 }
 
 export interface CreatureState {
@@ -68,6 +76,7 @@ export interface SimState {
   timeAlive: number;
   mode: 'survival' | 'quest';
   phase: 'Playing' | 'GameOver' | 'Paused' | 'PerkSelect';
+  perkChoices: PerkId[] | null;
   creatureSpawnCooldownTicks: number;
   nextEntityId: number;
   projectilePool: ObjectPool<ProjectileState>;
@@ -102,6 +111,7 @@ export function createSimState(seed = 1): SimState {
       radius: 1.2,
       hp: 100,
       hpMax: 100,
+      baseHpMax: 100,
       aimDir: vec2(1, 0),
       aimAngle: 0,
       fireCooldownTicks: 0,
@@ -111,6 +121,11 @@ export function createSimState(seed = 1): SimState {
       input: { ...EMPTY_INPUT },
       baseSpeed: 6,
       activeEffects: {},
+      level: 1,
+      xp: 0,
+      xpToNext: 75,
+      perks: {},
+      perkStats: createPerkStats(),
     },
     creatures: [],
     projectiles: [],
@@ -119,6 +134,7 @@ export function createSimState(seed = 1): SimState {
     timeAlive: 0,
     mode: 'survival',
     phase: 'Playing',
+    perkChoices: null,
     creatureSpawnCooldownTicks: 0,
     nextEntityId: 2,
     projectilePool,

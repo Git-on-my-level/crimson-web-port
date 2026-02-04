@@ -76,4 +76,4 @@ Functions: 37
 - Main menu system (options, profiles) not yet implemented
 - Only basic title/start flow exists
 - No options/config UI
-- No perk selection UI (when `phase === 'PerkSelect'`)
+- Perk selection UI implemented for `phase === 'PerkSelect'` (overlay with 3 choices)

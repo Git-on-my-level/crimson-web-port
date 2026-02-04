@@ -2,6 +2,8 @@ import type { CreatureState, SimState } from '../state';
 import type { SimEvent } from '../types';
 import { despawnProjectile } from './projectiles';
 import { trySpawnBonusOnKill } from './bonuses';
+import { getCreatureDef } from '../../content/creatures';
+import { grantXp } from './progression';
 
 export function resolveCollisions(state: SimState, events: SimEvent[]): void {
   const player = state.player;
@@ -79,6 +81,8 @@ function applyDamageToCreature(
   events.push({ type: 'death', target: 'creature', id: creature.id });
   state.score += CREATURE_SCORE_VALUE;
   events.push({ type: 'score', amount: CREATURE_SCORE_VALUE, total: state.score });
+  const def = getCreatureDef(creature.kind);
+  grantXp(state, events, def.xpValue);
   trySpawnBonusOnKill(state, events, creature.pos);
 }
 
@@ -87,8 +91,10 @@ function applyDamageToPlayer(state: SimState, amount: number, events: SimEvent[]
     return;
   }
 
-  state.player.hp = Math.max(0, state.player.hp - amount);
-  events.push({ type: 'damage', target: 'player', id: state.player.id, amount });
+  const reduction = state.player.perkStats.damageReduction;
+  const finalAmount = amount * (1 - reduction);
+  state.player.hp = Math.max(0, state.player.hp - finalAmount);
+  events.push({ type: 'damage', target: 'player', id: state.player.id, amount: finalAmount });
 
   if (state.player.hp > 0) {
     return;

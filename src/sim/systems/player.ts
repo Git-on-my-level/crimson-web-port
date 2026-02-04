@@ -12,10 +12,8 @@ const WORLD_BOUNDS = {
 
 function getPlayerMaxSpeed(player: SimState['player']): number {
   const speedBoostTicks = player.activeEffects['speed_boost'] ?? 0;
-  if (speedBoostTicks > 0) {
-    return player.baseSpeed * 1.5;
-  }
-  return player.baseSpeed;
+  const bonusMultiplier = speedBoostTicks > 0 ? 1.5 : 1.0;
+  return player.baseSpeed * player.perkStats.moveSpeedMultiplier * bonusMultiplier;
 }
 
 export function updatePlayer(state: SimState, dt: number): void {

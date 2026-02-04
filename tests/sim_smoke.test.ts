@@ -46,6 +46,7 @@ function scriptedInput(sim: Sim, tick: number): InputFrame {
     reload: false,
     weaponSwitch: null,
     pause: false,
+    perkChoice: null,
   };
 }
 

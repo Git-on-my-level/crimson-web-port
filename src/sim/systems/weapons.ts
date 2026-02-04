@@ -57,6 +57,7 @@ export function updateWeapons(state: SimState, events: SimEvent[], dt: number): 
   const spread = weapon.spreadRadians ?? 0;
   const muzzleOffset = weapon.muzzleOffset;
   const lifeTicks = Math.max(1, weapon.projectileLifeTicks);
+  const projectileSpeed = weapon.projectileSpeed * player.perkStats.projectileSpeedMultiplier;
 
   for (let i = 0; i < pellets; i += 1) {
     const spreadOffset = spread > 0 ? (state.rng.nextFloat01() - 0.5) * spread : 0;
@@ -66,8 +67,8 @@ export function updateWeapons(state: SimState, events: SimEvent[], dt: number): 
 
     const posX = player.pos.x + pDirX * muzzleOffset;
     const posY = player.pos.y + pDirY * muzzleOffset;
-    const velX = pDirX * weapon.projectileSpeed;
-    const velY = pDirY * weapon.projectileSpeed;
+    const velX = pDirX * projectileSpeed;
+    const velY = pDirY * projectileSpeed;
 
     spawnProjectile(
       state,
@@ -107,6 +108,7 @@ export function fireSpiralPattern(
   const player = state.player;
   const lifeTicks = Math.max(1, weapon.projectileLifeTicks);
   const damageMultiplier = getDamageMultiplier(player);
+  const projectileSpeed = weapon.projectileSpeed * player.perkStats.projectileSpeedMultiplier;
 
   for (let i = 0; i < projectilesPerTick; i++) {
     const angleOffset = (i / projectilesPerTick) * Math.PI * 2;
@@ -118,8 +120,8 @@ export function fireSpiralPattern(
 
     const posX = player.pos.x + dirX * weapon.muzzleOffset;
     const posY = player.pos.y + dirY * weapon.muzzleOffset;
-    const velX = dirX * weapon.projectileSpeed;
-    const velY = dirY * weapon.projectileSpeed;
+    const velX = dirX * projectileSpeed;
+    const velY = dirY * projectileSpeed;
 
     spawnProjectile(
       state,

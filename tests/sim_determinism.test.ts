@@ -11,6 +11,7 @@ const constantInput: InputFrame = {
   reload: false,
   weaponSwitch: null,
   pause: false,
+  perkChoice: null,
 };
 
 describe('Sim determinism', () => {
@@ -63,6 +64,7 @@ describe('Sim determinism', () => {
       reload: false,
       weaponSwitch: null,
       pause: false,
+      perkChoice: null,
     };
 
     for (let i = 0; i < 30; i += 1) {

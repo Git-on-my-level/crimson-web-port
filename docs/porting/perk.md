@@ -4,9 +4,13 @@ Functions: 6
 
 ## Function Checklist
 
-- [ ] `perk_apply` — TODO (ref: crimsonland:004055e0)
-- [ ] `perk_can_offer` — TODO (ref: crimsonland:0042fb10)
-- [ ] `perk_count_get` — TODO (ref: crimsonland:0042fcf0)
-- [ ] `perk_prompt_update_and_render` — TODO (ref: crimsonland:00403550)
-- [ ] `perk_select_random` — TODO (ref: crimsonland:0042fbd0)
-- [ ] `perk_selection_screen_update` — TODO (ref: crimsonland:00405be0)
+- [x] `perk_apply` — Implemented in `choosePerk()` + `recomputePerkStats()`
+- [x] `perk_can_offer` — Implemented in `perkCanOffer()` (max stacks + exclusivity)
+- [x] `perk_count_get` — Implemented in `perkCountGet()`
+- [x] `perk_prompt_update_and_render` — Implemented via `PerkPickerOverlay`
+- [x] `perk_select_random` — Implemented via `generatePerkChoices()` using sim RNG
+- [x] `perk_selection_screen_update` — Implemented via sim `PerkSelect` phase handling
+
+## Notes
+
+- Perk choices are presented in a modal overlay and selected via keys 1-3 or click.

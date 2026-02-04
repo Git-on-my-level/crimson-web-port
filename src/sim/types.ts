@@ -1,4 +1,5 @@
 import type { BonusId } from '../content/bonuses';
+import type { PerkId } from '../content/perks';
 
 export type EntityId = number;
 
@@ -16,6 +17,7 @@ export interface InputFrame {
   reload: boolean;
   weaponSwitch: number | null;
   pause: boolean;
+  perkChoice: number | null;
 }
 
 export const EMPTY_INPUT: InputFrame = {
@@ -27,6 +29,7 @@ export const EMPTY_INPUT: InputFrame = {
   reload: false,
   weaponSwitch: null,
   pause: false,
+  perkChoice: null,
 };
 
 export type SimEvent =
@@ -37,6 +40,10 @@ export type SimEvent =
   | { type: 'death'; target: 'player' | 'creature'; id: EntityId }
   | { type: 'gameOver'; id: EntityId }
   | { type: 'score'; amount: number; total: number }
+  | { type: 'xp'; amount: number; total: number; level: number }
+  | { type: 'levelUp'; level: number; xpToNext: number }
+  | { type: 'perkOffered'; level: number; choices: PerkId[] }
+  | { type: 'perkChosen'; perkId: PerkId; level: number }
   | { type: 'playSfx'; name: string }
   | { type: 'pickup'; id: EntityId; bonusType: string };
 

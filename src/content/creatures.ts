@@ -4,6 +4,7 @@ export type CreatureDef = {
   speed: number;
   radius: number;
   touchDamage: number;
+  xpValue: number;
   color?: number;
 };
 
@@ -14,6 +15,7 @@ export const CREATURES: CreatureDef[] = [
     speed: 3.2,
     radius: 1.1,
     touchDamage: 8,
+    xpValue: 20,
     color: 0x22c55e,
   },
 ];

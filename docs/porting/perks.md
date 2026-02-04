@@ -4,7 +4,12 @@ Functions: 4
 
 ## Function Checklist
 
-- [ ] `perks_generate_choices` — TODO (ref: crimsonland:004045a0)
-- [ ] `perks_init_database` — TODO (ref: crimsonland:0042fd90)
-- [ ] `perks_rebuild_available` — TODO (ref: crimsonland:0042fc30)
-- [ ] `perks_update_effects` — TODO (ref: crimsonland:00406b40)
+- [x] `perks_generate_choices` — Implemented via `generatePerkChoices()` (rng-driven, deterministic draw order)
+- [x] `perks_init_database` — Implemented via `src/content/perks.ts` static perk table
+- [x] `perks_rebuild_available` — Implemented via `perkCanOffer()` filtering + exclusive tags
+- [x] `perks_update_effects` — Implemented via `recomputePerkStats()` and per-tick regen in progression system
+
+## Notes
+
+- Perk availability respects max stacks and exclusive tags (e.g. mutually exclusive styles).
+- Effects are recomputed deterministically on selection and stored in `player.perkStats`.

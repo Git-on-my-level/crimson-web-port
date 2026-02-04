@@ -41,6 +41,7 @@ export class PhaserInputAdapter {
       reload: this.isDown('R'),
       weaponSwitch: this.readWeaponSwitch(),
       pause: this.isDown('P') || this.isDown('ESC'),
+      perkChoice: this.readPerkChoice(),
     };
   }
 
@@ -55,6 +56,23 @@ export class PhaserInputAdapter {
       ['THREE', 3],
       ['FOUR', 4],
       ['FIVE', 5],
+    ];
+
+    for (const [key, slot] of mapping) {
+      const keyObj = this.keys[key];
+      if (keyObj && Phaser.Input.Keyboard.JustDown(keyObj)) {
+        return slot;
+      }
+    }
+
+    return null;
+  }
+
+  private readPerkChoice(): number | null {
+    const mapping: Array<[string, number]> = [
+      ['ONE', 1],
+      ['TWO', 2],
+      ['THREE', 3],
     ];
 
     for (const [key, slot] of mapping) {

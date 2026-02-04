@@ -1,15 +1,19 @@
 import Phaser from 'phaser';
 import { WEAPON_BY_ID } from '../content/weapons';
 import { getBonusDef } from '../content/bonuses';
+import { getPerkDef, type PerkId } from '../content/perks';
 import type { SimState } from '../sim/state';
 
 export class Hud {
   private hpText: Phaser.GameObjects.Text;
+  private levelText: Phaser.GameObjects.Text;
+  private xpText: Phaser.GameObjects.Text;
   private scoreText: Phaser.GameObjects.Text;
   private weaponText: Phaser.GameObjects.Text;
   private pauseText: Phaser.GameObjects.Text;
   private entityCountText?: Phaser.GameObjects.Text;
   private activeBonusesText: Phaser.GameObjects.Text;
+  private perksText: Phaser.GameObjects.Text;
 
   constructor(scene: Phaser.Scene, showDebugInfo = false) {
     const { width, height } = scene.scale;
@@ -24,6 +28,14 @@ export class Hud {
     };
 
     this.hpText = scene.add.text(padding, padding, '', style)
+      .setScrollFactor(0)
+      .setDepth(1000);
+
+    this.levelText = scene.add.text(padding, padding + 24, '', style)
+      .setScrollFactor(0)
+      .setDepth(1000);
+
+    this.xpText = scene.add.text(padding, padding + 48, '', style)
       .setScrollFactor(0)
       .setDepth(1000);
 
@@ -68,7 +80,11 @@ export class Hud {
       ...style,
       fontSize: '14px',
     };
-    this.activeBonusesText = scene.add.text(padding, padding * 2 + 24, '', bonusStyle)
+    this.activeBonusesText = scene.add.text(padding, padding + 72, '', bonusStyle)
+      .setScrollFactor(0)
+      .setDepth(1000);
+
+    this.perksText = scene.add.text(padding, padding + 96, '', bonusStyle)
       .setScrollFactor(0)
       .setDepth(1000);
 
@@ -78,6 +94,11 @@ export class Hud {
   update(state: SimState): void {
     const hpDisplay = Math.max(0, Math.round(state.player.hp));
     this.hpText.setText(`HP: ${hpDisplay}/${state.player.hpMax}`);
+
+    this.levelText.setText(`Level: ${state.player.level}`);
+    const xp = Math.floor(state.player.xp);
+    const xpToNext = Math.max(1, Math.floor(state.player.xpToNext));
+    this.xpText.setText(`XP: ${xp}/${xpToNext}`);
 
     const scoreDisplay = Math.round(state.score);
     this.scoreText.setText(`Score: ${scoreDisplay}`);
@@ -117,6 +138,19 @@ export class Hud {
     } else {
       this.activeBonusesText.setText('');
     }
+
+    const perkEntries = Object.entries(state.player.perks)
+      .filter(([_, count]) => (count ?? 0) > 0)
+      .map(([perkId, count]) => {
+        const def = getPerkDef(perkId as PerkId);
+        return `${def.name} x${count}`;
+      });
+
+    if (perkEntries.length > 0) {
+      this.perksText.setText(`Perks: ${perkEntries.join(' | ')}`);
+    } else {
+      this.perksText.setText('');
+    }
   }
 
   private handleResize(gameSize: Phaser.Structs.Size): void {
@@ -135,10 +169,13 @@ export class Hud {
 
   destroy(): void {
     this.hpText.destroy();
+    this.levelText.destroy();
+    this.xpText.destroy();
     this.scoreText.destroy();
     this.weaponText.destroy();
     this.pauseText.destroy();
     this.entityCountText?.destroy();
     this.activeBonusesText.destroy();
+    this.perksText.destroy();
   }
 }

@@ -17,7 +17,9 @@ export function updateBonuses(state: SimState, events: SimEvent[]): void {
 }
 
 export function trySpawnBonusOnKill(state: SimState, events: SimEvent[], pos: { x: number; y: number }): void {
-  if (state.rng.nextFloat01() >= BONUS_DROP_CHANCE) {
+  const dropMultiplier = state.player.perkStats.bonusDropMultiplier;
+  const dropChance = Math.min(0.9, BONUS_DROP_CHANCE * dropMultiplier);
+  if (state.rng.nextFloat01() >= dropChance) {
     return;
   }
   const bonusType = pickRandomBonusType(state.rng);
@@ -52,7 +54,7 @@ export function checkBonusPickup(state: SimState, events: SimEvent[]): void {
 
     const dx = player.pos.x - bonus.pos.x;
     const dy = player.pos.y - bonus.pos.y;
-    const radius = player.radius + BONUS_PICKUP_RADIUS;
+    const radius = player.radius + BONUS_PICKUP_RADIUS + player.perkStats.pickupRangeBonus;
     if (dx * dx + dy * dy <= radius * radius) {
       applyBonus(state, bonus, events);
       bonus.active = false;
@@ -124,10 +126,12 @@ function applyBonus(state: SimState, bonus: SimState['bonuses'][0], events: SimE
 
 export function getDamageMultiplier(player: SimState['player']): number {
   const damageBoostTicks = player.activeEffects['damage_boost'] ?? 0;
-  return damageBoostTicks > 0 ? 1.5 : 1.0;
+  const bonusMultiplier = damageBoostTicks > 0 ? 1.5 : 1.0;
+  return player.perkStats.damageMultiplier * bonusMultiplier;
 }
 
 export function getFireRateMultiplier(player: SimState['player']): number {
   const fireRateBoostTicks = player.activeEffects['fire_rate_boost'] ?? 0;
-  return fireRateBoostTicks > 0 ? 1.5 : 1.0;
+  const bonusMultiplier = fireRateBoostTicks > 0 ? 1.5 : 1.0;
+  return player.perkStats.fireRateMultiplier * bonusMultiplier;
 }
