@@ -266,6 +266,16 @@ const EVIL_ZOMBIES_AT_LARGE_TIMELINE = (() => {
 
 export const QUESTS: QuestDef[] = [
   {
+    id: 'quest_test_short',
+    title: 'Test Quest (Short)',
+    description: 'Deterministic test quest for validation.',
+    objectives: [{ type: 'survive', durationTicks: 120 }],
+    timeline: [
+      spawn(1000, 'grunt', 1),
+      spawn(1500, 'grunt', 1),
+    ],
+  },
+  {
     id: 'nagolipoli',
     title: QUEST_TITLES.nagolipoli,
     description: 'Survive waves of enemies attacking from all directions.',

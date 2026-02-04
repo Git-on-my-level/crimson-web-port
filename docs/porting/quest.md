@@ -199,3 +199,46 @@ Not yet needed but may be required for future quests:
 - Collection objectives (non-bonus)
 - Position-based objectives
 - Time-based completion (reach before time)
+
+## Manual Playtest Protocol
+
+### Quest Mode Verification
+
+To manually verify quest mode works correctly:
+
+1. **Load the test quest**:
+   - Start the game in quest mode with `questId: 'quest_test_short'`
+   - Observe that the quest loads successfully without falling back to the default quest
+
+2. **Verify survival objective**:
+   - Watch the elapsed timer in the HUD
+   - Confirm victory triggers at tick 120 (2000ms)
+   - Verify the quest status changes from "Playing" to "Success"
+
+3. **Verify spawn events**:
+   - First spawn should occur at tick 60 (1000ms)
+   - Second spawn should occur at tick 90 (1500ms)
+   - Confirm creatures appear at expected times and positions
+
+4. **Verify quest completion flow**:
+   - After reaching tick 120, the QuestResultsScene should appear
+   - Verify the results screen shows success status and elapsed time
+
+5. **Key scenarios to test**:
+   - **Survival victory**: Complete the objective duration without dying
+   - **Spawn timing**: All timeline events fire at correct ticks
+   - **Status transitions**: Playing → Success (or Failed if player dies)
+   - **Fallback behavior**: Invalid questId should fall back to first quest
+
+6. **Additional validation**:
+   - Check browser console for any errors or warnings
+   - Verify `playSfx` and other sim events are emitted during quest
+   - Confirm no creatures spawn after the quest completes
+
+### Automated Test Coverage
+
+The automated test in `tests/sim_quest_mode.test.ts` validates:
+- Spawn events fire during quest execution
+- Quest status changes to Success at the correct tick
+- Exactly one status change event is emitted
+- The quest completes within the expected tick count (120)
