@@ -172,7 +172,8 @@ async function main() {
 
   const vitestFindings = vitestReport ? buildVitestFindings(vitestReport) : { findings: [], totalTests: 0, failedTests: 0 };
   const staticFindings = runStaticScans({ rootDir: options.rootDir, includeRefTests: options.includeRefTests });
-  const dynamicFindings = options.includeDynamicProbes ? runDynamicProbes() : [];
+  const dynamicResult = options.includeDynamicProbes ? runDynamicProbes() : { findings: [] };
+  const dynamicFindings = dynamicResult.findings;
 
   const allFindings = [...vitestFindings.findings, ...staticFindings, ...dynamicFindings];
 
