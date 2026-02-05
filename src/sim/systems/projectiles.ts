@@ -17,6 +17,7 @@ export function spawnProjectile(
     pierceRemaining?: number;
     explosionRadius?: number;
     explosionDamage?: number;
+    speedScale?: number;
   } = {},
 ): number | null {
   const id = state.projectilePool.alloc((proj) => {
@@ -33,6 +34,7 @@ export function spawnProjectile(
     proj.pierceRemaining = options.pierceRemaining ?? 0;
     proj.explosionRadius = options.explosionRadius ?? 0;
     proj.explosionDamage = options.explosionDamage ?? 0;
+    proj.speedScale = options.speedScale ?? 1;
   }, state.nextEntityId++);
 
   if (id !== null) {
@@ -58,8 +60,8 @@ export function updateProjectiles(state: SimState, events: SimEvent[], dt: numbe
   const toRelease: number[] = [];
 
   state.projectilePool.forEachActive((id, proj) => {
-    proj.pos.x += proj.vel.x * dt;
-    proj.pos.y += proj.vel.y * dt;
+    proj.pos.x += proj.vel.x * dt * proj.speedScale;
+    proj.pos.y += proj.vel.y * dt * proj.speedScale;
     proj.lifeTicksRemaining -= tickDelta;
 
     if (

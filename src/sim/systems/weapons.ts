@@ -4,6 +4,8 @@ import type { SimState } from '../state';
 import type { SimEvent } from '../types';
 import { assignWeapon, getWeaponById, getWeaponOrder, isWeaponAvailable } from '../weapons/weaponTable';
 import { spawnProjectile } from './projectiles';
+import { spawnSecondaryProjectile } from './secondaryProjectiles';
+import { spawnParticleFast, spawnParticleSlow } from './particles';
 import { getDamageMultiplier, getReloadRateMultiplier } from './bonuses';
 
 const DEFAULT_PROJECTILE_RADIUS = 0.4;
@@ -71,38 +73,40 @@ export function updateWeapons(state: SimState, events: SimEvent[], dt: number): 
   const shotAngle = Math.atan2(jitteredAimY - player.pos.y, jitteredAimX - player.pos.x);
 
   const fireBulletsActive = (player.activeEffects['fire_bullets'] ?? 0) > 0;
-  const pellets = fireBulletsActive ? getFireBulletsPelletCount(weapon.id) : Math.max(1, weapon.pellets ?? 1);
   const muzzleOffset = weapon.muzzleOffset;
-  const lifeTicks = Math.max(1, weapon.projectileLifeTicks);
-  const projectileSpeed = weapon.projectileSpeed * player.perkStats.projectileSpeedMultiplier;
-  const projectileProfile = getProjectileProfile(weapon.projectileProfileId);
-  const projectileRadius = projectileProfile.projectileRadius ?? DEFAULT_PROJECTILE_RADIUS;
-  const pierceRemaining = projectileProfile.pierceCount ?? 0;
-  const explosionRadius = projectileProfile.explosionRadius ?? 0;
-  const explosionDamage = explosionRadius
-    ? weapon.damage * damageMultiplier * (projectileProfile.explosionDamageMultiplier ?? 1)
-    : 0;
-  const projectileKind = fireBulletsActive ? 'fire_bullets' : weapon.id;
-  const pelletJitterStep = getPelletJitterStep(weapon.id);
+  const particleAngle = shotAngle;
+  const muzzleBaseX = player.pos.x + Math.cos(shotAngle) * muzzleOffset;
+  const muzzleBaseY = player.pos.y + Math.sin(shotAngle) * muzzleOffset;
+  let ammoCost = 1;
 
-  for (let i = 0; i < pellets; i += 1) {
-    const pelletJitter = pellets > 1 ? (state.rng.nextUint32() % PELLET_JITTER_RANGE) - 100 : 0;
-    const angle = shotAngle + pelletJitter * pelletJitterStep;
+  const spawnProjectileForWeapon = (
+    weaponDef: WeaponDef,
+    angle: number,
+    options: { kind?: string; damage?: number; speedScale?: number } = {},
+  ): void => {
+    const projectileProfile = getProjectileProfile(weaponDef.projectileProfileId);
+    const projectileRadius = projectileProfile.projectileRadius ?? DEFAULT_PROJECTILE_RADIUS;
+    const pierceRemaining = projectileProfile.pierceCount ?? 0;
+    const explosionRadius = projectileProfile.explosionRadius ?? 0;
+    const explosionDamage = explosionRadius
+      ? weaponDef.damage * damageMultiplier * (projectileProfile.explosionDamageMultiplier ?? 1)
+      : 0;
+    const projectileSpeed = weaponDef.projectileSpeed * player.perkStats.projectileSpeedMultiplier;
     const pDirX = Math.cos(angle);
     const pDirY = Math.sin(angle);
-
     const posX = player.pos.x + pDirX * muzzleOffset;
     const posY = player.pos.y + pDirY * muzzleOffset;
     const velX = pDirX * projectileSpeed;
     const velY = pDirY * projectileSpeed;
+    const lifeTicks = Math.max(1, weaponDef.projectileLifeTicks);
 
     spawnProjectile(
       state,
       events,
       { x: posX, y: posY },
       { x: velX, y: velY },
-      projectileKind,
-      weapon.damage * damageMultiplier,
+      options.kind ?? weaponDef.id,
+      (options.damage ?? weaponDef.damage) * damageMultiplier,
       lifeTicks,
       'player',
       projectileRadius,
@@ -110,12 +114,182 @@ export function updateWeapons(state: SimState, events: SimEvent[], dt: number): 
         pierceRemaining,
         explosionRadius,
         explosionDamage,
+        speedScale: options.speedScale,
       },
     );
+  };
+
+  if (fireBulletsActive) {
+    const pellets = getFireBulletsPelletCount(weapon.id);
+    const pelletJitterStep = getPelletJitterStep(weapon.id);
+    for (let i = 0; i < pellets; i += 1) {
+      const pelletJitter = pellets > 1 ? (state.rng.nextUint32() % PELLET_JITTER_RANGE) - 100 : 0;
+      const angle = shotAngle + pelletJitter * pelletJitterStep;
+      spawnProjectileForWeapon(weapon, angle, { kind: 'fire_bullets' });
+    }
+  } else if (weapon.id === 'rocket_launcher') {
+    spawnSecondaryProjectile(
+      state,
+      events,
+      { x: muzzleBaseX, y: muzzleBaseY },
+      shotAngle,
+      1,
+      'player',
+      {
+        damage: weapon.damage * damageMultiplier,
+        lifeTicks: Math.max(1, weapon.projectileLifeTicks),
+        speed: weapon.projectileSpeed * player.perkStats.projectileSpeedMultiplier,
+        explosionRadius: 3.5,
+        explosionDamage: weapon.damage * damageMultiplier,
+      },
+    );
+  } else if (weapon.id === 'seeker_rockets') {
+    spawnSecondaryProjectile(
+      state,
+      events,
+      { x: muzzleBaseX, y: muzzleBaseY },
+      shotAngle,
+      2,
+      'player',
+      {
+        damage: weapon.damage * damageMultiplier,
+        lifeTicks: Math.max(1, weapon.projectileLifeTicks),
+        speed: weapon.projectileSpeed * player.perkStats.projectileSpeedMultiplier,
+        explosionRadius: 3.5,
+        explosionDamage: weapon.damage * damageMultiplier,
+      },
+    );
+  } else if (weapon.id === 'mini_rocket_swarmers') {
+    const rocketCount = Math.max(1, Math.floor(player.ammo));
+    const step = rocketCount * (Math.PI / 3);
+    let angle = (shotAngle - Math.PI) - step * rocketCount * 0.5;
+    for (let i = 0; i < rocketCount; i += 1) {
+      spawnSecondaryProjectile(
+        state,
+        events,
+        { x: player.pos.x + Math.cos(angle) * muzzleOffset, y: player.pos.y + Math.sin(angle) * muzzleOffset },
+        angle,
+        2,
+        'player',
+        {
+          damage: weapon.damage * damageMultiplier,
+          lifeTicks: Math.max(1, weapon.projectileLifeTicks),
+          speed: weapon.projectileSpeed * player.perkStats.projectileSpeedMultiplier,
+          explosionRadius: 3.5,
+          explosionDamage: weapon.damage * damageMultiplier,
+        },
+      );
+      angle += step;
+    }
+    ammoCost = rocketCount;
+  } else if (weapon.id === 'rocket_minigun') {
+    spawnSecondaryProjectile(
+      state,
+      events,
+      { x: muzzleBaseX, y: muzzleBaseY },
+      shotAngle,
+      4,
+      'player',
+      {
+        damage: weapon.damage * damageMultiplier,
+        lifeTicks: Math.max(1, weapon.projectileLifeTicks),
+        speed: weapon.projectileSpeed * player.perkStats.projectileSpeedMultiplier,
+        explosionRadius: 3.5,
+        explosionDamage: weapon.damage * damageMultiplier,
+      },
+    );
+  } else if (weapon.id === 'flamethrower') {
+    spawnParticleFast(
+      state,
+      events,
+      { x: muzzleBaseX, y: muzzleBaseY },
+      particleAngle,
+      0,
+      'player',
+      { damagePerTick: weapon.damage * damageMultiplier },
+    );
+    ammoCost = 0.1;
+  } else if (weapon.id === 'blow_torch') {
+    spawnParticleFast(
+      state,
+      events,
+      { x: muzzleBaseX, y: muzzleBaseY },
+      particleAngle,
+      1,
+      'player',
+      { damagePerTick: weapon.damage * damageMultiplier },
+    );
+    ammoCost = 0.05;
+  } else if (weapon.id === 'hr_flamer') {
+    spawnParticleFast(
+      state,
+      events,
+      { x: muzzleBaseX, y: muzzleBaseY },
+      particleAngle,
+      2,
+      'player',
+      { damagePerTick: weapon.damage * damageMultiplier },
+    );
+    ammoCost = 0.1;
+  } else if (weapon.id === 'bubblegun') {
+    spawnParticleSlow(
+      state,
+      events,
+      { x: muzzleBaseX, y: muzzleBaseY },
+      particleAngle,
+      8,
+      'player',
+      { damagePerTick: weapon.damage * damageMultiplier },
+    );
+    ammoCost = 0.15;
+  } else if (weapon.id === 'multi_plasma') {
+    const spreadSmall = Math.PI / 10;
+    const spreadLarge = Math.PI / 6;
+    const plasmaRifle = getWeaponById('plasma_rifle');
+    const plasmaMinigun = getWeaponById('plasma_minigun');
+    const patterns: Array<{ offset: number; weaponDef: WeaponDef; kind: string }> = [
+      { offset: -spreadSmall, weaponDef: plasmaRifle, kind: 'plasma_rifle' },
+      { offset: -spreadLarge, weaponDef: plasmaMinigun, kind: 'plasma_minigun' },
+      { offset: 0, weaponDef: plasmaRifle, kind: 'plasma_rifle' },
+      { offset: spreadLarge, weaponDef: plasmaMinigun, kind: 'plasma_minigun' },
+      { offset: spreadSmall, weaponDef: plasmaRifle, kind: 'plasma_rifle' },
+    ];
+    for (const pattern of patterns) {
+      spawnProjectileForWeapon(pattern.weaponDef, shotAngle + pattern.offset, { kind: pattern.kind });
+    }
+  } else if (weapon.id === 'plasma_shotgun') {
+    const plasmaMinigun = getWeaponById('plasma_minigun');
+    for (let i = 0; i < 14; i += 1) {
+      const jitter = ((state.rng.nextUint32() & 0xff) - 0x80) * 0.002;
+      const speedScale = 1.0 + (state.rng.nextUint32() % 100) * 0.01;
+      spawnProjectileForWeapon(plasmaMinigun, shotAngle + jitter, { kind: 'plasma_minigun', speedScale });
+    }
+  } else if (weapon.id === 'gauss_shotgun') {
+    const gaussGun = getWeaponById('gauss_gun');
+    for (let i = 0; i < 6; i += 1) {
+      const jitter = (state.rng.nextUint32() % 200 - 100) * 0.002;
+      const speedScale = 1.4 + (state.rng.nextUint32() % 0x50) * 0.01;
+      spawnProjectileForWeapon(gaussGun, shotAngle + jitter, { kind: 'gauss_gun', speedScale });
+    }
+  } else if (weapon.id === 'ion_shotgun') {
+    const ionMinigun = getWeaponById('ion_minigun');
+    for (let i = 0; i < 8; i += 1) {
+      const jitter = (state.rng.nextUint32() % 200 - 100) * 0.0026;
+      const speedScale = 1.4 + (state.rng.nextUint32() % 0x50) * 0.01;
+      spawnProjectileForWeapon(ionMinigun, shotAngle + jitter, { kind: 'ion_minigun', speedScale });
+    }
+  } else {
+    const pellets = Math.max(1, weapon.pellets ?? 1);
+    const pelletJitterStep = getPelletJitterStep(weapon.id);
+    for (let i = 0; i < pellets; i += 1) {
+      const pelletJitter = pellets > 1 ? (state.rng.nextUint32() % PELLET_JITTER_RANGE) - 100 : 0;
+      const angle = shotAngle + pelletJitter * pelletJitterStep;
+      spawnProjectileForWeapon(weapon, angle);
+    }
   }
 
   if (weapon.ammoMax !== undefined) {
-    player.ammo = Math.max(0, player.ammo - 1);
+    player.ammo = Math.max(0, player.ammo - ammoCost);
   }
 
   events.push({ type: 'playSfx', name: `${weapon.id}_shot` });

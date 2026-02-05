@@ -6,6 +6,8 @@ import { applyInput } from './systems/input';
 import { updatePlayer } from './systems/player';
 import { updateWeapons } from './systems/weapons';
 import { updateProjectiles } from './systems/projectiles';
+import { updateSecondaryProjectiles } from './systems/secondaryProjectiles';
+import { updateParticles } from './systems/particles';
 import { updateCreatures } from './systems/creatures';
 import { resolveCollisions } from './systems/collision';
 import { updateBonuses } from './systems/bonuses';
@@ -44,6 +46,8 @@ export class Sim {
     this.state.player = fresh.player;
     this.state.creatures = fresh.creatures;
     this.state.projectiles = fresh.projectiles;
+    this.state.secondaryProjectiles = fresh.secondaryProjectiles;
+    this.state.particles = fresh.particles;
     this.state.bonuses = fresh.bonuses;
     this.state.score = fresh.score;
     this.state.timeAlive = fresh.timeAlive;
@@ -52,6 +56,8 @@ export class Sim {
     this.state.phase = fresh.phase;
     this.state.nextEntityId = fresh.nextEntityId;
     this.state.projectilePool = fresh.projectilePool;
+    this.state.secondaryProjectilePool = fresh.secondaryProjectilePool;
+    this.state.particlePool = fresh.particlePool;
     this.state.lastStepTimeMs = 0;
     this.state.profile = fresh.profile;
     this.state.perkChoices = fresh.perkChoices;
@@ -103,6 +109,11 @@ export class Sim {
     phaseStart = performance.now();
     updateProjectiles(this.state, events, scaledDt);
     profile.projectilesMs = performance.now() - phaseStart;
+
+    phaseStart = performance.now();
+    updateSecondaryProjectiles(this.state, events, scaledDt);
+    updateParticles(this.state, events, scaledDt);
+    profile.projectilesMs += performance.now() - phaseStart;
 
     phaseStart = performance.now();
     if (this.state.mode === 'survival') {

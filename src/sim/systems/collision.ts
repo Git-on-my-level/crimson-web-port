@@ -1,6 +1,8 @@
 import type { CreatureState, SimState } from '../state';
 import type { SimEvent } from '../types';
 import { despawnProjectile } from './projectiles';
+import { despawnSecondaryProjectile } from './secondaryProjectiles';
+import { despawnParticle } from './particles';
 import { trySpawnBonusOnKill } from './bonuses';
 import { getCreatureDef } from '../../content/creatures';
 import { grantXp } from './progression';
@@ -29,6 +31,8 @@ export function resolveCollisions(state: SimState, events: SimEvent[]): void {
   rebuildCollisionGrid(state.creatures);
 
   const toRemove: number[] = [];
+  const secondaryToRemove: number[] = [];
+  const particlesToRemove: number[] = [];
 
   state.projectilePool.forEachActive((projId, projectile) => {
     if (!projectile.alive || projectile.owner !== 'player') {
@@ -107,6 +111,128 @@ export function resolveCollisions(state: SimState, events: SimEvent[]): void {
 
   for (const id of toRemove) {
     despawnProjectile(state, id);
+  }
+
+  state.secondaryProjectilePool.forEachActive((projId, projectile) => {
+    if (!projectile.alive || projectile.owner !== 'player') {
+      return;
+    }
+
+    if (isTerrainBlocked(state.terrain, projectile.pos.x, projectile.pos.y, projectile.radius)) {
+      const impactPos = { x: projectile.pos.x, y: projectile.pos.y };
+      const explosionRadius = projectile.explosionRadius;
+      if (explosionRadius > 0) {
+        const explosionDamage = projectile.explosionDamage || projectile.damage;
+        applyExplosionDamage(state, impactPos, explosionRadius, explosionDamage, events);
+        events.push({
+          type: 'projectileImpact',
+          id: projId,
+          pos: impactPos,
+          kind: `secondary_${projectile.typeId}`,
+          explosionRadius,
+        });
+      }
+      projectile.alive = false;
+      secondaryToRemove.push(projId);
+      return;
+    }
+
+    const { cellX, cellY } = getCellCoords(projectile.pos.x, projectile.pos.y);
+    for (let dy = -1; dy <= 1; dy += 1) {
+      const ny = cellY + dy;
+      if (ny < 0 || ny >= GRID_HEIGHT) continue;
+      for (let dx = -1; dx <= 1; dx += 1) {
+        const nx = cellX + dx;
+        if (nx < 0 || nx >= GRID_WIDTH) continue;
+        const cell = collisionGrid.get(getCellKey(nx, ny));
+        if (!cell) continue;
+        for (const creature of cell) {
+          if (!creature.alive) {
+            continue;
+          }
+
+          const dxp = projectile.pos.x - creature.pos.x;
+          const dyp = projectile.pos.y - creature.pos.y;
+          const radius = projectile.radius + creature.radius;
+          if (dxp * dxp + dyp * dyp <= radius * radius) {
+            const impactPos = { x: projectile.pos.x, y: projectile.pos.y };
+            const explosionRadius = projectile.explosionRadius;
+            if (explosionRadius > 0) {
+              const explosionDamage = projectile.explosionDamage || projectile.damage;
+              applyExplosionDamage(state, impactPos, explosionRadius, explosionDamage, events);
+              events.push({
+                type: 'projectileImpact',
+                id: projId,
+                pos: impactPos,
+                kind: `secondary_${projectile.typeId}`,
+                explosionRadius,
+              });
+              projectile.alive = false;
+              secondaryToRemove.push(projId);
+              return;
+            }
+
+            applyDamageToCreature(state, creature, projectile.damage, events);
+            events.push({
+              type: 'projectileImpact',
+              id: projId,
+              pos: impactPos,
+              kind: `secondary_${projectile.typeId}`,
+            });
+
+            projectile.alive = false;
+            secondaryToRemove.push(projId);
+            return;
+          }
+        }
+      }
+    }
+  });
+
+  for (const id of secondaryToRemove) {
+    despawnSecondaryProjectile(state, id);
+  }
+
+  state.particlePool.forEachActive((particleId, particle) => {
+    if (!particle.alive || particle.owner !== 'player') {
+      return;
+    }
+
+    if (particle.damagePerTick <= 0) {
+      return;
+    }
+
+    const { cellX, cellY } = getCellCoords(particle.pos.x, particle.pos.y);
+    for (let dy = -1; dy <= 1; dy += 1) {
+      const ny = cellY + dy;
+      if (ny < 0 || ny >= GRID_HEIGHT) continue;
+      for (let dx = -1; dx <= 1; dx += 1) {
+        const nx = cellX + dx;
+        if (nx < 0 || nx >= GRID_WIDTH) continue;
+        const cell = collisionGrid.get(getCellKey(nx, ny));
+        if (!cell) continue;
+        for (const creature of cell) {
+          if (!creature.alive) {
+            continue;
+          }
+
+          const dxp = particle.pos.x - creature.pos.x;
+          const dyp = particle.pos.y - creature.pos.y;
+          const radius = particle.radius + creature.radius;
+          if (dxp * dxp + dyp * dyp <= radius * radius) {
+            applyDamageToCreature(state, creature, particle.damagePerTick, events);
+          }
+        }
+      }
+    }
+
+    if (!particle.alive || particle.lifeTicksRemaining <= 0) {
+      particlesToRemove.push(particleId);
+    }
+  });
+
+  for (const id of particlesToRemove) {
+    despawnParticle(state, id);
   }
 
   for (const creature of state.creatures) {
