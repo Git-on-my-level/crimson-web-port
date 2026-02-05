@@ -84,7 +84,13 @@ function pickSurvivalWaveKind(rng: Rng, playerExperience: number): string {
   let typeId: number;
 
   if (xp < 12000) {
-    typeId = r10 < 9 ? 2 : 3;
+    if (r10 < 8) {
+      typeId = 2;
+    } else if (r10 < 9) {
+      typeId = 3;
+    } else {
+      typeId = 0;
+    }
   } else if (xp < 25000) {
     typeId = r10 < 4 ? 0 : 3;
     if (r10 > 8) {
