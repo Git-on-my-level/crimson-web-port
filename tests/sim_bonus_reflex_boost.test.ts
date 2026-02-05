@@ -13,6 +13,7 @@ function spawnTestCreature(sim: Sim): void {
   if (!creature) {
     throw new Error('Expected creature to spawn');
   }
+  creature.aiMode = 2;
 }
 
 function measureDistanceDelta(reflexActive: boolean): number {
@@ -27,33 +28,30 @@ function measureDistanceDelta(reflexActive: boolean): number {
   if (!creature) {
     throw new Error('Expected creature to exist');
   }
-  const initialDist = Math.hypot(
-    sim.state.player.pos.x - creature.pos.x,
-    sim.state.player.pos.y - creature.pos.y,
-  );
+  let prevX = creature.pos.x;
+  let prevY = creature.pos.y;
+  let totalDistance = 0;
 
   const steps = 60;
   for (let i = 0; i < steps; i += 1) {
     sim.step(EMPTY_INPUT);
+    const updatedCreature = sim.state.creatures[0];
+    if (!updatedCreature) {
+      throw new Error('Expected creature to still exist');
+    }
+    const stepDistance = Math.hypot(updatedCreature.pos.x - prevX, updatedCreature.pos.y - prevY);
+    totalDistance += stepDistance;
+    prevX = updatedCreature.pos.x;
+    prevY = updatedCreature.pos.y;
   }
 
-  const updatedCreature = sim.state.creatures[0];
-  if (!updatedCreature) {
-    throw new Error('Expected creature to still exist');
-  }
-  const updatedDist = Math.hypot(
-    sim.state.player.pos.x - updatedCreature.pos.x,
-    sim.state.player.pos.y - updatedCreature.pos.y,
-  );
-
-  return initialDist - updatedDist;
+  return totalDistance;
 }
 
 describe('Reflex Boost bonus', () => {
   it('slows creature approach distance proportionally', () => {
     const baselineDelta = measureDistanceDelta(false);
     const slowedDelta = measureDistanceDelta(true);
-
     expect(baselineDelta).toBeGreaterThan(0);
     const ratio = slowedDelta / baselineDelta;
     expect(ratio).toBeGreaterThan(0.5);

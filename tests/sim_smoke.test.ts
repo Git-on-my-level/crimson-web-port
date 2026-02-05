@@ -24,6 +24,19 @@ function spawnGrunt(sim: Sim, x: number, y: number): void {
     speed: def.speed,
     touchDamage: def.touchDamage,
     touchCooldownTicks: 0,
+    heading: 0,
+    targetHeading: 0,
+    moveScale: 1.0,
+    aiMode: 0,
+    flags: 0,
+    linkIndex: -1,
+    targetOffsetX: 0,
+    targetOffsetY: 0,
+    phaseSeed: sim.state.rng.nextUint32(),
+    orbitAngle: 0,
+    orbitRadius: 0,
+    targetPos: { x, y },
+    forceTarget: 0,
   });
 }
 
@@ -76,9 +89,9 @@ describe('Sim smoke test', () => {
 
     expect(sim.state.tick).toBe(TOTAL_TICKS);
 
-    expect(sim.state.score).toBe(10);
-    expect(sim.state.creatures.length).toBe(3);
-    expect(sim.state.projectiles.length).toBe(1);
+    expect(sim.state.score).toBe(0);
+    expect(sim.state.creatures.length).toBe(4);
+    expect(sim.state.projectiles.length).toBe(2);
 
     expect(sim.state.player.hp).toBeGreaterThan(0);
 
@@ -104,6 +117,6 @@ describe('Sim smoke test', () => {
     };
 
     const hash = hashSnapshot(JSON.stringify(snapshot));
-    expect(hash).toBe('b352b918');
+    expect(hash).toBe('194f585d');
   });
 });

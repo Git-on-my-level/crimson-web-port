@@ -18,6 +18,19 @@ function makeCreature(id: number, x: number, y: number, hp = 20): CreatureState 
     touchCooldownTicks: 0,
     alive: true,
     kind: 'grunt',
+    heading: 0,
+    targetHeading: 0,
+    moveScale: 1.0,
+    aiMode: 0,
+    flags: 0,
+    linkIndex: -1,
+    targetOffsetX: 0,
+    targetOffsetY: 0,
+    phaseSeed: 0,
+    orbitAngle: 0,
+    orbitRadius: 0,
+    targetPos: { x, y },
+    forceTarget: 0,
   };
 }
 

@@ -51,6 +51,16 @@ export interface CreatureState {
   heading: number;
   targetHeading: number;
   moveScale: number;
+  aiMode: number;
+  flags: number;
+  linkIndex: number;
+  targetOffsetX: number;
+  targetOffsetY: number;
+  phaseSeed: number;
+  orbitAngle: number;
+  orbitRadius: number;
+  targetPos: Vec2;
+  forceTarget: number;
 }
 
 export interface ProjectileState {

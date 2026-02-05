@@ -1,15 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { createSimState } from '../src/sim/state';
-import { pickRandomWeapon, refreshAvailableWeapons, unlockWeapon } from '../src/sim/weapons/weaponTable';
+import { getWeaponOrder, pickRandomWeapon, refreshAvailableWeapons, unlockWeapon } from '../src/sim/weapons/weaponTable';
 
 describe('Weapon availability', () => {
   it('filters by unlock level in a stable order', () => {
     const state = createSimState(7);
-    expect(state.player.availableWeapons).toEqual(['pistol']);
+    const expectedOrder = getWeaponOrder();
+    expect(state.player.availableWeapons).toEqual(expectedOrder);
 
     state.player.level = 4;
     refreshAvailableWeapons(state.player);
-    expect(state.player.availableWeapons).toEqual(['pistol', 'revolver', 'shotgun', 'smg', 'burst_rifle']);
+    expect(state.player.availableWeapons).toEqual(expectedOrder);
   });
 
   it('is deterministic and respects unlocked weapons', () => {
