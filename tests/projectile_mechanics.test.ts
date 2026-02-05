@@ -4,6 +4,7 @@ import { createSimState } from '../src/sim/state';
 import { resolveCollisions } from '../src/sim/systems/collision';
 import { spawnProjectile, updateProjectiles } from '../src/sim/systems/projectiles';
 import type { SimEvent } from '../src/sim/types';
+import { refRadius } from '../src/sim/modes/survival_ref';
 
 function makeCreature(id: number, x: number, y: number, hp = 20): CreatureState {
   return {
@@ -47,7 +48,7 @@ describe('Projectile mechanics', () => {
       { x: 6, y: 0 },
       { x: 0, y: 0 },
       'sniper',
-      6,
+      0.1,
       10,
       'player',
       0.4,
@@ -56,8 +57,11 @@ describe('Projectile mechanics', () => {
 
     resolveCollisions(state, events);
 
-    expect(state.creatures[0].hp).toBe(14);
-    expect(state.creatures[1].hp).toBe(14);
+    const distWorld = 1;
+    const distRef = Math.max(50, distWorld / refRadius(1));
+    const expectedDamage = ((100 / distRef) * 0.1 * 30 + 10) * 0.95;
+    expect(state.creatures[0].hp).toBeCloseTo(20 - expectedDamage, 4);
+    expect(state.creatures[1].hp).toBeCloseTo(20 - expectedDamage, 4);
   });
 
   it('explosive projectile damages multiple targets in radius', () => {

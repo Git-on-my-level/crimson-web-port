@@ -75,6 +75,7 @@ export interface CreatureState {
 
 export interface ProjectileState {
   id: number;
+  origin: Vec2;
   pos: Vec2;
   vel: Vec2;
   alive: boolean;
@@ -240,6 +241,7 @@ export function createSimState(
   const projectilePool = new ObjectPool<ProjectileState>(
     () => ({
       id: 0,
+      origin: vec2(0, 0),
       pos: vec2(0, 0),
       vel: vec2(0, 0),
       alive: false,

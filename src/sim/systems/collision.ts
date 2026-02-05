@@ -10,12 +10,18 @@ import { registerQuestKill, setQuestStatus } from './mode_quest';
 import { registerSurvivalKill } from './mode_survival';
 import { WORLD_BOUNDS } from '../world';
 import { isTerrainBlocked } from '../terrain';
+import { refRadius } from '../modes/survival_ref';
 
 const CELL_SIZE = 6;
 const GRID_WIDTH = Math.ceil((WORLD_BOUNDS.maxX - WORLD_BOUNDS.minX) / CELL_SIZE);
 const GRID_HEIGHT = Math.ceil((WORLD_BOUNDS.maxY - WORLD_BOUNDS.minY) / CELL_SIZE);
 const collisionGrid = new Map<number, CreatureState[]>();
 const cellPool: CreatureState[][] = [];
+const WORLD_TO_REF = 1 / refRadius(1);
+const PROJECTILE_DAMAGE_MIN_DIST_REF = 50;
+const PROJECTILE_DAMAGE_SCALE = 30;
+const PROJECTILE_DAMAGE_BASE = 10;
+const PROJECTILE_DAMAGE_POST_SCALE = 0.95;
 
 export function resolveCollisions(state: SimState, events: SimEvent[]): void {
   const player = state.player;
@@ -93,7 +99,8 @@ export function resolveCollisions(state: SimState, events: SimEvent[]): void {
               return;
             }
 
-            applyDamageToCreature(state, creature, projectile.damage, events, shouldAllowBonusDrop(projectile.kind));
+            const impactDamage = computeProjectileImpactDamage(projectile);
+            applyDamageToCreature(state, creature, impactDamage, events, shouldAllowBonusDrop(projectile.kind));
             events.push({ type: 'projectileImpact', id: projId, pos: impactPos, kind: projectile.kind });
 
             const pierceRemaining = projectile.pierceRemaining ?? 0;
@@ -254,6 +261,14 @@ export function resolveCollisions(state: SimState, events: SimEvent[]): void {
   }
 
   clearCollisionGrid();
+}
+
+function computeProjectileImpactDamage(projectile: { origin: { x: number; y: number }; pos: { x: number; y: number }; damage: number }): number {
+  const dx = projectile.pos.x - projectile.origin.x;
+  const dy = projectile.pos.y - projectile.origin.y;
+  const distRef = Math.max(PROJECTILE_DAMAGE_MIN_DIST_REF, Math.hypot(dx, dy) * WORLD_TO_REF);
+  const scaled = (100 / distRef) * projectile.damage * PROJECTILE_DAMAGE_SCALE + PROJECTILE_DAMAGE_BASE;
+  return scaled * PROJECTILE_DAMAGE_POST_SCALE;
 }
 
 function rebuildCollisionGrid(creatures: CreatureState[]): void {

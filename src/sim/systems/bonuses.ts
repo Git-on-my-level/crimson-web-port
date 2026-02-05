@@ -10,6 +10,7 @@ import { grantXp } from './progression';
 import { registerQuestBonusCollected, registerQuestKill } from './mode_quest';
 import { registerSurvivalKill } from './mode_survival';
 import { spawnProjectile } from './projectiles';
+import { refRadius } from '../modes/survival_ref';
 
 const BONUS_BASE_DROP_DENOM = 9;
 const BONUS_DESPAWN_TICKS = 900;
@@ -18,7 +19,7 @@ const BONUS_PICKUP_RADIUS = 1.5;
 const MEDKIT_HEAL_AMOUNT = 10;
 const POINTS_BONUS_BASE = 500;
 const POINTS_BONUS_BIG = 1000;
-const POINTS_BONUS_BIG_CHANCE = 0.08;
+const POINTS_BONUS_BIG_CHANCE = 0.375;
 const BONUS_SPAWN_MIN_DISTANCE = 3.0;
 const BONUS_SPAWN_JITTER = 3.5;
 const BONUS_REROLL_MAX = 100;
@@ -32,6 +33,12 @@ const FIREBLAST_PROJECTILE_RADIUS = 0.6;
 const SHOCK_CHAIN_DAMAGE = 45;
 const SHOCK_CHAIN_RADIUS = 12;
 const SHOCK_CHAIN_MAX_TARGETS = 6;
+const BONUS_WEAPON_NEAR_RADIUS = refRadius(56);
+const BONUS_PISTOL_SAFETY_MASK = 0x03;
+const BONUS_PISTOL_SAFETY_THRESHOLD = 3;
+const BONUS_PISTOL_EXTRA_DENOM = 5;
+const BONUS_MAGNET_EXTRA_DENOM = 10;
+const BONUS_MAGNET_EXTRA_VALUE = 2;
 
 export function updateBonuses(state: SimState, events: SimEvent[]): void {
   updateBonusEffects(state);
@@ -40,35 +47,70 @@ export function updateBonuses(state: SimState, events: SimEvent[]): void {
 }
 
 export function trySpawnBonusOnKill(state: SimState, events: SimEvent[], pos: { x: number; y: number }): void {
-  const dropMultiplier = state.player.perkStats.bonusDropMultiplier;
-  const baseChance = 1 / BONUS_BASE_DROP_DENOM;
-  const boostedChance = Math.min(0.9, baseChance * dropMultiplier);
-  const baseRoll = state.rng.nextInt(BONUS_BASE_DROP_DENOM) === 1;
-  if (!baseRoll) {
-    const extraChance = Math.max(0, boostedChance - baseChance);
-    if (state.rng.nextFloat01() >= extraChance) {
+  const player = state.player;
+  const rng = state.rng;
+  const hasPistol = player.weaponId === 'pistol';
+
+  if (hasPistol && (rng.nextUint32() & BONUS_PISTOL_SAFETY_MASK) < BONUS_PISTOL_SAFETY_THRESHOLD) {
+    const forcedWeapon = pickWeaponDrop(state);
+    if (!forcedWeapon) {
       return;
+    }
+    if (hasActiveBonusKind(state, 'weapon')) {
+      return;
+    }
+    if (perkActive(player, 'my_favourite_weapon')) {
+      return;
+    }
+    const spawnPos = pickBonusSpawnPos(state, pos);
+    spawnBonus(state, events, spawnPos, 'weapon', { weaponId: forcedWeapon });
+    return;
+  }
+
+  const baseRoll = rng.nextUint32();
+  if (baseRoll % BONUS_BASE_DROP_DENOM !== 1) {
+    let allowWithoutMagnet = false;
+    if (hasPistol) {
+      allowWithoutMagnet = rng.nextUint32() % BONUS_PISTOL_EXTRA_DENOM === 1;
+    }
+    if (!allowWithoutMagnet) {
+      if (!perkActive(player, 'bonus_magnet')) {
+        return;
+      }
+      if (rng.nextUint32() % BONUS_MAGNET_EXTRA_DENOM !== BONUS_MAGNET_EXTRA_VALUE) {
+        return;
+      }
     }
   }
 
   const bonusType = pickBonusWithReroll(state);
-  const spawnPos = findSpawnPosAwayFromPlayer(
-    state.rng,
-    state.player.pos,
-    BONUS_SPAWN_MIN_DISTANCE,
-    12,
-    (rng) => {
-      const angle = rng.nextFloat01() * Math.PI * 2;
-      const distance = rng.nextFloat01() * BONUS_SPAWN_JITTER;
-      const candidate = {
-        x: pos.x + Math.cos(angle) * distance,
-        y: pos.y + Math.sin(angle) * distance,
-      };
-      return clampToWorld(candidate, BONUS_RADIUS);
-    },
-    (candidate) => !isTerrainBlocked(state.terrain, candidate.x, candidate.y, BONUS_RADIUS),
-  );
-  spawnBonus(state, events, spawnPos, bonusType);
+  const spawnPos = pickBonusSpawnPos(state, pos);
+  let resolvedType = bonusType;
+  let overrideWeapon: WeaponId | undefined;
+  let overrideAmount: number | undefined;
+
+  if (resolvedType === 'weapon') {
+    const candidateWeapon = pickWeaponDrop(state);
+    if (!candidateWeapon) {
+      return;
+    }
+    if (candidateWeapon === player.weaponId) {
+      return;
+    }
+
+    if (isBonusNearPlayer(player, pos, BONUS_WEAPON_NEAR_RADIUS)) {
+      resolvedType = 'points';
+      overrideAmount = 100;
+    } else {
+      overrideWeapon = candidateWeapon;
+    }
+  }
+
+  if (resolvedType !== 'points' && hasActiveBonusKind(state, resolvedType)) {
+    return;
+  }
+
+  spawnBonus(state, events, spawnPos, resolvedType, { weaponId: overrideWeapon, amount: overrideAmount });
 }
 
 export function spawnBonus(
@@ -76,18 +118,23 @@ export function spawnBonus(
   events: SimEvent[],
   pos: { x: number; y: number },
   kind: BonusId,
-): void {
+  overrides: { weaponId?: WeaponId; amount?: number } = {},
+): SimState['bonuses'][0] | null {
   const clamped = clampToWorld({ x: pos.x, y: pos.y }, BONUS_RADIUS);
   const spawnPos = findOpenTerrainPosition(state.terrain, state.rng, clamped, BONUS_RADIUS);
   const id = state.nextEntityId++;
   const lifeTicksRemaining = BONUS_DESPAWN_TICKS;
-  let weaponId: WeaponId | undefined;
-  let amount: number | undefined;
+  let weaponId: WeaponId | undefined = overrides.weaponId;
+  let amount: number | undefined = overrides.amount;
   if (kind === 'weapon') {
-    const available = getWeaponBonusPool(state);
-    weaponId = pickRandomWeapon(state.rng, available);
+    if (!weaponId) {
+      const available = getWeaponBonusPool(state);
+      weaponId = pickRandomWeapon(state.rng, available);
+    }
   } else if (kind === 'points') {
-    amount = state.rng.nextFloat01() < POINTS_BONUS_BIG_CHANCE ? POINTS_BONUS_BIG : POINTS_BONUS_BASE;
+    if (amount === undefined) {
+      amount = state.rng.nextFloat01() < POINTS_BONUS_BIG_CHANCE ? POINTS_BONUS_BIG : POINTS_BONUS_BASE;
+    }
   }
   state.bonuses.push({
     id,
@@ -101,6 +148,7 @@ export function spawnBonus(
     weaponId,
   });
   events.push({ type: 'spawnBonus', id, pos: spawnPos, kind, weaponId, amount, lifeTicksMax: lifeTicksRemaining });
+  return state.bonuses[state.bonuses.length - 1] ?? null;
 }
 
 export function checkBonusPickup(state: SimState, events: SimEvent[]): void {
@@ -249,7 +297,9 @@ function applyNukeDamage(state: SimState, events: SimEvent[], center: { x: numbe
 }
 
 function applyTimedBonus(state: SimState, bonusId: BonusId, def: ReturnType<typeof getBonusDef>): void {
-  const duration = def.durationTicks ?? 600;
+  const baseDuration = def.durationTicks ?? 600;
+  const bonusEconomistStacks = state.player.perks['bonus_economist'] ?? 0;
+  const duration = baseDuration * (1 + 0.5 * bonusEconomistStacks);
   const existing = state.player.activeEffects[bonusId] ?? 0;
   const mode = def.stackMode ?? 'refresh';
 
@@ -285,8 +335,71 @@ function getWeaponBonusPool(state: SimState): WeaponId[] {
   return filtered.length > 0 ? filtered : available;
 }
 
+function pickWeaponDrop(state: SimState): WeaponId | null {
+  const available = getWeaponBonusPool(state);
+  if (available.length === 0) {
+    return null;
+  }
+
+  let weaponId = pickRandomWeapon(state.rng, available);
+  if (weaponId === 'pistol') {
+    weaponId = pickRandomWeapon(state.rng, available);
+  }
+
+  if (weaponId === 'pistol') {
+    return null;
+  }
+  return weaponId;
+}
+
+function pickBonusSpawnPos(state: SimState, pos: { x: number; y: number }): { x: number; y: number } {
+  return findSpawnPosAwayFromPlayer(
+    state.rng,
+    state.player.pos,
+    BONUS_SPAWN_MIN_DISTANCE,
+    12,
+    (rng) => {
+      const angle = rng.nextFloat01() * Math.PI * 2;
+      const distance = rng.nextFloat01() * BONUS_SPAWN_JITTER;
+      const candidate = {
+        x: pos.x + Math.cos(angle) * distance,
+        y: pos.y + Math.sin(angle) * distance,
+      };
+      return clampToWorld(candidate, BONUS_RADIUS);
+    },
+    (candidate) => !isTerrainBlocked(state.terrain, candidate.x, candidate.y, BONUS_RADIUS),
+  );
+}
+
+function hasActiveBonusKind(state: SimState, kind: BonusId): boolean {
+  return state.bonuses.some((bonus) => bonus.active && bonus.kind === kind);
+}
+
+function perkActive(player: SimState['player'], perkId: keyof SimState['player']['perks']): boolean {
+  return (player.perks[perkId] ?? 0) > 0;
+}
+
+function isBonusNearPlayer(
+  player: SimState['player'],
+  pos: { x: number; y: number },
+  radius: number,
+): boolean {
+  const dx = pos.x - player.pos.x;
+  const dy = pos.y - player.pos.y;
+  return dx * dx + dy * dy < radius * radius;
+}
+
 function isBonusAllowed(state: SimState, bonusId: BonusId): boolean {
   const activeEffects = state.player.activeEffects;
+  if (bonusId === 'weapon' && perkActive(state.player, 'my_favourite_weapon')) {
+    return false;
+  }
+  if (bonusId === 'weapon' && hasActiveBonusKind(state, 'fire_bullets')) {
+    return false;
+  }
+  if (bonusId === 'medkit' && perkActive(state.player, 'death_clock')) {
+    return false;
+  }
   if (bonusId === 'freeze' && (activeEffects.freeze ?? 0) > 0) {
     return false;
   }

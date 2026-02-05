@@ -21,6 +21,8 @@ export function spawnProjectile(
   } = {},
 ): number | null {
   const id = state.projectilePool.alloc((proj) => {
+    proj.origin.x = pos.x;
+    proj.origin.y = pos.y;
     proj.pos.x = pos.x;
     proj.pos.y = pos.y;
     proj.vel.x = vel.x;
