@@ -13,6 +13,7 @@ const FIRE_INPUT: InputFrame = {
   reload: false,
   weaponSwitch: null,
   pause: false,
+  openPerkMenu: false,
   perkChoice: null,
 };
 
@@ -25,6 +26,7 @@ const IDLE_INPUT: InputFrame = {
   reload: false,
   weaponSwitch: null,
   pause: false,
+  openPerkMenu: false,
   perkChoice: null,
 };
 

@@ -15,6 +15,7 @@ const NO_INPUT = {
   reload: false,
   weaponSwitch: null,
   pause: false,
+  openPerkMenu: false,
   perkChoice: null,
 };
 
@@ -32,6 +33,9 @@ describe('Perk progression', () => {
     grantXp(simA.state, eventsA, simA.state.player.xpToNext);
     grantXp(simB.state, eventsB, simB.state.player.xpToNext);
 
+    simA.step({ ...NO_INPUT, openPerkMenu: true });
+    simB.step({ ...NO_INPUT, openPerkMenu: true });
+
     expect(simA.state.phase).toBe('PerkSelect');
     expect(simB.state.phase).toBe('PerkSelect');
     expect(simA.state.perkChoices).toEqual(simB.state.perkChoices);
@@ -44,12 +48,14 @@ describe('Perk progression', () => {
 
     const events: SimEvent[] = [];
     grantXp(sim.state, events, sim.state.player.xpToNext);
+    sim.step({ ...NO_INPUT, openPerkMenu: true });
     const choice = sim.state.perkChoices?.[0];
     expect(choice).toBeTruthy();
 
     sim.step({ ...NO_INPUT, perkChoice: 1 });
 
     expect(sim.state.phase).toBe('Playing');
+    expect(sim.state.pendingPerks).toBe(0);
     expect(choice ? sim.state.player.perks[choice] : 0).toBe(1);
   });
 

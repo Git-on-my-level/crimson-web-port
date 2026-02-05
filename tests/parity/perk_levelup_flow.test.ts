@@ -14,6 +14,7 @@ const NO_INPUT: InputFrame = {
   reload: false,
   weaponSwitch: null,
   pause: false,
+  openPerkMenu: false,
   perkChoice: null,
 };
 
@@ -26,16 +27,20 @@ describe('Parity: perk level-up flow', () => {
     const events: SimEvent[] = [];
     grantXp(sim.state, events, sim.state.player.xpToNext);
 
+    expect(sim.state.phase).toBe('Playing');
+    expect(sim.state.pendingPerks).toBe(1);
+
+    const result = sim.step({ ...NO_INPUT, openPerkMenu: true });
     expect(sim.state.phase).toBe('PerkSelect');
     expect(sim.state.perkChoices?.length).toBeGreaterThan(0);
-    expect(events.some((event) => event.type === 'perkOffered')).toBe(true);
+    expect(result.events.some((event) => event.type === 'perkOffered')).toBe(true);
 
     const choiceIndex = 0;
     const chosen = sim.state.perkChoices?.[choiceIndex];
     expect(chosen).toBeTruthy();
 
     const before = { ...sim.state.player.perks };
-    const result = sim.step({ ...NO_INPUT, perkChoice: choiceIndex + 1 });
+    const chooseResult = sim.step({ ...NO_INPUT, perkChoice: choiceIndex + 1 });
 
     expect(sim.state.phase).toBe('Playing');
     if (chosen) {
@@ -45,6 +50,6 @@ describe('Parity: perk level-up flow', () => {
       expect(def).toBeDefined();
       expect(def.id).toBe(chosen);
     }
-    expect(result.events.some((event) => event.type === 'perkChosen')).toBe(true);
+    expect(chooseResult.events.some((event) => event.type === 'perkChosen')).toBe(true);
   });
 });

@@ -134,6 +134,7 @@ export interface SimState {
   modeState: ModeState;
   phase: 'Playing' | 'GameOver' | 'Paused' | 'PerkSelect' | 'QuestResults' | 'QuestFailed';
   perkChoices: PerkId[] | null;
+  pendingPerks: number;
   nextEntityId: number;
   projectilePool: ObjectPool<ProjectileState>;
   secondaryProjectilePool: ObjectPool<SecondaryProjectileState>;
@@ -321,6 +322,7 @@ export function createSimState(
     modeState: mode === 'quest' ? createQuestModeState(selectedQuestId) : createSurvivalModeState(),
     phase: 'Playing',
     perkChoices: null,
+    pendingPerks: 0,
     nextEntityId: 2,
     projectilePool,
     secondaryProjectilePool,

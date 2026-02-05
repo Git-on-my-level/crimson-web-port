@@ -61,6 +61,7 @@ export class Sim {
     this.state.lastStepTimeMs = 0;
     this.state.profile = fresh.profile;
     this.state.perkChoices = fresh.perkChoices;
+    this.state.pendingPerks = fresh.pendingPerks;
     this.state.selectedQuestId = fresh.selectedQuestId;
   }
 
