@@ -1,1 +1,0 @@
-/* Stubbed for Ghidra C parser. */

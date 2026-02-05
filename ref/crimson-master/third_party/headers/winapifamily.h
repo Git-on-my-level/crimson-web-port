@@ -1,7 +1,0 @@
-#ifndef _WINAPIFAMILY_H_
-#define _WINAPIFAMILY_H_
-
-#define WINAPI_PARTITION_DESKTOP 1
-#define WINAPI_FAMILY_PARTITION(x) (1)
-
-#endif
