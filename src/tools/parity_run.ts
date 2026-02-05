@@ -3,6 +3,7 @@ import { dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { writeReport, type ParityFinding, type ParityReport } from '../parity/report';
 import { runStaticScan } from '../parity/static_scan';
+import { runDynamicProbes } from '../parity/probe_runner';
 
 type VitestAssertionResult = {
   fullName?: string;
@@ -122,16 +123,7 @@ function runStaticScans(): ParityFinding[] {
   return runStaticScan();
 }
 
-function runDynamicProbes(): ParityFinding[] {
-  return [
-    {
-      id: 'dynamic-probes:pending',
-      status: 'skip',
-      message: 'Dynamic probes not implemented yet.',
-      tags: ['dynamic', 'pending'],
-    },
-  ];
-}
+// Dynamic probes are handled by src/parity/probe_runner.ts
 
 function summarizeScore(totalTests: number, failedTests: number, findings: ParityFinding[]): number {
   const additionalTotal = findings.filter(f => f.status === 'pass' || f.status === 'fail').length;
