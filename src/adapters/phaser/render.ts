@@ -32,6 +32,7 @@ const CREATURE_SPRITE_BY_KIND: Record<string, string> = {
 const PROJECTILE_FRAME_BY_KIND: Record<string, number> = {
   ...PROJECTILE_FRAMES,
   fire_bullets: 5,
+  fireblast: 4,
 };
 const BONUS_FRAME_BY_KIND: Record<BonusId, number> = BONUS_FRAMES;
 const PROJECTILE_ROTATION_OFFSET_BY_KIND: Record<string, number> = {};

@@ -9,6 +9,7 @@ import { getCreatureDef } from '../../content/creatures';
 import { grantXp } from './progression';
 import { registerQuestBonusCollected, registerQuestKill } from './mode_quest';
 import { registerSurvivalKill } from './mode_survival';
+import { spawnProjectile } from './projectiles';
 
 const BONUS_BASE_DROP_DENOM = 9;
 const BONUS_DESPAWN_TICKS = 900;
@@ -23,7 +24,10 @@ const BONUS_SPAWN_JITTER = 3.5;
 const BONUS_REROLL_MAX = 100;
 const NUKE_DAMAGE = 9999;
 const FIREBLAST_DAMAGE = 60;
-const FIREBLAST_RADIUS = 10;
+const FIREBLAST_BURST_COUNT = 16;
+const FIREBLAST_PROJECTILE_SPEED = 20;
+const FIREBLAST_PROJECTILE_LIFE_TICKS = 30;
+const FIREBLAST_PROJECTILE_RADIUS = 0.6;
 const SHOCK_CHAIN_DAMAGE = 45;
 const SHOCK_CHAIN_RADIUS = 12;
 const SHOCK_CHAIN_MAX_TARGETS = 6;
@@ -178,7 +182,7 @@ function applyBonus(state: SimState, bonus: SimState['bonuses'][0], events: SimE
       break;
     }
     case 'fireblast': {
-      applyBonusAreaDamage(state, events, state.player.pos, FIREBLAST_RADIUS, FIREBLAST_DAMAGE, false);
+      spawnFireblastBurst(state, events);
       break;
     }
     case 'shock_chain': {
@@ -278,19 +282,17 @@ function applyBonusAreaDamage(
 
 function applyShockChain(state: SimState, events: SimEvent[]): void {
   const player = state.player;
-  const candidates = state.creatures
-    .filter((creature) => creature.alive)
-    .map((creature) => {
-      const dx = creature.pos.x - player.pos.x;
-      const dy = creature.pos.y - player.pos.y;
-      return { creature, distSq: dx * dx + dy * dy };
-    })
-    .filter((entry) => entry.distSq <= SHOCK_CHAIN_RADIUS * SHOCK_CHAIN_RADIUS)
-    .sort((a, b) => a.distSq - b.distSq)
-    .slice(0, SHOCK_CHAIN_MAX_TARGETS);
+  const visited = new Set<number>();
+  let source = { x: player.pos.x, y: player.pos.y };
 
-  for (const entry of candidates) {
-    applyBonusDamageToCreature(state, entry.creature, SHOCK_CHAIN_DAMAGE, events, false);
+  for (let i = 0; i < SHOCK_CHAIN_MAX_TARGETS; i += 1) {
+    const next = findNearestCreatureInRadius(state, source, SHOCK_CHAIN_RADIUS, visited);
+    if (!next) {
+      break;
+    }
+    visited.add(next.id);
+    applyBonusDamageToCreature(state, next, SHOCK_CHAIN_DAMAGE, events, false);
+    source = next.pos;
   }
 }
 
@@ -326,6 +328,60 @@ function applyBonusDamageToCreature(
   if (allowBonusDrop) {
     trySpawnBonusOnKill(state, events, creature.pos);
   }
+}
+
+function spawnFireblastBurst(state: SimState, events: SimEvent[]): void {
+  const { x, y } = state.player.pos;
+  for (let i = 0; i < FIREBLAST_BURST_COUNT; i += 1) {
+    const angle = (i / FIREBLAST_BURST_COUNT) * Math.PI * 2;
+    const vel = {
+      x: Math.cos(angle) * FIREBLAST_PROJECTILE_SPEED,
+      y: Math.sin(angle) * FIREBLAST_PROJECTILE_SPEED,
+    };
+    spawnProjectile(
+      state,
+      events,
+      { x, y },
+      vel,
+      'fireblast',
+      FIREBLAST_DAMAGE,
+      FIREBLAST_PROJECTILE_LIFE_TICKS,
+      'player',
+      FIREBLAST_PROJECTILE_RADIUS,
+    );
+  }
+}
+
+function findNearestCreatureInRadius(
+  state: SimState,
+  origin: { x: number; y: number },
+  radius: number,
+  exclude: Set<number>,
+): SimState['creatures'][0] | null {
+  const radiusSq = radius * radius;
+  let best: SimState['creatures'][0] | null = null;
+  let bestDistSq = Number.POSITIVE_INFINITY;
+
+  for (const creature of state.creatures) {
+    if (!creature.alive || exclude.has(creature.id)) {
+      continue;
+    }
+    const dx = creature.pos.x - origin.x;
+    const dy = creature.pos.y - origin.y;
+    const distSq = dx * dx + dy * dy;
+    if (distSq > radiusSq) {
+      continue;
+    }
+    if (distSq < bestDistSq || (distSq === bestDistSq && best && creature.id < best.id)) {
+      best = creature;
+      bestDistSq = distSq;
+    } else if (distSq === bestDistSq && !best) {
+      best = creature;
+      bestDistSq = distSq;
+    }
+  }
+
+  return best;
 }
 
 export function getDamageMultiplier(player: SimState['player']): number {

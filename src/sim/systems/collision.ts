@@ -89,7 +89,7 @@ export function resolveCollisions(state: SimState, events: SimEvent[]): void {
               return;
             }
 
-            applyDamageToCreature(state, creature, projectile.damage, events);
+            applyDamageToCreature(state, creature, projectile.damage, events, shouldAllowBonusDrop(projectile.kind));
             events.push({ type: 'projectileImpact', id: projId, pos: impactPos, kind: projectile.kind });
 
             const pierceRemaining = projectile.pierceRemaining ?? 0;
@@ -212,6 +212,13 @@ function applyExplosionDamage(
       }
     }
   }
+}
+
+function shouldAllowBonusDrop(projectileKind: string): boolean {
+  if (projectileKind === 'fireblast') {
+    return false;
+  }
+  return true;
 }
 
 function applyDamageToCreature(
