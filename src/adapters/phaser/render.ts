@@ -4,6 +4,7 @@ import type { EntityId } from '../../sim/types';
 import { type BonusId } from '../../content/bonuses';
 import type { WeaponId } from '../../content/weapons';
 import { BONUS_FRAMES, PROJECTILE_FRAMES } from '../../content/atlas';
+import { rotationFromVelocity } from '../../render/facing';
 
 export type RenderTransform = {
   originX: number;
@@ -25,6 +26,7 @@ const CREATURE_SPRITE_BY_KIND: Record<string, string> = {
 
 const PROJECTILE_FRAME_BY_WEAPON: Record<WeaponId, number> = PROJECTILE_FRAMES;
 const BONUS_FRAME_BY_KIND: Record<BonusId, number> = BONUS_FRAMES;
+const PROJECTILE_ROTATION_OFFSET_BY_WEAPON: Partial<Record<WeaponId, number>> = {};
 
 export class PhaserRenderAdapter {
   private readonly scene: Phaser.Scene;
@@ -155,12 +157,14 @@ export class PhaserRenderAdapter {
       }
       seen.add(projectile.id);
       const frame = PROJECTILE_FRAME_BY_WEAPON[projectile.kind as WeaponId] ?? fallbackFrame;
+      const rotationOffset = PROJECTILE_ROTATION_OFFSET_BY_WEAPON[projectile.kind as WeaponId] ?? 0;
       const obj =
         this.projectiles.get(projectile.id) ??
         this.createSprite(this.projectiles, this.projectileSpritePool, projectile.id, PROJECTILE_SPRITE_KEY, frame);
       const { x, y } = this.toScreen(projectile.pos.x, projectile.pos.y);
       obj.setPosition(x, y);
       obj.setDisplaySize(projectile.radius * 2 * this.transform.pixelsPerUnit, projectile.radius * 2 * this.transform.pixelsPerUnit);
+      obj.setRotation(rotationFromVelocity(projectile.vel.x, projectile.vel.y) + rotationOffset);
       obj.setVisible(true);
     }
 
