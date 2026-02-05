@@ -4,7 +4,7 @@ import type { SimState } from '../state';
 import type { SimEvent } from '../types';
 import { assignWeapon, getWeaponById, getWeaponOrder, isWeaponAvailable } from '../weapons/weaponTable';
 import { spawnProjectile } from './projectiles';
-import { getDamageMultiplier, getFireRateMultiplier } from './bonuses';
+import { getDamageMultiplier, getFireRateMultiplier, getReloadRateMultiplier } from './bonuses';
 
 const DEFAULT_PROJECTILE_RADIUS = 0.4;
 
@@ -32,7 +32,8 @@ export function updateWeapons(state: SimState, events: SimEvent[], dt: number): 
   }
 
   if (player.reloadTicksRemaining > 0) {
-    player.reloadTicksRemaining = Math.max(0, player.reloadTicksRemaining - tickDelta);
+    const reloadRateMultiplier = getReloadRateMultiplier(player);
+    player.reloadTicksRemaining = Math.max(0, player.reloadTicksRemaining - tickDelta * reloadRateMultiplier);
     if (player.reloadTicksRemaining <= 0 && weapon.ammoMax !== undefined) {
       player.ammo = weapon.ammoMax;
     }

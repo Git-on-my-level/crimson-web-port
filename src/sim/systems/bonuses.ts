@@ -4,7 +4,7 @@ import type { SimState } from '../state';
 import type { SimEvent } from '../types';
 import { clampToWorld, findSpawnPosAwayFromPlayer } from '../world';
 import { findOpenTerrainPosition, isTerrainBlocked } from '../terrain';
-import { assignWeapon, pickRandomWeapon, refreshAvailableWeapons, unlockWeapon } from '../weapons/weaponTable';
+import { assignWeapon, getWeaponById, pickRandomWeapon, refreshAvailableWeapons, unlockWeapon } from '../weapons/weaponTable';
 import { getCreatureDef } from '../../content/creatures';
 import { grantXp } from './progression';
 import { registerQuestBonusCollected, registerQuestKill } from './mode_quest';
@@ -185,8 +185,17 @@ function applyBonus(state: SimState, bonus: SimState['bonuses'][0], events: SimE
       applyShockChain(state, events);
       break;
     }
+    case 'weapon_power_up': {
+      applyTimedBonus(state, bonus.kind, def);
+      const weapon = getWeaponById(state.player.weaponId);
+      state.player.fireCooldownTicks = 0;
+      state.player.reloadTicksRemaining = 0;
+      if (weapon.ammoMax !== undefined) {
+        state.player.ammo = weapon.ammoMax;
+      }
+      break;
+    }
     case 'energizer':
-    case 'weapon_power_up':
     case 'double_xp':
     case 'reflex_boost':
     case 'shield':
@@ -329,6 +338,12 @@ export function getFireRateMultiplier(player: SimState['player']): number {
   const weaponPowerUpTicks = player.activeEffects['weapon_power_up'] ?? 0;
   const bonusMultiplier = weaponPowerUpTicks > 0 ? 1.5 : 1.0;
   return player.perkStats.fireRateMultiplier * bonusMultiplier;
+}
+
+export function getReloadRateMultiplier(player: SimState['player']): number {
+  const weaponPowerUpTicks = player.activeEffects['weapon_power_up'] ?? 0;
+  const reloadTimeMultiplier = weaponPowerUpTicks > 0 ? 0.6 : 1.0;
+  return 1 / reloadTimeMultiplier;
 }
 
 export function getXpMultiplier(player: SimState['player']): number {
