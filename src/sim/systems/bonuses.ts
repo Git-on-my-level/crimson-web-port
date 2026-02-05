@@ -1,4 +1,5 @@
 import { getBonusDef, pickRandomBonusType, type BonusId } from '../../content/bonuses';
+import type { WeaponId } from '../../content/weapons';
 import type { SimState } from '../state';
 import type { SimEvent } from '../types';
 import { clampToWorld, findSpawnPosAwayFromPlayer } from '../world';
@@ -72,15 +73,27 @@ export function spawnBonus(
   const clamped = clampToWorld({ x: pos.x, y: pos.y }, BONUS_RADIUS);
   const spawnPos = findOpenTerrainPosition(state.terrain, state.rng, clamped, BONUS_RADIUS);
   const id = state.nextEntityId++;
+  const lifeTicksRemaining = BONUS_DESPAWN_TICKS;
+  let weaponId: WeaponId | undefined;
+  let amount: number | undefined;
+  if (kind === 'weapon') {
+    const available = refreshAvailableWeapons(state.player);
+    weaponId = pickRandomWeapon(state.rng, available);
+  } else if (kind === 'score') {
+    amount = SCORE_BONUS_AMOUNT;
+  }
   state.bonuses.push({
     id,
     pos: { x: spawnPos.x, y: spawnPos.y },
     active: true,
     kind,
     radius: BONUS_RADIUS,
-    lifeTicksRemaining: BONUS_DESPAWN_TICKS,
+    lifeTicksRemaining,
+    lifeTicksMax: lifeTicksRemaining,
+    amount,
+    weaponId,
   });
-  events.push({ type: 'spawnBonus', id, pos: spawnPos, kind });
+  events.push({ type: 'spawnBonus', id, pos: spawnPos, kind, weaponId, amount, lifeTicksMax: lifeTicksRemaining });
 }
 
 export function checkBonusPickup(state: SimState, events: SimEvent[]): void {
@@ -144,13 +157,14 @@ function applyBonus(state: SimState, bonus: SimState['bonuses'][0], events: SimE
       break;
     }
     case 'score': {
-      state.score += SCORE_BONUS_AMOUNT;
-      events.push({ type: 'score', amount: SCORE_BONUS_AMOUNT, total: state.score });
+      const amount = bonus.amount ?? SCORE_BONUS_AMOUNT;
+      state.score += amount;
+      events.push({ type: 'score', amount, total: state.score });
       break;
     }
     case 'weapon': {
       const available = refreshAvailableWeapons(state.player);
-      const nextWeapon = pickRandomWeapon(state.rng, available);
+      const nextWeapon = bonus.weaponId ?? pickRandomWeapon(state.rng, available);
       unlockWeapon(state.player, nextWeapon);
       assignWeapon(state.player, nextWeapon);
       events.push({ type: 'playSfx', name: 'weapon_pickup' });

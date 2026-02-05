@@ -72,6 +72,9 @@ export interface BonusState {
   kind: BonusId;
   radius: number;
   lifeTicksRemaining: number;
+  lifeTicksMax?: number;
+  amount?: number;
+  weaponId?: WeaponId;
 }
 
 export interface SimState {

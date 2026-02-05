@@ -1,5 +1,6 @@
 import type { BonusId } from '../content/bonuses';
 import type { PerkId } from '../content/perks';
+import type { WeaponId } from '../content/weapons';
 
 export type EntityId = number;
 
@@ -36,7 +37,7 @@ export type SimEvent =
   | { type: 'spawnProjectile'; id: EntityId; pos: Vec2; vel: Vec2; kind: string }
   | { type: 'projectileImpact'; id: EntityId; pos: Vec2; kind: string; explosionRadius?: number }
   | { type: 'spawnCreature'; id: EntityId; pos: Vec2; kind: string }
-  | { type: 'spawnBonus'; id: EntityId; pos: Vec2; kind: BonusId }
+  | { type: 'spawnBonus'; id: EntityId; pos: Vec2; kind: BonusId; weaponId?: WeaponId; amount?: number; lifeTicksMax?: number }
   | { type: 'damage'; target: 'player' | 'creature'; id: EntityId; amount: number }
   | { type: 'death'; target: 'player' | 'creature'; id: EntityId }
   | { type: 'gameOver'; id: EntityId }
