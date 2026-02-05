@@ -341,6 +341,6 @@ export function createSimState(
     selectedQuestId,
   };
 
-  refreshAvailableWeapons(player);
+  refreshAvailableWeapons(player, { mode });
   return state;
 }

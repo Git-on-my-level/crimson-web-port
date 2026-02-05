@@ -173,7 +173,7 @@ function applyBonus(state: SimState, bonus: SimState['bonuses'][0], events: SimE
     case 'weapon': {
       const available = getWeaponBonusPool(state);
       const nextWeapon = bonus.weaponId ?? pickRandomWeapon(state.rng, available);
-      unlockWeapon(state.player, nextWeapon);
+      unlockWeapon(state.player, nextWeapon, { mode: state.mode });
       assignWeapon(state.player, nextWeapon);
       events.push({ type: 'playSfx', name: 'weapon_pickup' });
       break;
@@ -267,7 +267,7 @@ function pickBonusWithReroll(state: SimState): BonusId {
 }
 
 function getWeaponBonusPool(state: SimState): WeaponId[] {
-  const available = refreshAvailableWeapons(state.player);
+  const available = refreshAvailableWeapons(state.player, { mode: state.mode });
   if (available.length <= 1) {
     return available;
   }

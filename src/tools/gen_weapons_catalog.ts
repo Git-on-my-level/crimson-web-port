@@ -117,7 +117,6 @@ function generateWeaponDefs(specs: FullWeaponSpec[]): string {
     const fireRate = shotCooldown !== '0' ? `(1.0 / ${shotCooldown})` : '0';
     const fireMode = 'auto';
     const projectileProfileId = 'undefined';
-    const unlockLevel = '1';
 
     return `  {
     id: '${id}',
@@ -146,7 +145,6 @@ function generateWeaponDefs(specs: FullWeaponSpec[]): string {
     fireRate: ${fireRate},
     fireMode: '${fireMode}',
     projectileProfileId: ${projectileProfileId},
-    unlockLevel: ${unlockLevel},
   }`;
   });
 
@@ -236,7 +234,6 @@ export interface WeaponDef {
   fireRate: number;
   fireMode: 'single' | 'auto' | 'burst';
   projectileProfileId: undefined;
-  unlockLevel?: number;
 }
 
 export const WEAPONS: WeaponDef[] = [
