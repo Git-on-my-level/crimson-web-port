@@ -20,6 +20,7 @@ describe('Parity: dynamic probes', () => {
     const findings = probeReloadHappens.run({
       setup: (sim) => {
         assignWeapon(sim.state.player, 'pistol');
+        sim.state.player.ammo = 0;
       },
     });
     expectProbeFailure(findings, 'probe:reload-happens');
