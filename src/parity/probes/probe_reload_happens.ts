@@ -14,9 +14,9 @@ function runReloadProbe(override?: ProbeRunOverride) {
   const sim = new Sim({ seed: override?.seed ?? DEFAULT_SEED, mode: 'survival' });
   clearTerrain(sim.state);
 
-  unlockWeapon(sim.state.player, 'smg');
-  assignWeapon(sim.state.player, 'smg');
-  const weapon = WEAPON_BY_ID.smg;
+  unlockWeapon(sim.state.player, 'submachine_gun');
+  assignWeapon(sim.state.player, 'submachine_gun');
+  const weapon = WEAPON_BY_ID.submachine_gun;
   const ammoMax = weapon.ammoMax ?? 0;
   sim.state.player.ammo = ammoMax;
   sim.state.player.reloadTicksRemaining = 0;

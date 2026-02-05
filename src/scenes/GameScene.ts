@@ -390,7 +390,7 @@ export class GameScene extends Phaser.Scene {
 
     rofKey.on('down', () => {
       const player = this.sim.state.player;
-      player.weaponId = 'smg';
+      player.weaponId = 'submachine_gun';
       const def = WEAPON_BY_ID[player.weaponId];
       if (def && def.ammoMax !== undefined) {
         player.ammo = def.ammoMax;

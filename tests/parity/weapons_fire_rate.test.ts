@@ -39,9 +39,9 @@ function setupSimWithWeapon(weaponId: keyof typeof WEAPON_BY_ID): Sim {
 }
 
 describe('Parity: weapon fire rate + reload', () => {
-  it('fires on a stable cooldown for the SMG', () => {
-    const sim = setupSimWithWeapon('smg');
-    const weapon = WEAPON_BY_ID.smg;
+  it('fires on a stable cooldown for submachine gun', () => {
+    const sim = setupSimWithWeapon('submachine_gun');
+    const weapon = WEAPON_BY_ID.submachine_gun;
     sim.state.player.ammo = 999;
 
     const cooldownTicks = Math.max(
@@ -65,8 +65,8 @@ describe('Parity: weapon fire rate + reload', () => {
   });
 
   it('consumes ammo and reloads when empty', () => {
-    const sim = setupSimWithWeapon('smg');
-    const weapon = WEAPON_BY_ID.smg;
+    const sim = setupSimWithWeapon('submachine_gun');
+    const weapon = WEAPON_BY_ID.submachine_gun;
     const ammoStart = 3;
     sim.state.player.ammo = ammoStart;
 

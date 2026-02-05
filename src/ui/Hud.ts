@@ -117,7 +117,7 @@ export class Hud {
         const reloadTag = state.player.reloadTicksRemaining > 0 ? ' (Reloading)' : '';
         this.weaponText.setText(`${weapon.name} ${ammo}/${weapon.ammoMax}${reloadTag}`);
       } else {
-        this.weaponText.setText(weapon.name);
+        this.weaponText.setText(weapon.name ?? 'Unknown');
       }
     } else {
       this.weaponText.setText('Weapon');

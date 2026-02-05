@@ -15,8 +15,8 @@ function runProjectilesProbe(override?: ProbeRunOverride) {
   sim.state.player.pos.x = 0;
   sim.state.player.pos.y = 0;
 
-  unlockWeapon(sim.state.player, 'smg');
-  assignWeapon(sim.state.player, 'smg');
+  unlockWeapon(sim.state.player, 'submachine_gun');
+  assignWeapon(sim.state.player, 'submachine_gun');
 
   spawnCreatureAtPosition(sim.state, [], 'grunt', { x: 8, y: 0 });
   if (sim.state.creatures[0]) {
