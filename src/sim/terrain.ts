@@ -11,11 +11,11 @@ export interface TerrainGrid {
   blocked: Uint8Array;
 }
 
-const TERRAIN_CELL_SIZE = 8;
-const TERRAIN_FILL_CHANCE = 0.12;
-const TERRAIN_SMOOTH_PASSES = 2;
+const TERRAIN_CELL_SIZE = 4;
+const TERRAIN_FILL_CHANCE = 0;
+const TERRAIN_SMOOTH_PASSES = 0;
 const TERRAIN_EDGE_CLEAR_CELLS = 1;
-const TERRAIN_CLEAR_RADIUS = 8;
+const TERRAIN_CLEAR_RADIUS = 6;
 const TERRAIN_SPAWN_SEARCH_RADIUS = 10;
 
 export function terrain_generate(seed: number): TerrainGrid {

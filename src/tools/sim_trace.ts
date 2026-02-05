@@ -50,10 +50,10 @@ type TraceSnapshot = {
   modeState:
     | {
         kind: 'survival';
-        elapsedTicks: number;
-        difficultyLevel: number;
-        spawnBudget: number;
-        maxCreaturesSoftCap: number;
+        elapsedMs: number;
+        spawnCooldownMs: number;
+        spawnMinDistance: number;
+        spawnMaxDistance: number;
       }
     | {
         kind: 'quest';
@@ -323,10 +323,10 @@ function buildSnapshot(state: SimState): TraceSnapshot {
       state.modeState.kind === 'survival'
         ? {
             kind: 'survival',
-            elapsedTicks: state.modeState.elapsedTicks,
-            difficultyLevel: state.modeState.difficultyLevel,
-            spawnBudget: Number(state.modeState.spawnBudget.toFixed(4)),
-            maxCreaturesSoftCap: state.modeState.maxCreaturesSoftCap,
+            elapsedMs: Number(state.modeState.elapsedMs.toFixed(2)),
+            spawnCooldownMs: Number(state.modeState.spawnCooldownMs.toFixed(2)),
+            spawnMinDistance: state.modeState.spawnMinDistance,
+            spawnMaxDistance: state.modeState.spawnMaxDistance,
           }
         : {
             kind: 'quest',

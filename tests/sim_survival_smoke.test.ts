@@ -128,9 +128,6 @@ describe('Survival smoke', () => {
 
     expect(sim.state.score).toBeGreaterThan(0);
     expect(sim.state.player.level).toBeGreaterThanOrEqual(1);
-    if (sim.state.modeState.kind === 'survival') {
-      expect(sim.state.creatures.length).toBeLessThanOrEqual(sim.state.modeState.maxCreaturesSoftCap);
-    }
     expect(sim.state.projectiles.length).toBeGreaterThanOrEqual(0);
   });
 

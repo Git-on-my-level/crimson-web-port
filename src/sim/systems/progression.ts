@@ -22,7 +22,7 @@ export function grantXp(state: SimState, events: SimEvent[], amount: number): vo
   player.xp += gained;
   events.push({ type: 'xp', amount: gained, total: player.xp, level: player.level });
 
-  if (player.xp < player.xpToNext) {
+  if (player.xp <= player.xpToNext) {
     return;
   }
 
@@ -81,7 +81,7 @@ export function choosePerk(state: SimState, events: SimEvent[], perkId: PerkId):
   state.phase = 'Playing';
 
   events.push({ type: 'perkChosen', perkId, level: player.level });
-  if (player.xp >= player.xpToNext) {
+  if (player.xp > player.xpToNext) {
     levelUp(state, events);
   }
   return true;

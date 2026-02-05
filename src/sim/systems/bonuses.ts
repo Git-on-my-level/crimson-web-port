@@ -84,7 +84,7 @@ export function spawnBonus(
   let weaponId: WeaponId | undefined;
   let amount: number | undefined;
   if (kind === 'weapon') {
-    const available = refreshAvailableWeapons(state.player);
+    const available = getWeaponBonusPool(state);
     weaponId = pickRandomWeapon(state.rng, available);
   } else if (kind === 'points') {
     amount = state.rng.nextFloat01() < POINTS_BONUS_BIG_CHANCE ? POINTS_BONUS_BIG : POINTS_BONUS_BASE;
@@ -171,7 +171,7 @@ function applyBonus(state: SimState, bonus: SimState['bonuses'][0], events: SimE
       break;
     }
     case 'weapon': {
-      const available = refreshAvailableWeapons(state.player);
+      const available = getWeaponBonusPool(state);
       const nextWeapon = bonus.weaponId ?? pickRandomWeapon(state.rng, available);
       unlockWeapon(state.player, nextWeapon);
       assignWeapon(state.player, nextWeapon);
@@ -264,6 +264,15 @@ function pickBonusWithReroll(state: SimState): BonusId {
     }
   }
   return 'points';
+}
+
+function getWeaponBonusPool(state: SimState): WeaponId[] {
+  const available = refreshAvailableWeapons(state.player);
+  if (available.length <= 1) {
+    return available;
+  }
+  const filtered = available.filter((weaponId) => weaponId !== state.player.weaponId);
+  return filtered.length > 0 ? filtered : available;
 }
 
 function isBonusAllowed(state: SimState, bonusId: BonusId): boolean {

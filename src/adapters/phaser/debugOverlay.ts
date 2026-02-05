@@ -3,7 +3,7 @@ import type { SimProfile, SimState } from '../../sim/state';
 
 export class DebugOverlay {
   private readonly text: Phaser.GameObjects.Text;
-  private visible = true;
+  private visible = false;
   private readonly stepTimeHistory: number[] = [];
   private readonly HISTORY_SIZE = 60;
   private readonly profileHistory: Record<keyof SimProfile, number[]> = {
@@ -28,7 +28,7 @@ export class DebugOverlay {
       color: '#e5e7eb',
       backgroundColor: 'rgba(15, 23, 42, 0.65)',
       padding: { x: 10, y: 8 },
-    }).setDepth(1000);
+    }).setDepth(1000).setVisible(this.visible);
 
     this.onToggle = () => {
       this.visible = !this.visible;

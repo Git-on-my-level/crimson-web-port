@@ -113,21 +113,11 @@ export interface SimProfile {
 
 export interface SurvivalModeState {
   kind: 'survival';
-  elapsedTicks: number;
-  spawnBudget: number;
-  difficultyLevel: number;
-  maxCreaturesSoftCap: number;
+  elapsedMs: number;
+  spawnCooldownMs: number;
   spawnMinDistance: number;
   spawnMaxDistance: number;
   killsTotal: number;
-  nextWaveIndex: number;
-  spawnQueue: {
-    kind: string;
-    remaining: number;
-    pattern: 'edge' | 'near' | 'ring';
-    intervalTicks: number;
-    nextTick: number;
-  }[];
 }
 
 export interface QuestModeState {
@@ -159,15 +149,11 @@ export type ModeState = SurvivalModeState | QuestModeState;
 export function createSurvivalModeState(): SurvivalModeState {
   return {
     kind: 'survival',
-    elapsedTicks: 0,
-    spawnBudget: 0,
-    difficultyLevel: 0,
-    maxCreaturesSoftCap: 6,
+    elapsedMs: 0,
+    spawnCooldownMs: 0,
     spawnMinDistance: 10,
     spawnMaxDistance: 24,
     killsTotal: 0,
-    nextWaveIndex: 0,
-    spawnQueue: [],
   };
 }
 

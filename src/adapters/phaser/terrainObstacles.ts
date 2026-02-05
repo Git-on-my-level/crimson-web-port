@@ -1,9 +1,16 @@
 import Phaser from 'phaser';
 import type { TerrainGrid } from '../../sim/terrain';
+import { WORLD_BOUNDS } from '../../sim/world';
 import type { RenderTransform } from './render';
 
 const OBSTACLE_COLOR = 0x101826;
 const OBSTACLE_ALPHA = 0.85;
+const BORDER_COLOR = 0x1f2937;
+const BORDER_ALPHA = 0.9;
+const BORDER_WIDTH = 2;
+const OUTSIDE_COLOR = 0x0b0d12;
+const OUTSIDE_ALPHA = 0.85;
+const OUTSIDE_PADDING = 4000;
 
 export class TerrainObstacles {
   private readonly graphics: Phaser.GameObjects.Graphics;
@@ -47,5 +54,20 @@ export class TerrainObstacles {
         this.graphics.fillRect(screenX, screenY, sizePx, sizePx);
       }
     }
+
+    const minX = this.transform.originX + WORLD_BOUNDS.minX * this.transform.pixelsPerUnit;
+    const minY = this.transform.originY + WORLD_BOUNDS.minY * this.transform.pixelsPerUnit;
+    const maxX = this.transform.originX + WORLD_BOUNDS.maxX * this.transform.pixelsPerUnit;
+    const maxY = this.transform.originY + WORLD_BOUNDS.maxY * this.transform.pixelsPerUnit;
+    this.graphics.fillStyle(OUTSIDE_COLOR, OUTSIDE_ALPHA);
+    const worldWidth = maxX - minX;
+    const worldHeight = maxY - minY;
+    this.graphics.fillRect(minX - OUTSIDE_PADDING, minY - OUTSIDE_PADDING, OUTSIDE_PADDING, worldHeight + OUTSIDE_PADDING * 2);
+    this.graphics.fillRect(maxX, minY - OUTSIDE_PADDING, OUTSIDE_PADDING, worldHeight + OUTSIDE_PADDING * 2);
+    this.graphics.fillRect(minX, minY - OUTSIDE_PADDING, worldWidth, OUTSIDE_PADDING);
+    this.graphics.fillRect(minX, maxY, worldWidth, OUTSIDE_PADDING);
+
+    this.graphics.lineStyle(BORDER_WIDTH, BORDER_COLOR, BORDER_ALPHA);
+    this.graphics.strokeRect(minX, minY, maxX - minX, maxY - minY);
   }
 }

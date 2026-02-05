@@ -11,6 +11,7 @@ import { ControlsOverlay } from '../ui/ControlsOverlay';
 import { Menu } from '../ui/Menu';
 import { UI_STYLE } from '../ui/style';
 import { spawnCreatureAtEdge } from '../sim/systems/creatures';
+import { WORLD_BOUNDS } from '../sim/world';
 import { WEAPON_BY_ID } from '../content/weapons';
 import type { SimEvent } from '../sim/types';
 import { PhaserAudioAdapter } from '../adapters/phaser/audio';
@@ -106,6 +107,7 @@ export class GameScene extends Phaser.Scene {
 
     this.sim = new Sim({ seed: this.seed, mode: this.mode, questId: this.questId, debug: this.debugEnabled });
     this.updateSurvivalSpawnRange();
+    this.updateCameraBounds();
     this.inputAdapter = new PhaserInputAdapter(this, () => this.getTransform());
     this.renderAdapter = new PhaserRenderAdapter(this, this.getTransform());
     this.debugOverlay = new DebugOverlay(this);
@@ -166,6 +168,7 @@ export class GameScene extends Phaser.Scene {
     this.terrainObstacles?.setTransform(this.getTransform());
     this.terrain?.resize(gameSize.width, gameSize.height);
     this.updateSurvivalSpawnRange();
+    this.updateCameraBounds();
     if (this.gameOverText) {
       this.gameOverText.setPosition(this.originX, this.originY);
     }
@@ -362,6 +365,14 @@ export class GameScene extends Phaser.Scene {
     this.sim.state.modeState.spawnMaxDistance = minDistance + 6;
   }
 
+  private updateCameraBounds(): void {
+    const minX = this.originX + WORLD_BOUNDS.minX * this.pixelsPerUnit;
+    const minY = this.originY + WORLD_BOUNDS.minY * this.pixelsPerUnit;
+    const maxX = this.originX + WORLD_BOUNDS.maxX * this.pixelsPerUnit;
+    const maxY = this.originY + WORLD_BOUNDS.maxY * this.pixelsPerUnit;
+    this.cameras.main.setBounds(minX, minY, maxX - minX, maxY - minY);
+  }
+
   private setupDebugControls(): void {
     const keyboard = this.input.keyboard;
     if (!keyboard) {
@@ -415,18 +426,19 @@ export class GameScene extends Phaser.Scene {
   private showPauseMenu(): void {
     const { width, height } = this.scale;
     this.pauseBackdrop = this.add.rectangle(width / 2, height / 2, width, height, 0x0b0d12, 0.55)
-      .setDepth(920);
+      .setDepth(920)
+      .setScrollFactor(0);
 
     this.pauseTitle = this.add.text(width / 2, height / 2 - 180, 'Paused', {
       ...UI_STYLE.text.title,
       fontFamily: UI_STYLE.fontFamily,
       fontSize: '40px',
-    }).setOrigin(0.5).setDepth(921);
+    }).setOrigin(0.5).setDepth(921).setScrollFactor(0);
 
     this.pauseHint = this.add.text(width / 2, height / 2 + 190, 'Press Esc or P to resume', {
       ...UI_STYLE.text.small,
       fontFamily: UI_STYLE.fontFamily,
-    }).setOrigin(0.5).setDepth(921);
+    }).setOrigin(0.5).setDepth(921).setScrollFactor(0);
 
     const menuItems = [
       {

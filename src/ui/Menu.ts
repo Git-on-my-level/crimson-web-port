@@ -16,14 +16,24 @@ export class Menu {
   private container: Phaser.GameObjects.Container;
   private onIndexChange?: (index: number) => void;
 
-  constructor(scene: Phaser.Scene, items: MenuItem[]) {
+  constructor(
+    scene: Phaser.Scene,
+    items: MenuItem[],
+    options: { x?: number; y?: number; depth?: number; scrollFactor?: number } = {},
+  ) {
     this.scene = scene;
     this.items = items;
 
     const { width, height } = scene.scale;
     const { buttonHeight, buttonWidth, colors } = UI_STYLE;
 
-    this.container = scene.add.container(width / 2, height / 2);
+    const x = options.x ?? width / 2;
+    const y = options.y ?? height / 2;
+    const scrollFactor = options.scrollFactor ?? 0;
+    this.container = scene.add.container(x, y).setScrollFactor(scrollFactor);
+    if (options.depth !== undefined) {
+      this.container.setDepth(options.depth);
+    }
 
     const totalHeight = items.length * (buttonHeight + 8);
     const startY = -totalHeight / 2 + buttonHeight / 2;
@@ -33,6 +43,7 @@ export class Menu {
 
       const bg = scene.add.rectangle(0, y, buttonWidth, buttonHeight, 0x1e40af)
         .setStrokeStyle(2, 0x3b82f6)
+        .setScrollFactor(scrollFactor)
         .setInteractive({ useHandCursor: true })
         .setAlpha(item.enabled !== false ? 1 : 0.5);
 
@@ -42,6 +53,7 @@ export class Menu {
         color: item.enabled !== false ? colors.text : colors.textSecondary,
       })
         .setOrigin(0.5)
+        .setScrollFactor(scrollFactor)
         .setInteractive({ useHandCursor: true })
         .setAlpha(item.enabled !== false ? 1 : 0.5);
 
@@ -132,6 +144,14 @@ export class Menu {
 
   setOnIndexChange(callback: (index: number) => void): void {
     this.onIndexChange = callback;
+  }
+
+  setPosition(x: number, y: number): void {
+    this.container.setPosition(x, y);
+  }
+
+  setDepth(depth: number): void {
+    this.container.setDepth(depth);
   }
 
   destroy(): void {

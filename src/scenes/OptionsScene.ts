@@ -137,6 +137,14 @@ export class OptionsScene extends Phaser.Scene {
     ];
 
     this.menu = new Menu(this, menuItems);
+    this.positionMenu();
+  }
+
+  private positionMenu(): void {
+    if (!this.menu) return;
+    const { width, height } = this.scale;
+    this.menu.setPosition(width / 2, height - 90);
+    this.menu.setDepth(200);
   }
 
   private createKeybindList(width: number): void {

@@ -13,12 +13,14 @@ export class PhaserInputAdapter {
   private readonly keys: Record<string, Phaser.Input.Keyboard.Key>;
   private readonly getTransform: () => InputTransform;
   private keybinds: Keybinds;
+  private suppressPointerFireUntilUp: boolean;
 
   constructor(scene: Phaser.Scene, getTransform: () => InputTransform) {
     this.scene = scene;
     this.getTransform = getTransform;
     this.keybinds = loadSettings().keybinds;
     this.keys = this.setupKeys();
+    this.suppressPointerFireUntilUp = this.scene.input.activePointer.isDown;
   }
 
   private setupKeys(): Record<string, Phaser.Input.Keyboard.Key> {
@@ -57,17 +59,21 @@ export class PhaserInputAdapter {
       + (this.isKeybindDown(this.keybinds.moveDown) ? 1 : 0);
 
     const pointer = this.scene.input.activePointer;
+    if (this.suppressPointerFireUntilUp && !pointer.isDown) {
+      this.suppressPointerFireUntilUp = false;
+    }
     const { originX, originY, pixelsPerUnit } = this.getTransform();
     const world = this.scene.cameras.main.getWorldPoint(pointer.x, pointer.y);
     const aimWorldX = (world.x - originX) / pixelsPerUnit;
     const aimWorldY = (world.y - originY) / pixelsPerUnit;
+    const pointerFire = pointer.isDown && !this.suppressPointerFireUntilUp;
 
     return {
       moveX,
       moveY,
       aimX: aimWorldX,
       aimY: aimWorldY,
-      fire: pointer.isDown || this.isKeybindDown(this.keybinds.fire),
+      fire: pointerFire || this.isKeybindDown(this.keybinds.fire),
       reload: this.isKeybindDown(this.keybinds.reload),
       weaponSwitch: this.readWeaponSwitch(),
       pause: this.isKeybindDown(this.keybinds.pause) || this.isDown('ESC'),

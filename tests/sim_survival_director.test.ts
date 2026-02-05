@@ -40,7 +40,6 @@ describe('Survival director', () => {
     boostPlayerHp(simB);
 
     const totalTicks = 10_000;
-    let maxAlive = 0;
     let spawnCountA = 0;
     let spawnCountB = 0;
 
@@ -48,28 +47,17 @@ describe('Survival director', () => {
       const resultA = simA.step(IDLE_INPUT);
       const resultB = simB.step(IDLE_INPUT);
 
-      spawnCountA += resultA.events.filter((event) => event.type === 'spawnCreature').length;
-      spawnCountB += resultB.events.filter((event) => event.type === 'spawnCreature').length;
+      const spawnsA = resultA.events.filter((event) => event.type === 'spawnCreature').length;
+      const spawnsB = resultB.events.filter((event) => event.type === 'spawnCreature').length;
+      spawnCountA += spawnsA;
+      spawnCountB += spawnsB;
 
       const aliveA = countAlive(simA);
       const aliveB = countAlive(simB);
-      const capA =
-        simA.state.modeState.kind === 'survival' ? simA.state.modeState.maxCreaturesSoftCap : 0;
-
-      expect(aliveA).toBeLessThanOrEqual(capA);
       expect(aliveA).toBe(aliveB);
-
-      if (aliveA > maxAlive) {
-        maxAlive = aliveA;
-      }
     }
 
     expect(spawnCountA).toBeGreaterThan(0);
     expect(spawnCountA).toBe(spawnCountB);
-
-    if (simA.state.modeState.kind === 'survival') {
-      expect(simA.state.modeState.difficultyLevel).toBeGreaterThanOrEqual(4);
-      expect(maxAlive).toBeLessThanOrEqual(simA.state.modeState.maxCreaturesSoftCap);
-    }
   });
 });

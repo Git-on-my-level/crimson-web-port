@@ -1,8 +1,8 @@
 import type { Rng } from './rng';
 import type { Vec2 } from './types';
 
-export const WORLD_WIDTH = 2000;
-export const WORLD_HEIGHT = 2000;
+export const WORLD_WIDTH = 128;
+export const WORLD_HEIGHT = 128;
 
 export const WORLD_BOUNDS = {
   minX: -WORLD_WIDTH / 2,
