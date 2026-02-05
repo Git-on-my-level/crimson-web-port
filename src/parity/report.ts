@@ -129,7 +129,7 @@ function validateRunMeta(value: unknown, path: string, issues: string[]): value 
   return true;
 }
 
-function validateReport(value: unknown): value is ParityReport {
+function validateReport(value: unknown): asserts value is ParityReport {
   const issues: string[] = [];
 
   if (!isRecord(value)) {
@@ -153,8 +153,6 @@ function validateReport(value: unknown): value is ParityReport {
   if (issues.length > 0) {
     throw new ParityReportValidationError(issues);
   }
-
-  return true;
 }
 
 export function writeReport(path: string, report: ParityReport): void {
