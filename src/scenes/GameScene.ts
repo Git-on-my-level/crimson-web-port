@@ -356,9 +356,15 @@ export class GameScene extends Phaser.Scene {
     }
     const { width, height } = this.scale;
     const viewRadiusUnits = 0.5 * Math.hypot(width / this.pixelsPerUnit, height / this.pixelsPerUnit);
-    const minDistance = viewRadiusUnits + 2;
+    const worldRadius = Math.min(
+      WORLD_BOUNDS.maxX - WORLD_BOUNDS.minX,
+      WORLD_BOUNDS.maxY - WORLD_BOUNDS.minY,
+    ) / 2;
+    const maxMinDistance = Math.max(2, worldRadius - 2);
+    const minDistance = Math.min(viewRadiusUnits + 2, maxMinDistance);
+    const maxDistance = Math.min(minDistance + 6, worldRadius);
     this.sim.state.modeState.spawnMinDistance = minDistance;
-    this.sim.state.modeState.spawnMaxDistance = minDistance + 6;
+    this.sim.state.modeState.spawnMaxDistance = Math.max(minDistance, maxDistance);
   }
 
   private updateCameraBounds(): void {

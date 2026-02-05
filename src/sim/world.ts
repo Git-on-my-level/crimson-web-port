@@ -1,8 +1,10 @@
 import type { Rng } from './rng';
 import type { Vec2 } from './types';
 
-export const WORLD_WIDTH = 1024;
-export const WORLD_HEIGHT = 1024;
+// World units are scaled for rendering (see pixelsPerUnit in GameScene).
+// 1024px world / 20px-per-unit = 51.2 world units.
+export const WORLD_WIDTH = 51.2;
+export const WORLD_HEIGHT = 51.2;
 
 export const WORLD_BOUNDS = {
   minX: -WORLD_WIDTH / 2,

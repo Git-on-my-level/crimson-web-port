@@ -168,7 +168,7 @@ export function updateCreatures(state: SimState, events: SimEvent[], dt: number)
 
       const moveSpeed = creature.speed;
       const turnRate = moveSpeed * (4.0 / 3.0);
-      const speed = moveSpeed * 30 * creature.moveScale;
+      const speed = moveSpeed * creature.moveScale;
 
       creature.heading = angleApproach(creature.heading, targetHeading, turnRate, dt);
       const dirX = Math.cos(creature.heading - Math.PI / 2.0);

@@ -1,7 +1,8 @@
 import type { Vec2 } from '../types';
 import { WORLD_WIDTH } from '../world';
 
-const REF_HALF = 512;
+export const REF_WORLD_SIZE = 1024;
+const REF_HALF = REF_WORLD_SIZE / 2;
 const WORLD_HALF = WORLD_WIDTH / 2;
 const REF_TO_WORLD = WORLD_HALF / REF_HALF;
 

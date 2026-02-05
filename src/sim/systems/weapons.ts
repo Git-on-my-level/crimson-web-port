@@ -191,6 +191,8 @@ export function updateWeapons(state: SimState, events: SimEvent[], dt: number): 
   const aimDy = player.input.aimY - player.pos.y;
   const aimDist = Math.hypot(aimDx, aimDy);
   const aimMaxOffset = aimDist * player.spreadHeat * 0.5;
+  const aimDirX = aimDist > 0.0001 ? aimDx / aimDist : player.aimDir.x;
+  const aimDirY = aimDist > 0.0001 ? aimDy / aimDist : player.aimDir.y;
   const jitterDir = state.rng.nextUint32() & AIM_JITTER_MASK;
   const jitterMag = state.rng.nextUint32() & AIM_JITTER_MASK;
   const jitterAngle = jitterDir * AIM_JITTER_SCALE;
@@ -202,8 +204,8 @@ export function updateWeapons(state: SimState, events: SimEvent[], dt: number): 
   const fireBulletsActive = (player.activeEffects['fire_bullets'] ?? 0) > 0;
   const muzzleOffset = weapon.muzzleOffset;
   const particleAngle = shotAngle;
-  const muzzleBaseX = player.pos.x + Math.cos(shotAngle) * muzzleOffset;
-  const muzzleBaseY = player.pos.y + Math.sin(shotAngle) * muzzleOffset;
+  const muzzleBaseX = player.pos.x + aimDirX * muzzleOffset;
+  const muzzleBaseY = player.pos.y + aimDirY * muzzleOffset;
   let ammoCost = 1;
 
   const spawnProjectileForWeapon = (
@@ -221,8 +223,8 @@ export function updateWeapons(state: SimState, events: SimEvent[], dt: number): 
     const projectileSpeed = weaponDef.projectileSpeed * player.perkStats.projectileSpeedMultiplier;
     const pDirX = Math.cos(angle);
     const pDirY = Math.sin(angle);
-    const posX = player.pos.x + pDirX * muzzleOffset;
-    const posY = player.pos.y + pDirY * muzzleOffset;
+    const posX = muzzleBaseX;
+    const posY = muzzleBaseY;
     const velX = pDirX * projectileSpeed;
     const velY = pDirY * projectileSpeed;
     const lifeTicks = Math.max(1, weaponDef.projectileLifeTicks);

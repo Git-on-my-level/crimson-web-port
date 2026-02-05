@@ -15,14 +15,16 @@ function runWorldSizeProbe(override?: ProbeRunOverride) {
   const ticks = override?.ticks ?? DEFAULT_TICKS;
   runSimTicks(sim, ticks, () => idleInput());
 
-  const ok = WORLD_WIDTH === 1024 && WORLD_HEIGHT === 1024;
+  const ok = WORLD_WIDTH === 51.2 && WORLD_HEIGHT === 51.2;
 
   return buildProbeFinding({
     id: `probe:${PROBE_ID}`,
     ok,
-    message: ok ? 'World bounds are 1024x1024.' : 'World bounds diverged from 1024x1024 target.',
+    message: ok
+      ? 'World bounds are 51.2x51.2 (1024px at 20px/unit).'
+      : 'World bounds diverged from 51.2x51.2 (1024px at 20px/unit) target.',
     details: `WORLD_WIDTH=${WORLD_WIDTH}, WORLD_HEIGHT=${WORLD_HEIGHT}`,
-    expected: { width: 1024, height: 1024 },
+    expected: { width: 51.2, height: 51.2 },
     actual: { width: WORLD_WIDTH, height: WORLD_HEIGHT },
     tags: BASE_TAGS,
   });

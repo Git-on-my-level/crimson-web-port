@@ -313,7 +313,7 @@ export function createSimState(
     altShotCooldown: 0,
     altSpreadHeat: 0.01,
     input: { ...EMPTY_INPUT },
-    baseSpeed: 6,
+    baseSpeed: 5,
     activeEffects: {},
     level: 1,
     xp: 0,

@@ -4,8 +4,7 @@ import { spawnCreatureAtPosition } from './creatures';
 import { advanceSurvivalSpawnStage } from '../modes/survival_spawn_stage';
 import { resolveSurvivalSpawnTemplate } from '../modes/survival_spawn_templates';
 import { tickSurvivalWaveSpawns } from '../modes/survival_wave_spawns';
-import { refPos } from '../modes/survival_ref';
-import { WORLD_WIDTH, WORLD_HEIGHT } from '../world';
+import { refPos, REF_WORLD_SIZE } from '../modes/survival_ref';
 
 const MS_PER_SECOND = 1000;
 
@@ -32,8 +31,8 @@ export function updateSurvivalMode(state: SimState, events: SimEvent[], dt: numb
     playerCount: 1,
     survivalElapsedMs: modeState.elapsedMs,
     playerExperience: state.player.xp,
-    terrainWidth: WORLD_WIDTH,
-    terrainHeight: WORLD_HEIGHT,
+    terrainWidth: REF_WORLD_SIZE,
+    terrainHeight: REF_WORLD_SIZE,
   });
   modeState.spawnCooldownMs = waveResult.spawnCooldownMs;
   for (const waveSpawn of waveResult.spawns) {
