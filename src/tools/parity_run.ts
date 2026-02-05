@@ -124,7 +124,7 @@ function buildVitestFindings(report: VitestJsonReport): {
         status: 'fail',
         message: title,
         details: Array.isArray(assertion.failureMessages) ? assertion.failureMessages.join('\n') : undefined,
-        tags: ['vitest'],
+        tags: ['vitest', 'critical'],
       });
     });
   });

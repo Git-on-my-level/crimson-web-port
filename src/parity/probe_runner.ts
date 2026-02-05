@@ -8,9 +8,11 @@ import { idleInput, constantFireInput } from './probes/utils';
 type ProbeMatrixConfig = {
   seeds: number[];
   ticks: number[];
-  inputPatterns: ('idle' | 'constant-fire')[];
+  inputPatterns: InputPattern[];
   modes: ('survival' | 'quest')[];
 };
+
+type InputPattern = 'idle' | 'constant-fire';
 
 type InputPatternMap = {
   'idle': (tick: number) => any;
@@ -55,7 +57,13 @@ function generateMatrixOverrides(probe: typeof PROBES[0], matrix: ProbeMatrixCon
   const overrides: ProbeRunOverride[] = [];
   const seeds = matrix.seeds.length > 0 ? matrix.seeds : [probe.defaultSeed];
   const ticks = matrix.ticks.length > 0 ? matrix.ticks : [probe.defaultTicks];
-  const patterns = matrix.inputPatterns.length > 0 ? matrix.inputPatterns : ['idle'];
+  const supportedPatterns: InputPattern[] = probe.inputPatterns?.length ? probe.inputPatterns : ['idle'];
+  const matrixPatterns = matrix.inputPatterns.length > 0 ? matrix.inputPatterns : supportedPatterns;
+  const patterns = matrixPatterns.filter((pattern) => supportedPatterns.includes(pattern));
+
+  if (patterns.length === 0) {
+    return overrides;
+  }
 
   for (const seed of seeds) {
     for (const tick of ticks) {

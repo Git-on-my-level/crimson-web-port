@@ -15,5 +15,6 @@ export type ProbeDefinition = {
   tags: string[];
   defaultSeed: number;
   defaultTicks: number;
+  inputPatterns?: Array<'idle' | 'constant-fire'>;
   run: (override?: ProbeRunOverride) => ParityFinding[];
 };

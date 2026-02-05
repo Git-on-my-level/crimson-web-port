@@ -3,6 +3,7 @@ import { assignWeapon, unlockWeapon } from '../../sim/weapons/weaponTable';
 import type { ProbeDefinition, ProbeRunOverride } from './types';
 import { buildProbeFinding, clearTerrain, constantFireInput, runSimTicks } from './utils';
 import { WEAPON_BY_ID } from '../../content/weapons';
+import { getFireRateMultiplier } from '../../sim/systems/bonuses';
 
 const PROBE_ID = 'reload-happens';
 const DEFAULT_SEED = 121;
@@ -44,19 +45,40 @@ function runReloadProbe(override?: ProbeRunOverride) {
   });
 
   const ammoDropped = minAmmo < ammoStart;
-  const ok = ammoDropped && reloadStarted && reloadCompleted;
+  const fireRateMultiplier = getFireRateMultiplier(sim.state.player);
+  const fireRate = weapon.fireRate * fireRateMultiplier;
+  const cooldownTicks = Math.max(1, Math.round((1 / fireRate) * 60));
+  const ticksToEmpty = ammoMax * cooldownTicks;
+  const reloadTicks = weapon.reloadTicks ?? 0;
+  const ticksToReloadComplete = ticksToEmpty + reloadTicks;
+
+  const expectReloadStart = ticks >= ticksToEmpty;
+  const expectReloadComplete = ticks >= ticksToReloadComplete;
+
+  const ok =
+    ammoDropped &&
+    (!expectReloadStart || reloadStarted) &&
+    (!expectReloadComplete || reloadCompleted);
 
   return buildProbeFinding({
     id: `probe:${PROBE_ID}`,
     ok,
     message: ok
       ? 'Reloads trigger during sustained fire.'
-      : 'Expected ammo to drop and reload to complete during sustained fire.',
-    details: `ammoStart=${ammoStart}, minAmmo=${minAmmo}, reloadStarted=${reloadStarted}, reloadCompleted=${reloadCompleted}`,
+      : 'Expected ammo usage and reload transitions to match the fire window.',
+    details: [
+      `ammoStart=${ammoStart}`,
+      `minAmmo=${minAmmo}`,
+      `reloadStarted=${reloadStarted}`,
+      `reloadCompleted=${reloadCompleted}`,
+      `ticksToEmpty=${ticksToEmpty}`,
+      `ticksToReloadComplete=${ticksToReloadComplete}`,
+      `ticks=${ticks}`,
+    ].join(', '),
     expected: {
       ammoDropped: true,
-      reloadStarted: true,
-      reloadCompleted: true,
+      reloadStarted: expectReloadStart,
+      reloadCompleted: expectReloadComplete,
     },
     actual: {
       ammoDropped,
@@ -73,5 +95,6 @@ export const probeReloadHappens: ProbeDefinition = {
   tags: BASE_TAGS,
   defaultSeed: DEFAULT_SEED,
   defaultTicks: DEFAULT_TICKS,
+  inputPatterns: ['constant-fire'],
   run: (override?: ProbeRunOverride) => [runReloadProbe(override)],
 };

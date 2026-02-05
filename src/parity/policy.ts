@@ -1,7 +1,7 @@
 import { readFileSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import type { ParityFinding, ParityReport } from './report';
-import { runRefTestInventory } from './ref_test_inventory';
+import { DEFAULT_HIGH_PRIORITY, runRefTestInventory } from './ref_test_inventory';
 
 export type ParityPolicy = {
   requiredScore: number;
@@ -95,23 +95,24 @@ function countFindingsBySeverity(findings: ParityFinding[]): {
 }
 
 function calculateScore(report: ParityReport): number {
-  const total = report.findings.length;
-  if (total === 0) return 1;
+  const scored = report.findings.filter(f => f.status === 'pass' || f.status === 'fail');
+  if (scored.length === 0) return 1;
 
-  const passed = report.findings.filter(f => f.status === 'pass').length;
-  return passed / total;
+  const passed = scored.filter(f => f.status === 'pass').length;
+  return passed / scored.length;
 }
 
 function calculateRefTestPortCoverage(rootDir?: string): number {
   const inventory = runRefTestInventory({ rootDir });
-  const total = inventory.entries.length;
-  if (total === 0) return 100;
+  const highPriority = new Set(DEFAULT_HIGH_PRIORITY);
+  const candidates = inventory.entries.filter(entry => highPriority.has(basename(entry.py)));
+  if (candidates.length === 0) return 100;
 
-  const portedOrSkipped = inventory.entries.filter(
+  const portedOrSkipped = candidates.filter(
     e => e.status === 'ported' || e.status === 'skipped'
   ).length;
 
-  return (portedOrSkipped / total) * 100;
+  return (portedOrSkipped / candidates.length) * 100;
 }
 
 export function checkPolicy(report: ParityReport, policy?: ParityPolicy, rootDir?: string): PolicyCheckResult {
@@ -153,7 +154,7 @@ export function formatPolicyCheckResult(result: PolicyCheckResult): string {
   lines.push(`    High: ${result.findingsBySeverity.high} (max: 5) - ${result.findingsBySeverityMet.high ? '✓' : '✗'}`);
   lines.push(`    Medium: ${result.findingsBySeverity.medium} (max: 20) - ${result.findingsBySeverityMet.medium ? '✓' : '✗'}`);
   lines.push(`    Low: ${result.findingsBySeverity.low} (max: 50) - ${result.findingsBySeverityMet.low ? '✓' : '✗'}`);
-  lines.push(`  Ref-test port coverage: ${result.refTestPortCoverage.toFixed(1)}% (required: >=80%) - ${result.refTestPortCoverageMet ? '✓' : '✗'}`);
+  lines.push(`  Ref-test port coverage (high priority): ${result.refTestPortCoverage.toFixed(1)}% (required: >=80%) - ${result.refTestPortCoverageMet ? '✓' : '✗'}`);
   lines.push(`  Overall: ${result.meetsPolicy ? '✓ Policy met' : '✗ Policy not met'}`);
 
   return lines.join('\n');

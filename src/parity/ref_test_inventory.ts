@@ -28,7 +28,7 @@ export type RefTestInventory = {
   mapUpdated: boolean;
 };
 
-const DEFAULT_HIGH_PRIORITY = [
+export const DEFAULT_HIGH_PRIORITY = [
   'test_freeze_bonus.py',
   'test_nuke_bonus.py',
   'test_energizer_bonus.py',

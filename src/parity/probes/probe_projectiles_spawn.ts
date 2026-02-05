@@ -69,5 +69,6 @@ export const probeProjectilesSpawn: ProbeDefinition = {
   tags: BASE_TAGS,
   defaultSeed: DEFAULT_SEED,
   defaultTicks: DEFAULT_TICKS,
+  inputPatterns: ['constant-fire'],
   run: (override?: ProbeRunOverride) => [runProjectilesProbe(override)],
 };

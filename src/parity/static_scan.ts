@@ -32,6 +32,8 @@ type MarkerRule = {
   messagePrefix: string;
 };
 
+const EXCLUDED_SCAN_FILES = new Set(['src/parity/static_scan.ts']);
+
 const DOC_MARKERS: MarkerRule[] = [
   { typeKey: 'docs:TODO', pattern: /\bTODO\b/, status: 'skip', category: 'docs', messagePrefix: 'Porting TODO' },
   { typeKey: 'docs:UNPORTED', pattern: /\bUNPORTED\b/, status: 'skip', category: 'docs', messagePrefix: 'Porting UNPORTED' },
@@ -179,7 +181,9 @@ function scanDocs(rootDir: string, docsDir: string): ParityFinding[] {
 }
 
 function scanSrc(rootDir: string, sourceDir: string): ParityFinding[] {
-  const files = listFiles(rootDir, sourceDir, ['.ts', '.tsx', '.js', '.jsx']);
+  const files = listFiles(rootDir, sourceDir, ['.ts', '.tsx', '.js', '.jsx']).filter(
+    filePath => !EXCLUDED_SCAN_FILES.has(relative(rootDir, filePath)),
+  );
   return files.flatMap(filePath => scanFileForMarkers(filePath, rootDir, SRC_MARKERS));
 }
 
@@ -193,6 +197,9 @@ function scanWiringStubs(rootDir: string, wiringStubs: WiringStubCheck[]): Parit
 
     uniqueFiles.forEach(filePath => {
       const relPath = relative(rootDir, filePath);
+      if (EXCLUDED_SCAN_FILES.has(relPath)) {
+        return;
+      }
       const raw = readFileSync(filePath, 'utf-8');
       const lines = raw.split(/\r?\n/);
 

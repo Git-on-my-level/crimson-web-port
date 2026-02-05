@@ -109,5 +109,6 @@ export const probeAiConverges: ProbeDefinition = {
   tags: BASE_TAGS,
   defaultSeed: DEFAULT_SEED,
   defaultTicks: DEFAULT_TICKS,
+  inputPatterns: ['idle'],
   run: (override?: ProbeRunOverride) => [runAiConvergesProbe(override)],
 };

@@ -1,3 +1,4 @@
+// @parity-tags: parity-system/bonuses, ref-test/bonus-pickup-fx
 import { describe, expect, it } from 'vitest';
 import { Sim } from '../../src/sim/sim';
 import { spawnBonus, updateBonuses } from '../../src/sim/systems/bonuses';

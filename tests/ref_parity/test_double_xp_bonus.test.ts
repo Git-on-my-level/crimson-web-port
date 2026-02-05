@@ -1,3 +1,4 @@
+// @parity-tags: parity-system/bonuses, ref-test/double-xp
 import { describe, expect, it } from 'vitest';
 import { createSimState } from '../../src/sim/state';
 import { spawnCreatureAtPosition } from '../../src/sim/systems/creatures';

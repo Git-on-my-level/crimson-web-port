@@ -1,3 +1,4 @@
+// @parity-tags: parity-system/bonuses, ref-test/freeze
 import { describe, expect, it } from 'vitest';
 import { Sim } from '../../src/sim/sim';
 import { EMPTY_INPUT } from '../../src/sim/types';

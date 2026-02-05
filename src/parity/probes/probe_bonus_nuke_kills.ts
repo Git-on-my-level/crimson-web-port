@@ -76,5 +76,6 @@ export const probeBonusNukeKills: ProbeDefinition = {
   tags: BASE_TAGS,
   defaultSeed: DEFAULT_SEED,
   defaultTicks: DEFAULT_TICKS,
+  inputPatterns: ['idle'],
   run: (override?: ProbeRunOverride) => [runNukeProbe(override)],
 };
