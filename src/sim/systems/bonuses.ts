@@ -22,7 +22,8 @@ const POINTS_BONUS_BIG_CHANCE = 0.08;
 const BONUS_SPAWN_MIN_DISTANCE = 3.0;
 const BONUS_SPAWN_JITTER = 3.5;
 const BONUS_REROLL_MAX = 100;
-const NUKE_DAMAGE = 9999;
+const NUKE_RADIUS = 16;
+const NUKE_DAMAGE_SCALE = 12;
 const FIREBLAST_DAMAGE = 60;
 const FIREBLAST_BURST_COUNT = 16;
 const FIREBLAST_PROJECTILE_SPEED = 20;
@@ -178,7 +179,9 @@ function applyBonus(state: SimState, bonus: SimState['bonuses'][0], events: SimE
       break;
     }
     case 'nuke': {
-      applyBonusAreaDamage(state, events, state.player.pos, 999, NUKE_DAMAGE, false);
+      applyNukeDamage(state, events, state.player.pos);
+      events.push({ type: 'screenShake', intensity: 0.018, durationMs: 240 });
+      events.push({ type: 'screenFlash', kind: 'nuke' });
       break;
     }
     case 'fireblast': {
@@ -214,6 +217,24 @@ function applyBonus(state: SimState, bonus: SimState['bonuses'][0], events: SimE
   events.push({ type: 'playSfx', name: 'pickup' });
   if (state.mode === 'quest' && state.modeState.kind === 'quest') {
     registerQuestBonusCollected(state.modeState, bonus.kind);
+  }
+}
+
+function applyNukeDamage(state: SimState, events: SimEvent[], center: { x: number; y: number }): void {
+  const radiusSq = NUKE_RADIUS * NUKE_RADIUS;
+  for (const creature of state.creatures) {
+    if (!creature.alive) {
+      continue;
+    }
+    const dx = creature.pos.x - center.x;
+    const dy = creature.pos.y - center.y;
+    const distSq = dx * dx + dy * dy;
+    if (distSq > radiusSq) {
+      continue;
+    }
+    const dist = Math.sqrt(distSq);
+    const damage = Math.max(0, (NUKE_RADIUS - dist) * NUKE_DAMAGE_SCALE);
+    applyBonusDamageToCreature(state, creature, damage, events, false);
   }
 }
 
@@ -257,27 +278,6 @@ function isBonusAllowed(state: SimState, bonusId: BonusId): boolean {
     return false;
   }
   return true;
-}
-
-function applyBonusAreaDamage(
-  state: SimState,
-  events: SimEvent[],
-  center: { x: number; y: number },
-  radius: number,
-  damage: number,
-  allowBonusDrop: boolean,
-): void {
-  const radiusSq = radius * radius;
-  for (const creature of state.creatures) {
-    if (!creature.alive) {
-      continue;
-    }
-    const dx = creature.pos.x - center.x;
-    const dy = creature.pos.y - center.y;
-    if (dx * dx + dy * dy <= radiusSq) {
-      applyBonusDamageToCreature(state, creature, damage, events, allowBonusDrop);
-    }
-  }
 }
 
 function applyShockChain(state: SimState, events: SimEvent[]): void {

@@ -55,6 +55,7 @@ export class GameScene extends Phaser.Scene {
   private lastDamageFx = -Infinity;
   private lastPickupFx = -Infinity;
   private lastExplosionFx = -Infinity;
+  private lastScreenFlash = -Infinity;
   private controlsKeyHandler?: () => void;
   private escHandler?: () => void;
 
@@ -324,6 +325,12 @@ export class GameScene extends Phaser.Scene {
             explosionImpact = true;
           }
           break;
+        case 'screenShake':
+          this.cameras.main.shake(event.durationMs, event.intensity);
+          break;
+        case 'screenFlash':
+          this.triggerScreenFlash(event.kind);
+          break;
         default:
           break;
       }
@@ -554,6 +561,28 @@ export class GameScene extends Phaser.Scene {
     this.lastExplosionFx = now;
     this.cameras.main.shake(140, 0.008);
     this.cameras.main.flash(100, 255, 100, 40);
+  }
+
+  private triggerScreenFlash(kind: 'nuke' | 'pickup' | 'damage' | 'explosion'): void {
+    const now = this.time.now;
+    if (now - this.lastScreenFlash < 120) return;
+    this.lastScreenFlash = now;
+    switch (kind) {
+      case 'nuke':
+        this.cameras.main.flash(220, 255, 245, 210);
+        break;
+      case 'pickup':
+        this.cameras.main.flash(140, 255, 210, 80);
+        break;
+      case 'damage':
+        this.cameras.main.flash(120, 120, 20, 20);
+        break;
+      case 'explosion':
+        this.cameras.main.flash(100, 255, 100, 40);
+        break;
+      default:
+        break;
+    }
   }
 
   private handleShutdown(): void {

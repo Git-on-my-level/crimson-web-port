@@ -48,6 +48,8 @@ export type SimEvent =
   | { type: 'perkChosen'; perkId: PerkId; level: number }
   | { type: 'playSfx'; name: string }
   | { type: 'pickup'; id: EntityId; bonusType: string }
+  | { type: 'screenShake'; intensity: number; durationMs: number }
+  | { type: 'screenFlash'; kind: 'nuke' | 'pickup' | 'damage' | 'explosion' }
   | { type: 'questStatusChanged'; status: 'Playing' | 'Success' | 'Failed' }
   | { type: 'questMessage'; text: string };
 
