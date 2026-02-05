@@ -47,6 +47,9 @@ describe('ref parity: energizer bonus', () => {
       touchCooldownTicks: 0,
       alive: true,
       kind: 'grunt',
+      heading: 0,
+      targetHeading: 0,
+      moveScale: 1.0,
     }];
 
     sim.state.player.activeEffects.energizer = 60;

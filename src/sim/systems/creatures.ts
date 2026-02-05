@@ -3,6 +3,7 @@ import type { SimState } from '../state';
 import type { SimEvent } from '../types';
 import { clampToWorld, findSpawnPosAwayFromPlayer, pickRandomWorldEdge } from '../world';
 import { clampOrSlide, findOpenTerrainPosition, isTerrainBlocked } from '../terrain';
+import { angleApproach } from '../math/angles';
 
 export const CREATURE_SPAWN_MIN_DISTANCE = 10;
 const CREATURE_SPAWN_MAX_DISTANCE = 24;
@@ -60,6 +61,8 @@ export function spawnCreatureAtPosition(
   const x = open.x;
   const y = open.y;
   const id = state.nextEntityId++;
+  const heading = Math.atan2(state.player.pos.y - y, state.player.pos.x - x) + Math.PI / 2;
+  const targetHeading = heading;
   state.creatures.push({
     id,
     kind,
@@ -72,6 +75,9 @@ export function spawnCreatureAtPosition(
     speed: def.speed,
     touchDamage: def.touchDamage,
     touchCooldownTicks: 0,
+    heading,
+    targetHeading,
+    moveScale: 1.0,
   });
 
   events.push({ type: 'spawnCreature', id, pos: { x, y }, kind });
@@ -111,12 +117,15 @@ export function updateCreatures(state: SimState, events: SimEvent[], dt: number)
     }
 
     if (isFrozen) {
+      creature.moveScale = 0.0;
       creature.vel.x = 0;
       creature.vel.y = 0;
       state.creatures[writeIndex] = creature;
       writeIndex += 1;
       continue;
     }
+
+    creature.moveScale = 1.0;
 
     const dx = player.pos.x - creature.pos.x;
     const dy = player.pos.y - creature.pos.y;
@@ -125,33 +134,23 @@ export function updateCreatures(state: SimState, events: SimEvent[], dt: number)
     const prevY = creature.pos.y;
 
     if (dist > 0.0001) {
-      const def = getCreatureDef(creature.kind);
-      let dirX = dx / dist;
-      let dirY = dy / dist;
+      const targetX = player.pos.x;
+      const targetY = player.pos.y;
+      const rawTargetHeading = Math.atan2(targetY - creature.pos.y, targetX - creature.pos.x) + Math.PI / 2;
+      let targetHeading = rawTargetHeading;
       if (isEnergized) {
-        dirX = -dirX;
-        dirY = -dirY;
+        targetHeading = rawTargetHeading + Math.PI;
       }
-      let speedMultiplier = 1;
+      creature.targetHeading = targetHeading;
 
-      if (def.behavior === 'strafe') {
-        const phase = Math.sin((state.tick + creature.id) * 0.18);
-        const strafeStrength = 0.45 * phase;
-        const perpX = -dirY;
-        const perpY = dirX;
-        dirX += perpX * strafeStrength;
-        dirY += perpY * strafeStrength;
-        const norm = Math.hypot(dirX, dirY) || 1;
-        dirX /= norm;
-        dirY /= norm;
-      } else if (def.behavior === 'burst') {
-        const burstTick = (state.tick + creature.id * 17) % 120;
-        if (burstTick < 18) {
-          speedMultiplier = 1.6;
-        }
-      }
+      const moveSpeed = creature.speed;
+      const turnRate = moveSpeed * (4.0 / 3.0);
+      const speed = moveSpeed * 30 * creature.moveScale;
 
-      const speed = creature.speed * speedMultiplier;
+      creature.heading = angleApproach(creature.heading, targetHeading, turnRate, dt);
+      const dirX = Math.cos(creature.heading - Math.PI / 2.0);
+      const dirY = Math.sin(creature.heading - Math.PI / 2.0);
+
       creature.vel.x = dirX * speed;
       creature.vel.y = dirY * speed;
       creature.pos.x += creature.vel.x * dt;

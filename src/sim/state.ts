@@ -48,6 +48,9 @@ export interface CreatureState {
   touchCooldownTicks: number;
   alive: boolean;
   kind: string;
+  heading: number;
+  targetHeading: number;
+  moveScale: number;
 }
 
 export interface ProjectileState {
