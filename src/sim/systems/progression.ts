@@ -8,17 +8,17 @@ import { xpThresholdForLevel, xpToNextForLevel } from '../xp';
 
 const XP_PER_SECOND = 0;
 
-export function grantXp(state: SimState, events: SimEvent[], amount: number): void {
+export function grantXp(state: SimState, events: SimEvent[], baseAmount: number): void {
   if (state.phase !== 'Playing') {
     return;
   }
-  if (amount <= 0) {
+  if (baseAmount <= 0) {
     return;
   }
 
   const player = state.player;
   const multiplier = getXpMultiplier(player);
-  const gained = amount * multiplier;
+  const gained = Math.floor(baseAmount * multiplier);
   player.xp += gained;
   events.push({ type: 'xp', amount: gained, total: player.xp, level: player.level });
   applyLevelUpsFromXp(state, events);
@@ -61,6 +61,25 @@ export function updatePerkSelection(state: SimState, events: SimEvent[]): void {
   choosePerk(state, events, perkId);
 }
 
+function applyPerkImmediateEffect(state: SimState, events: SimEvent[], perkId: PerkId): void {
+  switch (perkId) {
+    case 'instant_winner':
+      state.player.xp += 2500;
+      events.push({ type: 'xp', amount: 2500, total: state.player.xp, level: state.player.level });
+      applyLevelUpsFromXp(state, events);
+      break;
+    case 'grim_deal':
+      state.player.hp = -1;
+      const xpBonus = Math.floor(state.player.xp * 0.18);
+      state.player.xp += xpBonus;
+      events.push({ type: 'xp', amount: xpBonus, total: state.player.xp, level: state.player.level });
+      applyLevelUpsFromXp(state, events);
+      break;
+    default:
+      break;
+  }
+}
+
 export function choosePerk(state: SimState, events: SimEvent[], perkId: PerkId): boolean {
   if (state.phase !== 'PerkSelect' || !state.perkChoices) {
     return false;
@@ -73,6 +92,8 @@ export function choosePerk(state: SimState, events: SimEvent[], perkId: PerkId):
   const player = state.player;
   player.perks[perkId] = (player.perks[perkId] ?? 0) + 1;
   recomputePerkStats(player);
+
+  applyPerkImmediateEffect(state, events, perkId);
 
   state.perkChoices = null;
   state.phase = 'Playing';

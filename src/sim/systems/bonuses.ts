@@ -408,10 +408,13 @@ export function getFireRateMultiplier(player: SimState['player']): number {
 export function getReloadRateMultiplier(player: SimState['player']): number {
   const weaponPowerUpTicks = player.activeEffects['weapon_power_up'] ?? 0;
   const reloadTimeMultiplier = weaponPowerUpTicks > 0 ? 0.6 : 1.0;
-  return 1 / reloadTimeMultiplier;
+  const baseMultiplier = 1 / reloadTimeMultiplier;
+  return baseMultiplier * player.perkStats.reloadSpeedMultiplier;
 }
 
 export function getXpMultiplier(player: SimState['player']): number {
   const doubleXpTicks = player.activeEffects['double_xp'] ?? 0;
-  return doubleXpTicks > 0 ? 2.0 : 1.0;
+  const bonusMultiplier = doubleXpTicks > 0 ? 2.0 : 1.0;
+  const baseMultiplier = player.perkStats.experienceMultiplier;
+  return baseMultiplier * bonusMultiplier;
 }
