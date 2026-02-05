@@ -2,6 +2,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join, relative, resolve } from 'node:path';
 import type { ParityFinding } from './report';
+import { runRefTestInventory, type RefTestInventoryOptions } from './ref_test_inventory';
 
 type ScanCategory = 'docs' | 'src' | 'wiring';
 
@@ -18,6 +19,9 @@ export type StaticScanOptions = {
   portingDocsDir?: string;
   sourceDir?: string;
   wiringStubs?: WiringStubCheck[];
+  includeRefTests?: boolean;
+  refTestInventory?: RefTestInventoryOptions;
+  persistRefTestMap?: boolean;
 };
 
 type MarkerRule = {
@@ -215,12 +219,23 @@ export function runStaticScan(options: StaticScanOptions = {}): ParityFinding[] 
   const portingDocsDir = options.portingDocsDir ?? 'docs/porting';
   const sourceDir = options.sourceDir ?? 'src';
   const wiringStubs = options.wiringStubs ?? DEFAULT_WIRING_STUBS;
+  const includeRefTests = options.includeRefTests ?? true;
+  const persistRefTestMap = options.persistRefTestMap ?? options.rootDir === undefined;
 
   const findings = [
     ...scanDocs(rootDir, portingDocsDir),
     ...scanSrc(rootDir, sourceDir),
     ...scanWiringStubs(rootDir, wiringStubs),
   ];
+
+  if (includeRefTests) {
+    const refFindings = runRefTestInventory({
+      rootDir,
+      persist: persistRefTestMap,
+      ...(options.refTestInventory ?? {}),
+    }).findings;
+    findings.push(...refFindings);
+  }
 
   return findings.sort((a, b) => a.id.localeCompare(b.id));
 }
