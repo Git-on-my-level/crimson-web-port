@@ -126,6 +126,10 @@ export class PerkPickerOverlay {
       }
 
       const def = getPerkDef(perkId);
+      if (!def) {
+        option.container.setVisible(false);
+        continue;
+      }
       const rarity = getRarityStyle(def.rarity);
       option.title.setText(def.name);
       option.rarity.setText(rarity.label);

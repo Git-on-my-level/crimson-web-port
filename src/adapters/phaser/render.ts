@@ -14,6 +14,7 @@ export type RenderTransform = {
 };
 
 const PROJECTILE_SPRITE_KEY = 'game-projs-grid4';
+const PARTICLE_SPRITE_KEY = 'game-particles-grid8';
 const BONUS_SPRITE_KEY = 'game-bonuses-grid4';
 const PLAYER_SPRITE_KEY = 'game-trooper';
 const PLAYER_SPRITE_FRAME = 16;
@@ -42,6 +43,11 @@ const PROJECTILE_FRAME_BY_KIND: Record<string, number> = {
 };
 const BONUS_FRAME_BY_KIND: Record<BonusId, number> = BONUS_FRAMES;
 const PROJECTILE_ROTATION_OFFSET_BY_KIND: Record<string, number> = {};
+const SECONDARY_PROJECTILE_FRAME_BY_TYPE: Record<number, number> = {
+  1: 1,
+  2: 1,
+  4: 1,
+};
 
 type BonusSprites = {
   bubble: Phaser.GameObjects.Sprite;
@@ -54,8 +60,12 @@ export class PhaserRenderAdapter {
   private playerOutline?: Phaser.GameObjects.Sprite;
   private readonly creatures = new Map<EntityId, Phaser.GameObjects.Sprite>();
   private readonly projectiles = new Map<EntityId, Phaser.GameObjects.Sprite>();
+  private readonly secondaryProjectiles = new Map<EntityId, Phaser.GameObjects.Sprite>();
+  private readonly particles = new Map<EntityId, Phaser.GameObjects.Sprite>();
   private readonly bonuses = new Map<EntityId, BonusSprites>();
   private readonly projectileSpritePool: Phaser.GameObjects.Sprite[] = [];
+  private readonly secondaryProjectileSpritePool: Phaser.GameObjects.Sprite[] = [];
+  private readonly particleSpritePool: Phaser.GameObjects.Sprite[] = [];
   private readonly creatureSpritePool: Phaser.GameObjects.Sprite[] = [];
   private readonly bonusSpritePool: BonusSprites[] = [];
   private cursorConfigured = false;
@@ -85,7 +95,9 @@ export class PhaserRenderAdapter {
       (entry) => entry.radius ?? 1,
       (entry) => entry.alive,
     );
+    this.syncParticles(state.particles);
     this.syncProjectiles(state.projectiles);
+    this.syncSecondaryProjectiles(state.secondaryProjectiles);
     this.syncBonuses(state.bonuses);
     this.renderCollisionDebug(state);
   }
@@ -231,6 +243,71 @@ export class PhaserRenderAdapter {
         obj.setVisible(false);
         this.projectiles.delete(id);
         this.projectileSpritePool.push(obj);
+      }
+    }
+  }
+
+  private syncSecondaryProjectiles(projectiles: SimState['secondaryProjectiles']): void {
+    const seen = new Set<EntityId>();
+    const fallbackFrame = 1;
+
+    for (const projectile of projectiles) {
+      if (!projectile.alive) {
+        continue;
+      }
+      seen.add(projectile.id);
+      const frame = SECONDARY_PROJECTILE_FRAME_BY_TYPE[projectile.typeId] ?? fallbackFrame;
+      const obj =
+        this.secondaryProjectiles.get(projectile.id) ??
+        this.createSprite(
+          this.secondaryProjectiles,
+          this.secondaryProjectileSpritePool,
+          projectile.id,
+          PROJECTILE_SPRITE_KEY,
+          frame,
+        );
+      const { x, y } = this.toScreen(projectile.pos.x, projectile.pos.y);
+      obj.setPosition(x, y);
+      obj.setDisplaySize(projectile.radius * 2 * this.transform.pixelsPerUnit, projectile.radius * 2 * this.transform.pixelsPerUnit);
+      obj.setDepth(440);
+      obj.setRotation(rotationFromVelocity(projectile.vel.x, projectile.vel.y));
+      obj.setVisible(true);
+    }
+
+    for (const [id, obj] of this.secondaryProjectiles) {
+      if (!seen.has(id)) {
+        obj.setVisible(false);
+        this.secondaryProjectiles.delete(id);
+        this.secondaryProjectileSpritePool.push(obj);
+      }
+    }
+  }
+
+  private syncParticles(particles: SimState['particles']): void {
+    const seen = new Set<EntityId>();
+
+    for (const particle of particles) {
+      if (!particle.alive) {
+        continue;
+      }
+      seen.add(particle.id);
+      const frame = particle.styleId;
+      const obj =
+        this.particles.get(particle.id) ??
+        this.createSprite(this.particles, this.particleSpritePool, particle.id, PARTICLE_SPRITE_KEY, frame);
+      const { x, y } = this.toScreen(particle.pos.x, particle.pos.y);
+      obj.setPosition(x, y);
+      obj.setDisplaySize(particle.radius * 2 * this.transform.pixelsPerUnit, particle.radius * 2 * this.transform.pixelsPerUnit);
+      obj.setDepth(420);
+      obj.setRotation(rotationFromVelocity(particle.vel.x, particle.vel.y));
+      obj.setVisible(true);
+    }
+
+    for (const [id, obj] of this.particles) {
+      if (!seen.has(id)) {
+        obj.setVisible(false);
+        this.particles.delete(id);
+        this.particleSpritePool.push(obj);
       }
     }
   }

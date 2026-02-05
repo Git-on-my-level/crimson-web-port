@@ -18,6 +18,7 @@ export type PolicyCheckResult = {
   meetsPolicy: boolean;
   score: number;
   scoreMet: boolean;
+  requiredScore: number;
   findingsBySeverity: {
     critical: number;
     high: number;
@@ -30,8 +31,15 @@ export type PolicyCheckResult = {
     medium: boolean;
     low: boolean;
   };
+  maxFindingsBySeverity: {
+    critical: number;
+    high: number;
+    medium: number;
+    low: number;
+  };
   refTestPortCoverage: number;
   refTestPortCoverageMet: boolean;
+  requiredRefTestPortCoveragePercent: number;
 };
 
 export function loadPolicy(rootDir?: string): ParityPolicy | null {
@@ -140,10 +148,13 @@ export function checkPolicy(report: ParityReport, policy?: ParityPolicy | null, 
     meetsPolicy,
     score,
     scoreMet,
+    requiredScore: loadedPolicy.requiredScore,
     findingsBySeverity,
     findingsBySeverityMet,
+    maxFindingsBySeverity: loadedPolicy.maxFindingsBySeverity,
     refTestPortCoverage,
     refTestPortCoverageMet,
+    requiredRefTestPortCoveragePercent: loadedPolicy.requiredRefTestPortCoveragePercent,
   };
 }
 
@@ -151,13 +162,13 @@ export function formatPolicyCheckResult(result: PolicyCheckResult): string {
   const lines: string[] = [];
 
   lines.push('Policy Check Results:');
-  lines.push(`  Score: ${result.score.toFixed(2)} (required: >=0.95) - ${result.scoreMet ? '✓' : '✗'}`);
+  lines.push(`  Score: ${result.score.toFixed(2)} (required: >=${result.requiredScore.toFixed(2)}) - ${result.scoreMet ? '✓' : '✗'}`);
   lines.push('  Findings by severity:');
-  lines.push(`    Critical: ${result.findingsBySeverity.critical} (max: 0) - ${result.findingsBySeverityMet.critical ? '✓' : '✗'}`);
-  lines.push(`    High: ${result.findingsBySeverity.high} (max: 5) - ${result.findingsBySeverityMet.high ? '✓' : '✗'}`);
-  lines.push(`    Medium: ${result.findingsBySeverity.medium} (max: 20) - ${result.findingsBySeverityMet.medium ? '✓' : '✗'}`);
-  lines.push(`    Low: ${result.findingsBySeverity.low} (max: 50) - ${result.findingsBySeverityMet.low ? '✓' : '✗'}`);
-  lines.push(`  Ref-test port coverage (high priority): ${result.refTestPortCoverage.toFixed(1)}% (required: >=80%) - ${result.refTestPortCoverageMet ? '✓' : '✗'}`);
+  lines.push(`    Critical: ${result.findingsBySeverity.critical} (max: ${result.maxFindingsBySeverity.critical}) - ${result.findingsBySeverityMet.critical ? '✓' : '✗'}`);
+  lines.push(`    High: ${result.findingsBySeverity.high} (max: ${result.maxFindingsBySeverity.high}) - ${result.findingsBySeverityMet.high ? '✓' : '✗'}`);
+  lines.push(`    Medium: ${result.findingsBySeverity.medium} (max: ${result.maxFindingsBySeverity.medium}) - ${result.findingsBySeverityMet.medium ? '✓' : '✗'}`);
+  lines.push(`    Low: ${result.findingsBySeverity.low} (max: ${result.maxFindingsBySeverity.low}) - ${result.findingsBySeverityMet.low ? '✓' : '✗'}`);
+  lines.push(`  Ref-test port coverage (high priority): ${result.refTestPortCoverage.toFixed(1)}% (required: >=${result.requiredRefTestPortCoveragePercent.toFixed(1)}%) - ${result.refTestPortCoverageMet ? '✓' : '✗'}`);
   lines.push(`  Overall: ${result.meetsPolicy ? '✓ Policy met' : '✗ Policy not met'}`);
 
   return lines.join('\n');

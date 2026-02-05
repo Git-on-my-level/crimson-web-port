@@ -12,6 +12,7 @@ const constantInput: InputFrame = {
   reload: false,
   weaponSwitch: null,
   pause: false,
+  openPerkMenu: false,
   perkChoice: null,
 };
 
@@ -62,6 +63,7 @@ describe('Sim determinism', () => {
       reload: false,
       weaponSwitch: null,
       pause: false,
+      openPerkMenu: false,
       perkChoice: null,
     };
 
@@ -69,7 +71,7 @@ describe('Sim determinism', () => {
       sim.step(firingInput);
     }
 
-    expect(sim.state.projectiles.length).toBe(3);
+    expect(sim.state.projectiles.length).toBe(1);
     for (const projectile of sim.state.projectiles) {
       expect(projectile.owner).toBe('player');
       expect(projectile.alive).toBe(true);

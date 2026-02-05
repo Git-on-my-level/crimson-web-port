@@ -34,6 +34,20 @@ export function assertSimInvariants(state: SimState): void {
     assertFiniteVec(proj.vel, `projectile(${id}).vel`);
     assertInRange(proj.lifeTicksRemaining, 0, 10000, `projectile(${id}).lifeTicksRemaining`);
   });
+
+  state.secondaryProjectilePool.forEachActive((id, proj) => {
+    assertUnique(ids, id, `secondaryProjectile(${id}).id`);
+    assertFiniteVec(proj.pos, `secondaryProjectile(${id}).pos`);
+    assertFiniteVec(proj.vel, `secondaryProjectile(${id}).vel`);
+    assertInRange(proj.lifeTicksRemaining, 0, 10000, `secondaryProjectile(${id}).lifeTicksRemaining`);
+  });
+
+  state.particlePool.forEachActive((id, particle) => {
+    assertUnique(ids, id, `particle(${id}).id`);
+    assertFiniteVec(particle.pos, `particle(${id}).pos`);
+    assertFiniteVec(particle.vel, `particle(${id}).vel`);
+    assertInRange(particle.lifeTicksRemaining, 0, 10000, `particle(${id}).lifeTicksRemaining`);
+  });
 }
 
 function assertFinite(value: number, label: string): void {

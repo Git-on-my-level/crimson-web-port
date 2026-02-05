@@ -3,7 +3,6 @@ import { assignWeapon, unlockWeapon } from '../../sim/weapons/weaponTable';
 import type { ProbeDefinition, ProbeRunOverride } from './types';
 import { buildProbeFinding, clearTerrain, constantFireInput, runSimTicks } from './utils';
 import { WEAPON_BY_ID } from '../../content/weapons';
-import { getFireRateMultiplier } from '../../sim/systems/bonuses';
 
 const PROBE_ID = 'reload-happens';
 const DEFAULT_SEED = 121;
@@ -14,12 +13,12 @@ function runReloadProbe(override?: ProbeRunOverride) {
   const sim = new Sim({ seed: override?.seed ?? DEFAULT_SEED, mode: 'survival' });
   clearTerrain(sim.state);
 
-  unlockWeapon(sim.state.player, 'smg');
-  assignWeapon(sim.state.player, 'smg');
-  const weapon = WEAPON_BY_ID.smg;
+  unlockWeapon(sim.state.player, 'submachine_gun');
+  assignWeapon(sim.state.player, 'submachine_gun');
+  const weapon = WEAPON_BY_ID.submachine_gun;
   const ammoMax = weapon.ammoMax ?? 0;
   sim.state.player.ammo = ammoMax;
-  sim.state.player.reloadTicksRemaining = 0;
+  sim.state.player.reloadTimer = 0;
 
   override?.setup?.(sim);
 
@@ -28,13 +27,13 @@ function runReloadProbe(override?: ProbeRunOverride) {
   let minAmmo = ammoStart;
   let reloadStarted = false;
   let reloadCompleted = false;
-  let lastReload = sim.state.player.reloadTicksRemaining;
+  let lastReload = sim.state.player.reloadTimer;
 
   const inputForTick = override?.input ?? (() => constantFireInput());
 
   runSimTicks(sim, ticks, inputForTick, () => {
     minAmmo = Math.min(minAmmo, sim.state.player.ammo);
-    const reloadNow = sim.state.player.reloadTicksRemaining;
+    const reloadNow = sim.state.player.reloadTimer;
     if (!reloadStarted && reloadNow > 0) {
       reloadStarted = true;
     }
@@ -45,11 +44,9 @@ function runReloadProbe(override?: ProbeRunOverride) {
   });
 
   const ammoDropped = minAmmo < ammoStart;
-  const fireRateMultiplier = getFireRateMultiplier(sim.state.player);
-  const fireRate = weapon.fireRate * fireRateMultiplier;
-  const cooldownTicks = Math.max(1, Math.round((1 / fireRate) * 60));
+  const cooldownTicks = Math.max(1, Math.round((weapon.shotCooldown ?? 0) * 60));
   const ticksToEmpty = ammoMax * cooldownTicks;
-  const reloadTicks = weapon.reloadTicks ?? 0;
+  const reloadTicks = Math.max(0, Math.round((weapon.reloadTime ?? 0) * 60));
   const ticksToReloadComplete = ticksToEmpty + reloadTicks;
 
   const expectReloadStart = ticks >= ticksToEmpty;

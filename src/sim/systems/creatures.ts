@@ -1,8 +1,14 @@
 import { getCreatureDef } from '../../content/creatures';
-import type { SimState } from '../state';
+import type { CreatureState, SimState } from '../state';
 import type { SimEvent } from '../types';
 import { clampToWorld, findSpawnPosAwayFromPlayer, pickRandomWorldEdge } from '../world';
 import { clampOrSlide, findOpenTerrainPosition, isTerrainBlocked } from '../terrain';
+import { angleApproach } from '../math/angles';
+import { creatureAi7TickLinkTimer, creatureAiUpdateTarget } from '../creatures/ai';
+import { trySpawnBonusOnKill } from './bonuses';
+import { grantXp } from './progression';
+import { registerQuestKill } from './mode_quest';
+import { registerSurvivalKill } from './mode_survival';
 
 export const CREATURE_SPAWN_MIN_DISTANCE = 10;
 const CREATURE_SPAWN_MAX_DISTANCE = 24;
@@ -60,6 +66,11 @@ export function spawnCreatureAtPosition(
   const x = open.x;
   const y = open.y;
   const id = state.nextEntityId++;
+  const heading = Math.atan2(state.player.pos.y - y, state.player.pos.x - x) + Math.PI / 2;
+  const targetHeading = heading;
+  const targetPos = { x: state.player.pos.x, y: state.player.pos.y };
+  const aiMode = def.aiMode ?? 0;
+  const flags = def.aiFlags ?? 0;
   state.creatures.push({
     id,
     kind,
@@ -72,6 +83,19 @@ export function spawnCreatureAtPosition(
     speed: def.speed,
     touchDamage: def.touchDamage,
     touchCooldownTicks: 0,
+    heading,
+    targetHeading,
+    moveScale: 1.0,
+    aiMode,
+    flags,
+    linkIndex: -1,
+    targetOffsetX: 0,
+    targetOffsetY: 0,
+    phaseSeed: state.rng.nextUint32(),
+    orbitAngle: 0,
+    orbitRadius: 0,
+    targetPos,
+    forceTarget: 0,
   });
 
   events.push({ type: 'spawnCreature', id, pos: { x, y }, kind });
@@ -96,13 +120,12 @@ export function spawnCreatureInRing(
 }
 
 export function updateCreatures(state: SimState, events: SimEvent[], dt: number): void {
-  void events;
-
   const player = state.player;
   const freezeTicks = player.activeEffects.freeze ?? 0;
   const isFrozen = freezeTicks > 0;
   const energizerTicks = player.activeEffects.energizer ?? 0;
   const isEnergized = energizerTicks > 0;
+  const dtMs = Math.round(dt * 1000);
   let writeIndex = 0;
   for (let i = 0; i < state.creatures.length; i += 1) {
     const creature = state.creatures[i];
@@ -110,7 +133,10 @@ export function updateCreatures(state: SimState, events: SimEvent[], dt: number)
       continue;
     }
 
+    creatureAi7TickLinkTimer(creature, dtMs, () => state.rng.nextUint32());
+
     if (isFrozen) {
+      creature.moveScale = 0.0;
       creature.vel.x = 0;
       creature.vel.y = 0;
       state.creatures[writeIndex] = creature;
@@ -118,40 +144,36 @@ export function updateCreatures(state: SimState, events: SimEvent[], dt: number)
       continue;
     }
 
-    const dx = player.pos.x - creature.pos.x;
-    const dy = player.pos.y - creature.pos.y;
+    const aiUpdate = creatureAiUpdateTarget(creature, player.pos, state.creatures, dt);
+    creature.moveScale = aiUpdate.moveScale;
+    if (aiUpdate.selfDamage) {
+      applyDamageToCreature(state, creature, aiUpdate.selfDamage, events);
+    }
+    if (!creature.alive) {
+      continue;
+    }
+
+    const dx = creature.targetPos.x - creature.pos.x;
+    const dy = creature.targetPos.y - creature.pos.y;
     const dist = Math.hypot(dx, dy);
     const prevX = creature.pos.x;
     const prevY = creature.pos.y;
 
     if (dist > 0.0001) {
-      const def = getCreatureDef(creature.kind);
-      let dirX = dx / dist;
-      let dirY = dy / dist;
+      let targetHeading = creature.targetHeading;
       if (isEnergized) {
-        dirX = -dirX;
-        dirY = -dirY;
+        targetHeading += Math.PI;
       }
-      let speedMultiplier = 1;
+      creature.targetHeading = targetHeading;
 
-      if (def.behavior === 'strafe') {
-        const phase = Math.sin((state.tick + creature.id) * 0.18);
-        const strafeStrength = 0.45 * phase;
-        const perpX = -dirY;
-        const perpY = dirX;
-        dirX += perpX * strafeStrength;
-        dirY += perpY * strafeStrength;
-        const norm = Math.hypot(dirX, dirY) || 1;
-        dirX /= norm;
-        dirY /= norm;
-      } else if (def.behavior === 'burst') {
-        const burstTick = (state.tick + creature.id * 17) % 120;
-        if (burstTick < 18) {
-          speedMultiplier = 1.6;
-        }
-      }
+      const moveSpeed = creature.speed;
+      const turnRate = moveSpeed * (4.0 / 3.0);
+      const speed = moveSpeed * 30 * creature.moveScale;
 
-      const speed = creature.speed * speedMultiplier;
+      creature.heading = angleApproach(creature.heading, targetHeading, turnRate, dt);
+      const dirX = Math.cos(creature.heading - Math.PI / 2.0);
+      const dirY = Math.sin(creature.heading - Math.PI / 2.0);
+
       creature.vel.x = dirX * speed;
       creature.vel.y = dirY * speed;
       creature.pos.x += creature.vel.x * dt;
@@ -177,4 +199,38 @@ export function updateCreatures(state: SimState, events: SimEvent[], dt: number)
   }
 
   state.creatures.length = writeIndex;
+}
+
+function applyDamageToCreature(
+  state: SimState,
+  creature: CreatureState,
+  amount: number,
+  events: SimEvent[],
+  allowBonusDrop = true,
+): void {
+  if (!creature.alive || amount <= 0) {
+    return;
+  }
+
+  creature.hp = Math.max(0, creature.hp - amount);
+  events.push({ type: 'damage', target: 'creature', id: creature.id, amount });
+
+  if (creature.hp > 0) {
+    return;
+  }
+
+  creature.alive = false;
+  events.push({ type: 'death', target: 'creature', id: creature.id });
+  if (state.mode === 'quest' && state.modeState.kind === 'quest') {
+    registerQuestKill(state.modeState, creature.kind);
+  } else if (state.mode === 'survival' && state.modeState.kind === 'survival') {
+    registerSurvivalKill(state.modeState);
+  }
+  const def = getCreatureDef(creature.kind);
+  state.score += def.scoreValue;
+  events.push({ type: 'score', amount: def.scoreValue, total: state.score });
+  grantXp(state, events, def.xpValue);
+  if (allowBonusDrop) {
+    trySpawnBonusOnKill(state, events, creature.pos);
+  }
 }

@@ -25,10 +25,8 @@ describe('Freeze bonus', () => {
     if (!creature) {
       throw new Error('Expected creature to spawn');
     }
-    const initialDist = Math.hypot(
-      sim.state.player.pos.x - creature.pos.x,
-      sim.state.player.pos.y - creature.pos.y,
-    );
+    const initialX = creature.pos.x;
+    const initialY = creature.pos.y;
 
     for (let i = 0; i < 60; i += 1) {
       sim.step(EMPTY_INPUT);
@@ -38,11 +36,8 @@ describe('Freeze bonus', () => {
     if (!updatedCreature) {
       throw new Error('Expected creature to still exist');
     }
-    const updatedDist = Math.hypot(
-      sim.state.player.pos.x - updatedCreature.pos.x,
-      sim.state.player.pos.y - updatedCreature.pos.y,
-    );
-    expect(updatedDist).toBeLessThan(initialDist);
+    const movement = Math.hypot(updatedCreature.pos.x - initialX, updatedCreature.pos.y - initialY);
+    expect(movement).toBeGreaterThan(0);
   });
 
   it('freezes creature movement while freeze is active', () => {

@@ -16,7 +16,6 @@ const TERRAIN_FILL_CHANCE = 0;
 const TERRAIN_SMOOTH_PASSES = 0;
 const TERRAIN_EDGE_CLEAR_CELLS = 1;
 const TERRAIN_CLEAR_RADIUS = 6;
-const TERRAIN_SPAWN_SEARCH_RADIUS = 10;
 
 export function terrain_generate(seed: number): TerrainGrid {
   const rng = new Rng(seed ^ 0x9e3779b9);
@@ -132,132 +131,40 @@ export function getTerrainIndex(terrain: TerrainGrid, cellX: number, cellY: numb
   return cellX + cellY * terrain.width;
 }
 
-export function isTerrainBlocked(terrain: TerrainGrid, x: number, y: number, radius = 0): boolean {
+export function isTerrainBlocked(_terrain: TerrainGrid, x: number, y: number, radius = 0): boolean {
   const minX = x - radius;
   const maxX = x + radius;
   const minY = y - radius;
   const maxY = y + radius;
 
-  if (
+  return (
     minX < WORLD_BOUNDS.minX ||
     maxX > WORLD_BOUNDS.maxX ||
     minY < WORLD_BOUNDS.minY ||
     maxY > WORLD_BOUNDS.maxY
-  ) {
-    return true;
-  }
-
-  const start = getTerrainCellCoords(terrain, minX, minY);
-  const end = getTerrainCellCoords(terrain, maxX, maxY);
-  const minCellX = Math.max(0, Math.min(start.cellX, end.cellX));
-  const maxCellX = Math.min(terrain.width - 1, Math.max(start.cellX, end.cellX));
-  const minCellY = Math.max(0, Math.min(start.cellY, end.cellY));
-  const maxCellY = Math.min(terrain.height - 1, Math.max(start.cellY, end.cellY));
-
-  for (let cellY = minCellY; cellY <= maxCellY; cellY += 1) {
-    for (let cellX = minCellX; cellX <= maxCellX; cellX += 1) {
-      if (terrain.blocked[getTerrainIndex(terrain, cellX, cellY)]) {
-        return true;
-      }
-    }
-  }
-
-  return false;
+  );
 }
 
 export function clampOrSlide(
-  terrain: TerrainGrid,
+  _terrain: TerrainGrid,
   pos: Vec2,
   radius: number,
-  prev: Vec2,
+  _prev: Vec2,
 ): boolean {
-  if (!isTerrainBlocked(terrain, pos.x, pos.y, radius)) {
-    return false;
-  }
-
-  const tryX = { x: pos.x, y: prev.y };
-  if (!isTerrainBlocked(terrain, tryX.x, tryX.y, radius)) {
-    pos.y = prev.y;
-    return true;
-  }
-
-  const tryY = { x: prev.x, y: pos.y };
-  if (!isTerrainBlocked(terrain, tryY.x, tryY.y, radius)) {
-    pos.x = prev.x;
-    return true;
-  }
-
-  pos.x = prev.x;
-  pos.y = prev.y;
-  return true;
+  const originalX = pos.x;
+  const originalY = pos.y;
+  const clamped = clampToWorld({ x: pos.x, y: pos.y }, radius);
+  pos.x = clamped.x;
+  pos.y = clamped.y;
+  return pos.x !== originalX || pos.y !== originalY;
 }
 
 export function findOpenTerrainPosition(
-  terrain: TerrainGrid,
-  rng: Rng,
+  _terrain: TerrainGrid,
+  _rng: Rng,
   pos: Vec2,
   radius: number,
-  attempts = 20,
+  _attempts = 20,
 ): Vec2 {
-  const clamped = clampToWorld({ x: pos.x, y: pos.y }, radius);
-  if (!isTerrainBlocked(terrain, clamped.x, clamped.y, radius)) {
-    return clamped;
-  }
-
-  for (let i = 0; i < attempts; i += 1) {
-    const angle = rng.nextFloat01() * Math.PI * 2;
-    const dist = rng.nextFloat01() * TERRAIN_SPAWN_SEARCH_RADIUS;
-    const candidate = clampToWorld(
-      {
-        x: pos.x + Math.cos(angle) * dist,
-        y: pos.y + Math.sin(angle) * dist,
-      },
-      radius,
-    );
-    if (!isTerrainBlocked(terrain, candidate.x, candidate.y, radius)) {
-      return candidate;
-    }
-  }
-
-  const nearest = findNearestOpenCell(terrain, clamped, radius, 6);
-  return nearest ?? clamped;
-}
-
-function findNearestOpenCell(
-  terrain: TerrainGrid,
-  pos: Vec2,
-  radius: number,
-  maxRadiusCells: number,
-): Vec2 | null {
-  const start = getTerrainCellCoords(terrain, pos.x, pos.y);
-  for (let r = 1; r <= maxRadiusCells; r += 1) {
-    for (let dy = -r; dy <= r; dy += 1) {
-      for (let dx = -r; dx <= r; dx += 1) {
-        if (Math.abs(dx) !== r && Math.abs(dy) !== r) {
-          continue;
-        }
-        const cellX = start.cellX + dx;
-        const cellY = start.cellY + dy;
-        if (cellX < 0 || cellY < 0 || cellX >= terrain.width || cellY >= terrain.height) {
-          continue;
-        }
-        if (terrain.blocked[getTerrainIndex(terrain, cellX, cellY)]) {
-          continue;
-        }
-        const center = cellToWorldCenter(terrain, cellX, cellY);
-        const clamped = clampToWorld(center, radius);
-        if (!isTerrainBlocked(terrain, clamped.x, clamped.y, radius)) {
-          return clamped;
-        }
-      }
-    }
-  }
-  return null;
-}
-
-function cellToWorldCenter(terrain: TerrainGrid, cellX: number, cellY: number): Vec2 {
-  return {
-    x: terrain.originX + (cellX + 0.5) * terrain.cellSize,
-    y: terrain.originY + (cellY + 0.5) * terrain.cellSize,
-  };
+  return clampToWorld({ x: pos.x, y: pos.y }, radius);
 }

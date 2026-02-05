@@ -4,29 +4,24 @@ import type { PerkId } from '../../content/perks';
 import { generatePerkChoices, recomputePerkStats } from '../perks';
 import { getXpMultiplier } from './bonuses';
 import { refreshAvailableWeapons } from '../weapons/weaponTable';
-import { xpToNextForLevel } from '../xp';
+import { xpThresholdForLevel, xpToNextForLevel } from '../xp';
 
 const XP_PER_SECOND = 0;
 
-export function grantXp(state: SimState, events: SimEvent[], amount: number): void {
+export function grantXp(state: SimState, events: SimEvent[], baseAmount: number): void {
   if (state.phase !== 'Playing') {
     return;
   }
-  if (amount <= 0) {
+  if (baseAmount <= 0) {
     return;
   }
 
   const player = state.player;
   const multiplier = getXpMultiplier(player);
-  const gained = amount * multiplier;
+  const gained = Math.floor(baseAmount * multiplier);
   player.xp += gained;
   events.push({ type: 'xp', amount: gained, total: player.xp, level: player.level });
-
-  if (player.xp <= player.xpToNext) {
-    return;
-  }
-
-  levelUp(state, events);
+  applyLevelUpsFromXp(state, events);
 }
 
 export function updateProgression(state: SimState, events: SimEvent[], dt: number): void {
@@ -43,6 +38,8 @@ export function updateProgression(state: SimState, events: SimEvent[], dt: numbe
     const nextHp = Math.min(state.player.hpMax, state.player.hp + regen * dt);
     state.player.hp = nextHp;
   }
+
+  tryOpenPerkMenu(state, events);
 }
 
 export function updatePerkSelection(state: SimState, events: SimEvent[]): void {
@@ -64,6 +61,25 @@ export function updatePerkSelection(state: SimState, events: SimEvent[]): void {
   choosePerk(state, events, perkId);
 }
 
+function applyPerkImmediateEffect(state: SimState, events: SimEvent[], perkId: PerkId): void {
+  switch (perkId) {
+    case 'instant_winner':
+      state.player.xp += 2500;
+      events.push({ type: 'xp', amount: 2500, total: state.player.xp, level: state.player.level });
+      applyLevelUpsFromXp(state, events);
+      break;
+    case 'grim_deal':
+      state.player.hp = -1;
+      const xpBonus = Math.floor(state.player.xp * 0.18);
+      state.player.xp += xpBonus;
+      events.push({ type: 'xp', amount: xpBonus, total: state.player.xp, level: state.player.level });
+      applyLevelUpsFromXp(state, events);
+      break;
+    default:
+      break;
+  }
+}
+
 export function choosePerk(state: SimState, events: SimEvent[], perkId: PerkId): boolean {
   if (state.phase !== 'PerkSelect' || !state.perkChoices) {
     return false;
@@ -77,32 +93,49 @@ export function choosePerk(state: SimState, events: SimEvent[], perkId: PerkId):
   player.perks[perkId] = (player.perks[perkId] ?? 0) + 1;
   recomputePerkStats(player);
 
+  applyPerkImmediateEffect(state, events, perkId);
+
   state.perkChoices = null;
   state.phase = 'Playing';
+  state.pendingPerks = Math.max(0, state.pendingPerks - 1);
 
   events.push({ type: 'perkChosen', perkId, level: player.level });
-  if (player.xp > player.xpToNext) {
-    levelUp(state, events);
-  }
   return true;
 }
 
-function levelUp(state: SimState, events: SimEvent[]): void {
+function applyLevelUpsFromXp(state: SimState, events: SimEvent[]): void {
   const player = state.player;
-  player.xp -= player.xpToNext;
-  player.level += 1;
-  player.xpToNext = xpToNextForLevel(player.level);
-  refreshAvailableWeapons(player);
-  const choices = generatePerkChoices(state.rng, player, 3);
-  if (choices.length === 0) {
-    state.phase = 'Playing';
-    state.perkChoices = null;
+  while (player.xp >= xpThresholdForLevel(player.level)) {
+    player.level += 1;
+    state.pendingPerks += 1;
+    player.xpToNext = xpToNextForLevel(player.level);
+    refreshAvailableWeapons(player);
+    events.push({ type: 'levelUp', level: player.level, xpToNext: player.xpToNext });
+  }
+}
+
+function tryOpenPerkMenu(state: SimState, events: SimEvent[]): void {
+  if (state.phase !== 'Playing') {
     return;
   }
-  state.phase = 'PerkSelect';
-  state.perkChoices = choices;
-  events.push({ type: 'levelUp', level: player.level, xpToNext: player.xpToNext });
-  events.push({ type: 'perkOffered', level: player.level, choices });
+  if (state.pendingPerks <= 0) {
+    return;
+  }
+  if (!state.player.input.openPerkMenu) {
+    return;
+  }
+
+  while (state.pendingPerks > 0) {
+    const choices = generatePerkChoices(state.rng, state.player, 3);
+    if (choices.length === 0) {
+      state.pendingPerks -= 1;
+      continue;
+    }
+    state.phase = 'PerkSelect';
+    state.perkChoices = choices;
+    events.push({ type: 'perkOffered', level: state.player.level, choices });
+    return;
+  }
 }
 
 export function resetProgression(state: SimState): void {
@@ -113,6 +146,7 @@ export function resetProgression(state: SimState): void {
   recomputePerkStats(state.player);
   refreshAvailableWeapons(state.player);
   state.perkChoices = null;
+  state.pendingPerks = 0;
 }
 
 export function getBaseXpToNext(): number {

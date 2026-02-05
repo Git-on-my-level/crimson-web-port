@@ -20,10 +20,18 @@ export interface PlayerState {
   baseHpMax: number;
   aimDir: Vec2;
   aimAngle: number;
-  fireCooldownTicks: number;
+  shotCooldown: number;
+  reloadTimer: number;
+  reloadTimerMax: number;
   weaponId: WeaponId;
   ammo: number;
-  reloadTicksRemaining: number;
+  spreadHeat: number;
+  altWeaponId: WeaponId | null;
+  altAmmo: number;
+  altReloadTimer: number;
+  altReloadTimerMax: number;
+  altShotCooldown: number;
+  altSpreadHeat: number;
   input: InputFrame;
   baseSpeed: number;
   activeEffects: Partial<Record<BonusId, number>>;
@@ -34,6 +42,8 @@ export interface PlayerState {
   perkStats: PerkStats;
   unlockedWeapons: Set<WeaponId>;
   availableWeapons: WeaponId[];
+  prevFirePressed: boolean;
+  prevReloadPressed: boolean;
 }
 
 export interface CreatureState {
@@ -48,6 +58,19 @@ export interface CreatureState {
   touchCooldownTicks: number;
   alive: boolean;
   kind: string;
+  heading: number;
+  targetHeading: number;
+  moveScale: number;
+  aiMode: number;
+  flags: number;
+  linkIndex: number;
+  targetOffsetX: number;
+  targetOffsetY: number;
+  phaseSeed: number;
+  orbitAngle: number;
+  orbitRadius: number;
+  targetPos: Vec2;
+  forceTarget: number;
 }
 
 export interface ProjectileState {
@@ -57,12 +80,39 @@ export interface ProjectileState {
   alive: boolean;
   radius: number;
   damage: number;
+  speedScale: number;
   lifeTicksRemaining: number;
   owner: 'player' | 'creature';
   kind: string;
   pierceRemaining: number;
   explosionRadius: number;
   explosionDamage: number;
+}
+
+export interface SecondaryProjectileState {
+  id: number;
+  pos: Vec2;
+  vel: Vec2;
+  alive: boolean;
+  radius: number;
+  damage: number;
+  lifeTicksRemaining: number;
+  owner: 'player' | 'creature';
+  typeId: number;
+  explosionRadius: number;
+  explosionDamage: number;
+}
+
+export interface ParticleState {
+  id: number;
+  pos: Vec2;
+  vel: Vec2;
+  alive: boolean;
+  radius: number;
+  damagePerTick: number;
+  lifeTicksRemaining: number;
+  styleId: number;
+  owner: 'player' | 'creature';
 }
 
 export interface BonusState {
@@ -84,6 +134,8 @@ export interface SimState {
   player: PlayerState;
   creatures: CreatureState[];
   projectiles: ProjectileState[];
+  secondaryProjectiles: SecondaryProjectileState[];
+  particles: ParticleState[];
   bonuses: BonusState[];
   score: number;
   timeAlive: number;
@@ -91,8 +143,11 @@ export interface SimState {
   modeState: ModeState;
   phase: 'Playing' | 'GameOver' | 'Paused' | 'PerkSelect' | 'QuestResults' | 'QuestFailed';
   perkChoices: PerkId[] | null;
+  pendingPerks: number;
   nextEntityId: number;
   projectilePool: ObjectPool<ProjectileState>;
+  secondaryProjectilePool: ObjectPool<SecondaryProjectileState>;
+  particlePool: ObjectPool<ParticleState>;
   lastStepTimeMs: number;
   profile: SimProfile;
   selectedQuestId: QuestId;
@@ -114,6 +169,7 @@ export interface SimProfile {
 export interface SurvivalModeState {
   kind: 'survival';
   elapsedMs: number;
+  stage: number;
   spawnCooldownMs: number;
   spawnMinDistance: number;
   spawnMaxDistance: number;
@@ -150,6 +206,7 @@ export function createSurvivalModeState(): SurvivalModeState {
   return {
     kind: 'survival',
     elapsedMs: 0,
+    stage: 0,
     spawnCooldownMs: 0,
     spawnMinDistance: 10,
     spawnMaxDistance: 24,
@@ -188,6 +245,7 @@ export function createSimState(
       alive: false,
       radius: 0.4,
       damage: 0,
+      speedScale: 1,
       lifeTicksRemaining: 0,
       owner: 'player',
       kind: '',
@@ -197,6 +255,38 @@ export function createSimState(
     }),
     50,
     1000,
+  );
+  const secondaryProjectilePool = new ObjectPool<SecondaryProjectileState>(
+    () => ({
+      id: 0,
+      pos: vec2(0, 0),
+      vel: vec2(0, 0),
+      alive: false,
+      radius: 0.6,
+      damage: 0,
+      lifeTicksRemaining: 0,
+      owner: 'player',
+      typeId: 0,
+      explosionRadius: 0,
+      explosionDamage: 0,
+    }),
+    30,
+    400,
+  );
+  const particlePool = new ObjectPool<ParticleState>(
+    () => ({
+      id: 0,
+      pos: vec2(0, 0),
+      vel: vec2(0, 0),
+      alive: false,
+      radius: 1,
+      damagePerTick: 0,
+      lifeTicksRemaining: 0,
+      styleId: 0,
+      owner: 'player',
+    }),
+    60,
+    800,
   );
 
   const startingWeapon = WEAPONS[0]?.id ?? 'pistol';
@@ -210,10 +300,18 @@ export function createSimState(
     baseHpMax: 100,
     aimDir: vec2(1, 0),
     aimAngle: 0,
-    fireCooldownTicks: 0,
+    shotCooldown: 0,
+    reloadTimer: 0,
+    reloadTimerMax: 0,
     weaponId: startingWeapon,
     ammo: WEAPONS[0]?.ammoMax ?? 0,
-    reloadTicksRemaining: 0,
+    spreadHeat: 0.01,
+    altWeaponId: null,
+    altAmmo: 0,
+    altReloadTimer: 0,
+    altReloadTimerMax: 0,
+    altShotCooldown: 0,
+    altSpreadHeat: 0.01,
     input: { ...EMPTY_INPUT },
     baseSpeed: 6,
     activeEffects: {},
@@ -224,6 +322,8 @@ export function createSimState(
     perkStats: createPerkStats(),
     unlockedWeapons: new Set<WeaponId>([startingWeapon]),
     availableWeapons: [],
+    prevFirePressed: false,
+    prevReloadPressed: false,
   };
 
   const state: SimState = {
@@ -233,6 +333,8 @@ export function createSimState(
     player,
     creatures: [],
     projectiles: [],
+    secondaryProjectiles: [],
+    particles: [],
     bonuses: [],
     score: 0,
     timeAlive: 0,
@@ -240,8 +342,11 @@ export function createSimState(
     modeState: mode === 'quest' ? createQuestModeState(selectedQuestId) : createSurvivalModeState(),
     phase: 'Playing',
     perkChoices: null,
+    pendingPerks: 0,
     nextEntityId: 2,
     projectilePool,
+    secondaryProjectilePool,
+    particlePool,
     lastStepTimeMs: 0,
     profile: {
       inputMs: 0,
@@ -258,6 +363,6 @@ export function createSimState(
     selectedQuestId,
   };
 
-  refreshAvailableWeapons(player);
+  refreshAvailableWeapons(player, { mode });
   return state;
 }

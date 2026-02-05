@@ -38,6 +38,7 @@ This workbook tracks progress porting functions from the Crimsonland decompiled 
 
 - Parity harness: `src/tools/sim_trace.ts` for deterministic sim traces + `tests/parity/` for golden scenarios.
 - Parity scorecard lives at `docs/parity/scorecard.md`.
+- Parity policy: `.codex-autorunner/parity/policy.json` enforces a 0.99 minimum score gate for runs.
 
 ## Survival Parity (M2)
 

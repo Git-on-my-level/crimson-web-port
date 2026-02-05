@@ -18,6 +18,7 @@ export interface InputFrame {
   reload: boolean;
   weaponSwitch: number | null;
   pause: boolean;
+  openPerkMenu: boolean;
   perkChoice: number | null;
 }
 
@@ -30,6 +31,7 @@ export const EMPTY_INPUT: InputFrame = {
   reload: false,
   weaponSwitch: null,
   pause: false,
+  openPerkMenu: false,
   perkChoice: null,
 };
 

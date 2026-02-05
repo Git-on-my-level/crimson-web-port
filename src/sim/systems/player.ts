@@ -51,6 +51,17 @@ export function updatePlayer(state: SimState, dt: number): void {
     state.player.vel.y = 0;
   }
 
+  const weaponPowerUpActive = (state.player.activeEffects['weapon_power_up'] ?? 0) > 0;
+  const cooldownScale = weaponPowerUpActive ? 1.5 : 1.0;
+  state.player.shotCooldown = Math.max(0, state.player.shotCooldown - dt * cooldownScale);
+
+  const hasSharpshooter = (state.player.perks['sharpshooter'] ?? 0) > 0;
+  if (hasSharpshooter) {
+    state.player.spreadHeat = 0.02;
+  } else {
+    state.player.spreadHeat = Math.max(0.01, state.player.spreadHeat - dt * 0.4);
+  }
+
   const aimDx = input.aimX - state.player.pos.x;
   const aimDy = input.aimY - state.player.pos.y;
   const aimLength = Math.hypot(aimDx, aimDy);

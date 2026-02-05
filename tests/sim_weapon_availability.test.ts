@@ -1,33 +1,35 @@
 import { describe, expect, it } from 'vitest';
 import { createSimState } from '../src/sim/state';
-import { pickRandomWeapon, refreshAvailableWeapons, unlockWeapon } from '../src/sim/weapons/weaponTable';
+import { getWeaponOrder, pickRandomWeapon, refreshAvailableWeapons, unlockWeapon } from '../src/sim/weapons/weaponTable';
 
 describe('Weapon availability', () => {
-  it('filters by unlock level in a stable order', () => {
+  it('only includes unlocked weapons plus pistol, sorted by refId', () => {
     const state = createSimState(7);
+    refreshAvailableWeapons(state.player);
+
     expect(state.player.availableWeapons).toEqual(['pistol']);
 
-    state.player.level = 4;
+    unlockWeapon(state.player, 'assault_rifle');
+    unlockWeapon(state.player, 'plasma_rifle');
     refreshAvailableWeapons(state.player);
-    expect(state.player.availableWeapons).toEqual(['pistol', 'revolver', 'shotgun', 'smg', 'burst_rifle']);
+
+    expect(state.player.availableWeapons).toEqual(['pistol', 'assault_rifle', 'plasma_rifle']);
   });
 
   it('is deterministic and respects unlocked weapons', () => {
     const stateA = createSimState(123);
     const stateB = createSimState(123);
 
-    stateA.player.level = 3;
-    stateB.player.level = 3;
     refreshAvailableWeapons(stateA.player);
     refreshAvailableWeapons(stateB.player);
 
-    unlockWeapon(stateA.player, 'railgun');
-    unlockWeapon(stateB.player, 'railgun');
+    unlockWeapon(stateA.player, 'gauss_gun');
+    unlockWeapon(stateB.player, 'gauss_gun');
 
     const pickA = pickRandomWeapon(stateA.rng, stateA.player.availableWeapons);
     const pickB = pickRandomWeapon(stateB.rng, stateB.player.availableWeapons);
 
-    expect(stateA.player.availableWeapons).toContain('railgun');
+    expect(stateA.player.availableWeapons).toContain('gauss_gun');
     expect(pickA).toBe(pickB);
     expect(stateA.player.availableWeapons).toContain(pickA);
   });

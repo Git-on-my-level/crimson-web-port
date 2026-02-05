@@ -37,6 +37,7 @@ export class PhaserInputAdapter {
     allCodes.add('R');
     allCodes.add('P');
     allCodes.add('ESC');
+    allCodes.add('TAB');
     allCodes.add('ONE');
     allCodes.add('TWO');
     allCodes.add('THREE');
@@ -77,6 +78,7 @@ export class PhaserInputAdapter {
       reload: this.isKeybindDown(this.keybinds.reload),
       weaponSwitch: this.readWeaponSwitch(),
       pause: this.isKeybindDown(this.keybinds.pause) || this.isDown('ESC'),
+      openPerkMenu: this.readOpenPerkMenu(),
       perkChoice: this.readPerkChoice(),
     };
   }
@@ -124,5 +126,10 @@ export class PhaserInputAdapter {
     }
 
     return null;
+  }
+
+  private readOpenPerkMenu(): boolean {
+    const keyObj = this.keys.TAB;
+    return Boolean(keyObj && Phaser.Input.Keyboard.JustDown(keyObj));
   }
 }

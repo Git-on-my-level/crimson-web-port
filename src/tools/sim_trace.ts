@@ -34,8 +34,9 @@ type TraceSnapshot = {
     xpToNext: number;
     weaponId: string;
     ammo: number;
-    reloadTicksRemaining: number;
-    fireCooldownTicks: number;
+    reloadTimer: number;
+    shotCooldown: number;
+    spreadHeat: number;
     pos: { x: number; y: number };
     aimAngle: number;
     activeEffects: Record<string, number>;
@@ -306,8 +307,9 @@ function buildSnapshot(state: SimState): TraceSnapshot {
       xpToNext: state.player.xpToNext,
       weaponId: state.player.weaponId,
       ammo: state.player.ammo,
-      reloadTicksRemaining: state.player.reloadTicksRemaining,
-      fireCooldownTicks: state.player.fireCooldownTicks,
+      reloadTimer: state.player.reloadTimer,
+      shotCooldown: state.player.shotCooldown,
+      spreadHeat: state.player.spreadHeat,
       pos: { x: state.player.pos.x, y: state.player.pos.y },
       aimAngle: state.player.aimAngle,
       activeEffects,

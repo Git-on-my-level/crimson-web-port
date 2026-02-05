@@ -47,6 +47,19 @@ describe('ref parity: energizer bonus', () => {
       touchCooldownTicks: 0,
       alive: true,
       kind: 'grunt',
+      heading: 0,
+      targetHeading: 0,
+      moveScale: 1.0,
+      aiMode: 0,
+      flags: 0,
+      linkIndex: -1,
+      targetOffsetX: 0,
+      targetOffsetY: 0,
+      phaseSeed: 0,
+      orbitAngle: 0,
+      orbitRadius: 0,
+      targetPos: { x: sim.state.player.pos.x + 10, y: sim.state.player.pos.y },
+      forceTarget: 0,
     }];
 
     sim.state.player.activeEffects.energizer = 60;

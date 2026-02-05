@@ -1,16 +1,16 @@
 # Terrain Subsystem
 
-Functions: 3
+Functions: 2
 
 ## Function Checklist
 
 - [x] `terrain_generate` — Deterministic terrain grid generated from seed in `src/sim/terrain.ts`. (ref: crimsonland:00417b80)
 - [x] `terrain_generate_random` — RNG-driven obstacle layout with smoothing + clear zones in `src/sim/terrain.ts`. (ref: crimsonland:004181b0)
-- [x] `terrain_render` — Procedural tile background + obstacle overlay in Phaser. (ref: crimsonland:004188a0)
+- [x] `terrain_render` — Procedural tile background in Phaser. (ref: crimsonland:004188a0)
 
 ## Notes
-- Terrain is represented as a low-res collision grid (`TERRAIN_CELL_SIZE = 8`) with smoothing passes for blob-like obstacles.
-- Center radius and edge margins are cleared to ensure consistent spawn and player start space.
-- Movement uses a simple clamp-or-slide response against blocked cells; projectiles despawn on blocked terrain.
-- Spawn selection uses terrain avoidance; spawns are adjusted to nearest open space if needed.
-- Differences vs original: no authored terrain variants yet, obstacle resolution is coarser, and rendering uses a flat obstacle overlay instead of original tiles.
+- Terrain is background-only with no obstacle collisions. The `blocked` grid is maintained for compatibility but always contains zeros.
+- Movement is clamped to world bounds only; there is no sliding against terrain obstacles.
+- Projectiles despawn only when they exit world bounds or reach lifetime, not on terrain cells.
+- Spawn selection does not use terrain avoidance; positions are simply clamped to world bounds.
+- Differences vs original: no authored terrain variants yet, and rendering uses procedural background generation instead of original tiles.

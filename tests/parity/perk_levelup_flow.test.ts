@@ -3,7 +3,7 @@ import { Sim } from '../../src/sim/sim';
 import { grantXp } from '../../src/sim/systems/progression';
 import type { InputFrame, SimEvent } from '../../src/sim/types';
 import { createQuestModeState } from '../../src/sim/state';
-import { getPerkDef } from '../../src/content/perks';
+import { PERK_BY_ID } from '../../src/content/perks';
 
 const NO_INPUT: InputFrame = {
   moveX: 0,
@@ -14,6 +14,7 @@ const NO_INPUT: InputFrame = {
   reload: false,
   weaponSwitch: null,
   pause: false,
+  openPerkMenu: false,
   perkChoice: null,
 };
 
@@ -26,28 +27,29 @@ describe('Parity: perk level-up flow', () => {
     const events: SimEvent[] = [];
     grantXp(sim.state, events, sim.state.player.xpToNext);
 
+    expect(sim.state.phase).toBe('Playing');
+    expect(sim.state.pendingPerks).toBe(1);
+
+    const result = sim.step({ ...NO_INPUT, openPerkMenu: true });
     expect(sim.state.phase).toBe('PerkSelect');
     expect(sim.state.perkChoices?.length).toBeGreaterThan(0);
-    expect(events.some((event) => event.type === 'perkOffered')).toBe(true);
+    expect(result.events.some((event) => event.type === 'perkOffered')).toBe(true);
 
     const choiceIndex = 0;
     const chosen = sim.state.perkChoices?.[choiceIndex];
     expect(chosen).toBeTruthy();
 
-    const before = { ...sim.state.player.perkStats };
-    const result = sim.step({ ...NO_INPUT, perkChoice: choiceIndex + 1 });
+    const before = { ...sim.state.player.perks };
+    const chooseResult = sim.step({ ...NO_INPUT, perkChoice: choiceIndex + 1 });
 
     expect(sim.state.phase).toBe('Playing');
     if (chosen) {
       expect(sim.state.player.perks[chosen]).toBe(1);
-      const after = sim.state.player.perkStats;
-      const def = getPerkDef(chosen);
-      const changed = Object.keys(def.modifiers).some((key) => {
-        const k = key as keyof typeof before;
-        return before[k] !== after[k];
-      });
-      expect(changed).toBe(true);
+      expect(sim.state.player.perks[chosen]).toBe((before[chosen] ?? 0) + 1);
+      const def = PERK_BY_ID[chosen];
+      expect(def).toBeDefined();
+      expect(def.id).toBe(chosen);
     }
-    expect(result.events.some((event) => event.type === 'perkChosen')).toBe(true);
+    expect(chooseResult.events.some((event) => event.type === 'perkChosen')).toBe(true);
   });
 });

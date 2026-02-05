@@ -7,6 +7,14 @@ export function xpThresholdForLevel(level: number): number {
   return Math.floor(XP_BASE + Math.pow(safeLevel, XP_EXPONENT) * XP_SCALE);
 }
 
+export function xpForLevelStart(level: number): number {
+  const safeLevel = Math.max(1, Math.floor(level));
+  if (safeLevel <= 1) {
+    return 0;
+  }
+  return xpThresholdForLevel(safeLevel - 1);
+}
+
 export function xpToNextForLevel(level: number): number {
   const safeLevel = Math.max(1, Math.floor(level));
   if (safeLevel <= 1) {

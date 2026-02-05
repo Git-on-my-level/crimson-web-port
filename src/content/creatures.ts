@@ -8,6 +8,8 @@ export type CreatureDef = {
   scoreValue: number;
   color?: number;
   behavior?: CreatureBehavior;
+  aiMode?: number;
+  aiFlags?: number;
 };
 
 export type CreatureBehavior = 'seek' | 'strafe' | 'burst';
@@ -22,6 +24,8 @@ export const CREATURES: CreatureDef[] = [
     xpValue: 40,
     scoreValue: 10,
     color: 0x22c55e,
+    aiMode: 0,
+    aiFlags: 0,
   },
   {
     id: 'runner',
@@ -32,6 +36,8 @@ export const CREATURES: CreatureDef[] = [
     xpValue: 32,
     scoreValue: 12,
     color: 0x38bdf8,
+    aiMode: 0,
+    aiFlags: 0,
   },
   {
     id: 'tank',
@@ -42,6 +48,8 @@ export const CREATURES: CreatureDef[] = [
     xpValue: 80,
     scoreValue: 25,
     color: 0xf97316,
+    aiMode: 0,
+    aiFlags: 0,
   },
   {
     id: 'zombie',
@@ -52,6 +60,8 @@ export const CREATURES: CreatureDef[] = [
     xpValue: 44,
     scoreValue: 12,
     color: 0x84cc16,
+    aiMode: 0,
+    aiFlags: 0,
   },
   {
     id: 'zombie_elite',
@@ -62,6 +72,8 @@ export const CREATURES: CreatureDef[] = [
     xpValue: 90,
     scoreValue: 30,
     color: 0x65a30d,
+    aiMode: 0,
+    aiFlags: 0,
   },
   {
     id: 'alien',
@@ -73,6 +85,8 @@ export const CREATURES: CreatureDef[] = [
     scoreValue: 14,
     color: 0x22d3ee,
     behavior: 'burst',
+    aiMode: 0,
+    aiFlags: 0,
   },
   {
     id: 'alien_elite',
@@ -84,6 +98,8 @@ export const CREATURES: CreatureDef[] = [
     scoreValue: 30,
     color: 0x0891b2,
     behavior: 'burst',
+    aiMode: 0,
+    aiFlags: 0,
   },
   {
     id: 'spider',
@@ -95,6 +111,8 @@ export const CREATURES: CreatureDef[] = [
     scoreValue: 10,
     color: 0xa855f7,
     behavior: 'strafe',
+    aiMode: 0,
+    aiFlags: 0,
   },
   {
     id: 'spider_elite',
@@ -106,6 +124,8 @@ export const CREATURES: CreatureDef[] = [
     scoreValue: 22,
     color: 0x7c3aed,
     behavior: 'strafe',
+    aiMode: 0,
+    aiFlags: 0,
   },
   {
     id: 'brute',
@@ -116,6 +136,8 @@ export const CREATURES: CreatureDef[] = [
     xpValue: 140,
     scoreValue: 45,
     color: 0xfb923c,
+    aiMode: 0,
+    aiFlags: 0,
   },
 ];
 

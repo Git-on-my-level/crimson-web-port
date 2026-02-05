@@ -13,6 +13,7 @@ const FIRE_INPUT: InputFrame = {
   reload: false,
   weaponSwitch: null,
   pause: false,
+  openPerkMenu: false,
   perkChoice: null,
 };
 
@@ -25,6 +26,7 @@ const IDLE_INPUT: InputFrame = {
   reload: false,
   weaponSwitch: null,
   pause: false,
+  openPerkMenu: false,
   perkChoice: null,
 };
 
@@ -33,21 +35,18 @@ function setupSimWithWeapon(weaponId: keyof typeof WEAPON_BY_ID): Sim {
   sim.state.mode = 'quest';
   sim.state.modeState = createQuestModeState();
   sim.state.player.weaponId = weaponId;
-  sim.state.player.fireCooldownTicks = 0;
-  sim.state.player.reloadTicksRemaining = 0;
+  sim.state.player.shotCooldown = 0;
+  sim.state.player.reloadTimer = 0;
   return sim;
 }
 
 describe('Parity: weapon fire rate + reload', () => {
-  it('fires on a stable cooldown for the SMG', () => {
-    const sim = setupSimWithWeapon('smg');
-    const weapon = WEAPON_BY_ID.smg;
+  it('fires on a stable cooldown for submachine gun', () => {
+    const sim = setupSimWithWeapon('submachine_gun');
+    const weapon = WEAPON_BY_ID.submachine_gun;
     sim.state.player.ammo = 999;
 
-    const cooldownTicks = Math.max(
-      1,
-      Math.round((1 / weapon.fireRate) / sim.fixedDeltaSeconds),
-    );
+    const cooldownTicks = Math.max(1, Math.ceil((weapon.shotCooldown ?? 0) / sim.fixedDeltaSeconds));
 
     const shotTicks: number[] = [];
     const totalTicks = cooldownTicks * 6;
@@ -65,8 +64,8 @@ describe('Parity: weapon fire rate + reload', () => {
   });
 
   it('consumes ammo and reloads when empty', () => {
-    const sim = setupSimWithWeapon('smg');
-    const weapon = WEAPON_BY_ID.smg;
+    const sim = setupSimWithWeapon('submachine_gun');
+    const weapon = WEAPON_BY_ID.submachine_gun;
     const ammoStart = 3;
     sim.state.player.ammo = ammoStart;
 
@@ -77,7 +76,7 @@ describe('Parity: weapon fire rate + reload', () => {
       const result = sim.step(FIRE_INPUT);
       shots += result.events.filter((event) => event.type === 'spawnProjectile').length;
 
-      if (!reloadStarted && sim.state.player.reloadTicksRemaining > 0) {
+      if (!reloadStarted && sim.state.player.reloadTimer > 0) {
         reloadStarted = true;
         break;
       }
@@ -87,12 +86,12 @@ describe('Parity: weapon fire rate + reload', () => {
     expect(shots).toBe(ammoStart);
     expect(sim.state.player.ammo).toBe(0);
 
-    const reloadTicks = weapon.reloadTicks ?? 0;
+    const reloadTicks = Math.max(0, Math.round((weapon.reloadTime ?? 0) / sim.fixedDeltaSeconds));
     for (let i = 0; i < reloadTicks; i += 1) {
       sim.step(IDLE_INPUT);
     }
 
-    expect(sim.state.player.reloadTicksRemaining).toBe(0);
+    expect(sim.state.player.reloadTimer).toBe(0);
     expect(sim.state.player.ammo).toBe(weapon.ammoMax);
   });
 });

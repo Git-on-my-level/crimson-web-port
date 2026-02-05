@@ -4,6 +4,7 @@ import { getBonusDef, type BonusId } from '../content/bonuses';
 import { BONUS_FRAMES } from '../content/atlas';
 import { getPerkDef, type PerkId } from '../content/perks';
 import type { SimState } from '../sim/state';
+import { xpForLevelStart } from '../sim/xp';
 
 export class Hud {
   private hpText: Phaser.GameObjects.Text;
@@ -15,6 +16,7 @@ export class Hud {
   private entityCountText?: Phaser.GameObjects.Text;
   private activeBonusesText: Phaser.GameObjects.Text;
   private perksText: Phaser.GameObjects.Text;
+  private pendingPerksText: Phaser.GameObjects.Text;
   private readonly activeBonusIcons: Phaser.GameObjects.Sprite[] = [];
   private readonly activeBonusIconPool: Phaser.GameObjects.Sprite[] = [];
   private readonly bonusIconOrigin: { x: number; y: number };
@@ -95,6 +97,10 @@ export class Hud {
       .setScrollFactor(0)
       .setDepth(1000);
 
+    this.pendingPerksText = scene.add.text(padding, padding + 144, '', bonusStyle)
+      .setScrollFactor(0)
+      .setDepth(1000);
+
     scene.scale.on('resize', this.handleResize, this);
   }
 
@@ -104,8 +110,9 @@ export class Hud {
 
     this.levelText.setText(`Level: ${state.player.level}`);
     const xp = Math.floor(state.player.xp);
+    const xpIntoLevel = Math.max(0, xp - Math.floor(xpForLevelStart(state.player.level)));
     const xpToNext = Math.max(1, Math.floor(state.player.xpToNext));
-    this.xpText.setText(`XP: ${xp}/${xpToNext}`);
+    this.xpText.setText(`XP: ${xpIntoLevel}/${xpToNext}`);
 
     const scoreDisplay = Math.round(state.score);
     this.scoreText.setText(`Score: ${scoreDisplay}`);
@@ -114,10 +121,10 @@ export class Hud {
     if (weapon) {
       if (weapon.ammoMax !== undefined) {
         const ammo = Math.max(0, state.player.ammo);
-        const reloadTag = state.player.reloadTicksRemaining > 0 ? ' (Reloading)' : '';
+        const reloadTag = state.player.reloadTimer > 0 ? ' (Reloading)' : '';
         this.weaponText.setText(`${weapon.name} ${ammo}/${weapon.ammoMax}${reloadTag}`);
       } else {
-        this.weaponText.setText(weapon.name);
+        this.weaponText.setText(weapon.name ?? 'Unknown');
       }
     } else {
       this.weaponText.setText('Weapon');
@@ -152,6 +159,7 @@ export class Hud {
       .filter(([_, count]) => (count ?? 0) > 0)
       .map(([perkId, count]) => {
         const def = getPerkDef(perkId as PerkId);
+        if (!def) return '';
         return `${def.name} x${count}`;
       });
 
@@ -159,6 +167,13 @@ export class Hud {
       this.perksText.setText(`Perks: ${perkEntries.join(' | ')}`);
     } else {
       this.perksText.setText('');
+    }
+
+    if (state.pendingPerks > 0 && state.phase === 'Playing') {
+      const label = state.pendingPerks === 1 ? 'perk' : 'perks';
+      this.pendingPerksText.setText(`Pending ${label}: ${state.pendingPerks} (Press Tab)`);
+    } else {
+      this.pendingPerksText.setText('');
     }
   }
 
@@ -186,6 +201,7 @@ export class Hud {
     this.entityCountText?.destroy();
     this.activeBonusesText.destroy();
     this.perksText.destroy();
+    this.pendingPerksText.destroy();
     this.activeBonusIcons.forEach(icon => icon.destroy());
     this.activeBonusIconPool.forEach(icon => icon.destroy());
   }

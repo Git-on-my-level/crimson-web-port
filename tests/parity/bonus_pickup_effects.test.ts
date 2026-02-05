@@ -46,19 +46,19 @@ describe('Parity: bonus pickup effects', () => {
 
   it('applies timed weapon power up bonus and expires', () => {
     const sim = setupSim();
-    sim.state.player.weaponId = 'smg';
+    sim.state.player.weaponId = 'submachine_gun';
     sim.state.player.ammo = 1;
-    sim.state.player.fireCooldownTicks = 12;
-    sim.state.player.reloadTicksRemaining = 30;
+    sim.state.player.shotCooldown = 0.2;
+    sim.state.player.reloadTimer = 0.5;
     const events: SimEvent[] = [];
 
     spawnBonus(sim.state, events, { x: 0, y: 0 }, 'weapon_power_up');
     updateBonuses(sim.state, events);
 
     expect(getFireRateMultiplier(sim.state.player)).toBeGreaterThan(1);
-    expect(sim.state.player.fireCooldownTicks).toBe(0);
-    expect(sim.state.player.reloadTicksRemaining).toBe(0);
-    expect(sim.state.player.ammo).toBe(WEAPON_BY_ID.smg.ammoMax);
+    expect(sim.state.player.shotCooldown).toBe(0);
+    expect(sim.state.player.reloadTimer).toBe(0);
+    expect(sim.state.player.ammo).toBe(WEAPON_BY_ID.submachine_gun.ammoMax);
 
     const duration = getBonusDef('weapon_power_up').durationTicks ?? 0;
     for (let i = 0; i < duration; i += 1) {
