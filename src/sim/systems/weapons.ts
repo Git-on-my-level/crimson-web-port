@@ -57,7 +57,8 @@ export function updateWeapons(state: SimState, events: SimEvent[], dt: number): 
     return;
   }
 
-  const pellets = Math.max(1, weapon.pellets ?? 1);
+  const fireBulletsActive = (player.activeEffects['fire_bullets'] ?? 0) > 0;
+  const pellets = fireBulletsActive ? getFireBulletsPelletCount(weapon.id) : Math.max(1, weapon.pellets ?? 1);
   const spread = weapon.spreadRadians ?? 0;
   const muzzleOffset = weapon.muzzleOffset;
   const lifeTicks = Math.max(1, weapon.projectileLifeTicks);
@@ -69,6 +70,7 @@ export function updateWeapons(state: SimState, events: SimEvent[], dt: number): 
   const explosionDamage = explosionRadius
     ? weapon.damage * damageMultiplier * (projectileProfile.explosionDamageMultiplier ?? 1)
     : 0;
+  const projectileKind = fireBulletsActive ? 'fire_bullets' : weapon.id;
 
   for (let i = 0; i < pellets; i += 1) {
     const spreadOffset = spread > 0 ? (state.rng.nextFloat01() - 0.5) * spread : 0;
@@ -86,7 +88,7 @@ export function updateWeapons(state: SimState, events: SimEvent[], dt: number): 
       events,
       { x: posX, y: posY },
       { x: velX, y: velY },
-      weapon.id,
+      projectileKind,
       weapon.damage * damageMultiplier,
       lifeTicks,
       'player',
@@ -114,6 +116,14 @@ export function updateWeapons(state: SimState, events: SimEvent[], dt: number): 
     cooldownTicks = Math.max(cooldownTicks, BURST_COOLDOWN);
   }
   player.fireCooldownTicks = cooldownTicks;
+}
+
+export function getFireBulletsPelletCount(weaponId: WeaponDef['id']): number {
+  const weapon = getWeaponById(weaponId);
+  if (!weapon) {
+    return 1;
+  }
+  return Math.max(1, weapon.pellets ?? 1);
 }
 
 export function fireSpiralPattern(

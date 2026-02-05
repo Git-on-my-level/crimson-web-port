@@ -2,7 +2,6 @@ import Phaser from 'phaser';
 import type { SimState } from '../../sim/state';
 import type { EntityId } from '../../sim/types';
 import { type BonusId } from '../../content/bonuses';
-import type { WeaponId } from '../../content/weapons';
 import { BONUS_FRAMES, PROJECTILE_FRAMES } from '../../content/atlas';
 import { rotationFromVelocity } from '../../render/facing';
 import { computeDisplaySize } from '../../render/scale';
@@ -30,9 +29,12 @@ const CREATURE_SPRITE_BY_KIND: Record<string, string> = {
   tank: 'game-bodyset',
 };
 
-const PROJECTILE_FRAME_BY_WEAPON: Record<WeaponId, number> = PROJECTILE_FRAMES;
+const PROJECTILE_FRAME_BY_KIND: Record<string, number> = {
+  ...PROJECTILE_FRAMES,
+  fire_bullets: 5,
+};
 const BONUS_FRAME_BY_KIND: Record<BonusId, number> = BONUS_FRAMES;
-const PROJECTILE_ROTATION_OFFSET_BY_WEAPON: Partial<Record<WeaponId, number>> = {};
+const PROJECTILE_ROTATION_OFFSET_BY_KIND: Record<string, number> = {};
 
 export class PhaserRenderAdapter {
   private readonly scene: Phaser.Scene;
@@ -183,8 +185,8 @@ export class PhaserRenderAdapter {
         continue;
       }
       seen.add(projectile.id);
-      const frame = PROJECTILE_FRAME_BY_WEAPON[projectile.kind as WeaponId] ?? fallbackFrame;
-      const rotationOffset = PROJECTILE_ROTATION_OFFSET_BY_WEAPON[projectile.kind as WeaponId] ?? 0;
+      const frame = PROJECTILE_FRAME_BY_KIND[projectile.kind] ?? fallbackFrame;
+      const rotationOffset = PROJECTILE_ROTATION_OFFSET_BY_KIND[projectile.kind] ?? 0;
       const obj =
         this.projectiles.get(projectile.id) ??
         this.createSprite(this.projectiles, this.projectileSpritePool, projectile.id, PROJECTILE_SPRITE_KEY, frame);
