@@ -101,6 +101,8 @@ export function updateCreatures(state: SimState, events: SimEvent[], dt: number)
   const player = state.player;
   const freezeTicks = player.activeEffects.freeze ?? 0;
   const isFrozen = freezeTicks > 0;
+  const energizerTicks = player.activeEffects.energizer ?? 0;
+  const isEnergized = energizerTicks > 0;
   let writeIndex = 0;
   for (let i = 0; i < state.creatures.length; i += 1) {
     const creature = state.creatures[i];
@@ -126,6 +128,10 @@ export function updateCreatures(state: SimState, events: SimEvent[], dt: number)
       const def = getCreatureDef(creature.kind);
       let dirX = dx / dist;
       let dirY = dy / dist;
+      if (isEnergized) {
+        dirX = -dirX;
+        dirY = -dirY;
+      }
       let speedMultiplier = 1;
 
       if (def.behavior === 'strafe') {

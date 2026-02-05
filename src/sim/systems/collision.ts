@@ -17,6 +17,8 @@ const cellPool: CreatureState[][] = [];
 
 export function resolveCollisions(state: SimState, events: SimEvent[]): void {
   const player = state.player;
+  const energizerTicks = player.activeEffects.energizer ?? 0;
+  const isEnergized = energizerTicks > 0;
 
   for (const creature of state.creatures) {
     if (creature.touchCooldownTicks > 0) {
@@ -116,8 +118,12 @@ export function resolveCollisions(state: SimState, events: SimEvent[]): void {
     const dy = creature.pos.y - player.pos.y;
     const radius = creature.radius + player.radius;
     if (dx * dx + dy * dy <= radius * radius) {
-      applyDamageToPlayer(state, creature.touchDamage, events);
-      creature.touchCooldownTicks = TOUCH_COOLDOWN_TICKS;
+      if (isEnergized) {
+        applyDamageToCreature(state, creature, creature.hp, events, false);
+      } else {
+        applyDamageToPlayer(state, creature.touchDamage, events);
+        creature.touchCooldownTicks = TOUCH_COOLDOWN_TICKS;
+      }
     }
   }
 
@@ -213,6 +219,7 @@ function applyDamageToCreature(
   creature: CreatureState,
   amount: number,
   events: SimEvent[],
+  allowBonusDrop = true,
 ): void {
   if (!creature.alive || amount <= 0) {
     return;
@@ -236,7 +243,9 @@ function applyDamageToCreature(
   state.score += def.scoreValue;
   events.push({ type: 'score', amount: def.scoreValue, total: state.score });
   grantXp(state, events, def.xpValue);
-  trySpawnBonusOnKill(state, events, creature.pos);
+  if (allowBonusDrop) {
+    trySpawnBonusOnKill(state, events, creature.pos);
+  }
 }
 
 function applyDamageToPlayer(state: SimState, amount: number, events: SimEvent[]): void {
