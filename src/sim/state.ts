@@ -169,6 +169,7 @@ export interface SimProfile {
 export interface SurvivalModeState {
   kind: 'survival';
   elapsedMs: number;
+  stage: number;
   spawnCooldownMs: number;
   spawnMinDistance: number;
   spawnMaxDistance: number;
@@ -205,6 +206,7 @@ export function createSurvivalModeState(): SurvivalModeState {
   return {
     kind: 'survival',
     elapsedMs: 0,
+    stage: 0,
     spawnCooldownMs: 0,
     spawnMinDistance: 10,
     spawnMaxDistance: 24,
