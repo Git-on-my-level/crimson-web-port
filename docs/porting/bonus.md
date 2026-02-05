@@ -20,7 +20,7 @@ Functions: 12
 ## Implementation Notes
 
 ### Bonus Types Implemented
-1. **Points** (instant) - Adds 500 score
+1. **Points** (instant) - Adds 500 or 1000 score (8% chance for 1000), and grants the same amount of XP
 2. **Energizer** (timed, 8s) - Timed effect placeholder (no behavior yet)
 3. **Weapon** (instant) - Grants a random available weapon
 4. **Weapon Power Up** (timed, 10s) - 1.5x fire rate multiplier

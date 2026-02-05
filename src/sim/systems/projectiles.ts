@@ -48,6 +48,7 @@ export function despawnProjectile(state: SimState, id: number): void {
 
 export function updateProjectiles(state: SimState, events: SimEvent[], dt: number): void {
   void events;
+  const tickDelta = dt * 60;
 
   const minX = WORLD_BOUNDS.minX - OUT_OF_BOUNDS_MARGIN;
   const maxX = WORLD_BOUNDS.maxX + OUT_OF_BOUNDS_MARGIN;
@@ -59,7 +60,7 @@ export function updateProjectiles(state: SimState, events: SimEvent[], dt: numbe
   state.projectilePool.forEachActive((id, proj) => {
     proj.pos.x += proj.vel.x * dt;
     proj.pos.y += proj.vel.y * dt;
-    proj.lifeTicksRemaining -= 1;
+    proj.lifeTicksRemaining -= tickDelta;
 
     if (
       proj.lifeTicksRemaining <= 0 ||

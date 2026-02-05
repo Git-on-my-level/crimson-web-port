@@ -1,5 +1,6 @@
 import type { BonusId } from '../content/bonuses';
 import type { PerkId } from '../content/perks';
+import type { WeaponId } from '../content/weapons';
 
 export type EntityId = number;
 
@@ -36,7 +37,7 @@ export type SimEvent =
   | { type: 'spawnProjectile'; id: EntityId; pos: Vec2; vel: Vec2; kind: string }
   | { type: 'projectileImpact'; id: EntityId; pos: Vec2; kind: string; explosionRadius?: number }
   | { type: 'spawnCreature'; id: EntityId; pos: Vec2; kind: string }
-  | { type: 'spawnBonus'; id: EntityId; pos: Vec2; kind: BonusId }
+  | { type: 'spawnBonus'; id: EntityId; pos: Vec2; kind: BonusId; weaponId?: WeaponId; amount?: number; lifeTicksMax?: number }
   | { type: 'damage'; target: 'player' | 'creature'; id: EntityId; amount: number }
   | { type: 'death'; target: 'player' | 'creature'; id: EntityId }
   | { type: 'gameOver'; id: EntityId }
@@ -47,6 +48,8 @@ export type SimEvent =
   | { type: 'perkChosen'; perkId: PerkId; level: number }
   | { type: 'playSfx'; name: string }
   | { type: 'pickup'; id: EntityId; bonusType: string }
+  | { type: 'screenShake'; intensity: number; durationMs: number }
+  | { type: 'screenFlash'; kind: 'nuke' | 'pickup' | 'damage' | 'explosion' }
   | { type: 'questStatusChanged'; status: 'Playing' | 'Success' | 'Failed' }
   | { type: 'questMessage'; text: string };
 

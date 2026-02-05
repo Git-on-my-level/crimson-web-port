@@ -1,26 +1,34 @@
 import { getBonusDef, pickRandomBonusType, type BonusId } from '../../content/bonuses';
+import type { WeaponId } from '../../content/weapons';
 import type { SimState } from '../state';
 import type { SimEvent } from '../types';
 import { clampToWorld, findSpawnPosAwayFromPlayer } from '../world';
 import { findOpenTerrainPosition, isTerrainBlocked } from '../terrain';
-import { assignWeapon, pickRandomWeapon, refreshAvailableWeapons, unlockWeapon } from '../weapons/weaponTable';
+import { assignWeapon, getWeaponById, pickRandomWeapon, refreshAvailableWeapons, unlockWeapon } from '../weapons/weaponTable';
 import { getCreatureDef } from '../../content/creatures';
 import { grantXp } from './progression';
 import { registerQuestBonusCollected, registerQuestKill } from './mode_quest';
 import { registerSurvivalKill } from './mode_survival';
+import { spawnProjectile } from './projectiles';
 
 const BONUS_BASE_DROP_DENOM = 9;
 const BONUS_DESPAWN_TICKS = 900;
 const BONUS_RADIUS = 0.8;
 const BONUS_PICKUP_RADIUS = 1.5;
 const MEDKIT_HEAL_AMOUNT = 10;
-const SCORE_BONUS_AMOUNT = 500;
+const POINTS_BONUS_BASE = 500;
+const POINTS_BONUS_BIG = 1000;
+const POINTS_BONUS_BIG_CHANCE = 0.08;
 const BONUS_SPAWN_MIN_DISTANCE = 3.0;
 const BONUS_SPAWN_JITTER = 3.5;
 const BONUS_REROLL_MAX = 100;
-const NUKE_DAMAGE = 9999;
+const NUKE_RADIUS = 16;
+const NUKE_DAMAGE_SCALE = 12;
 const FIREBLAST_DAMAGE = 60;
-const FIREBLAST_RADIUS = 10;
+const FIREBLAST_BURST_COUNT = 16;
+const FIREBLAST_PROJECTILE_SPEED = 20;
+const FIREBLAST_PROJECTILE_LIFE_TICKS = 30;
+const FIREBLAST_PROJECTILE_RADIUS = 0.6;
 const SHOCK_CHAIN_DAMAGE = 45;
 const SHOCK_CHAIN_RADIUS = 12;
 const SHOCK_CHAIN_MAX_TARGETS = 6;
@@ -72,15 +80,27 @@ export function spawnBonus(
   const clamped = clampToWorld({ x: pos.x, y: pos.y }, BONUS_RADIUS);
   const spawnPos = findOpenTerrainPosition(state.terrain, state.rng, clamped, BONUS_RADIUS);
   const id = state.nextEntityId++;
+  const lifeTicksRemaining = BONUS_DESPAWN_TICKS;
+  let weaponId: WeaponId | undefined;
+  let amount: number | undefined;
+  if (kind === 'weapon') {
+    const available = refreshAvailableWeapons(state.player);
+    weaponId = pickRandomWeapon(state.rng, available);
+  } else if (kind === 'points') {
+    amount = state.rng.nextFloat01() < POINTS_BONUS_BIG_CHANCE ? POINTS_BONUS_BIG : POINTS_BONUS_BASE;
+  }
   state.bonuses.push({
     id,
     pos: { x: spawnPos.x, y: spawnPos.y },
     active: true,
     kind,
     radius: BONUS_RADIUS,
-    lifeTicksRemaining: BONUS_DESPAWN_TICKS,
+    lifeTicksRemaining,
+    lifeTicksMax: lifeTicksRemaining,
+    amount,
+    weaponId,
   });
-  events.push({ type: 'spawnBonus', id, pos: spawnPos, kind });
+  events.push({ type: 'spawnBonus', id, pos: spawnPos, kind, weaponId, amount, lifeTicksMax: lifeTicksRemaining });
 }
 
 export function checkBonusPickup(state: SimState, events: SimEvent[]): void {
@@ -143,33 +163,46 @@ function applyBonus(state: SimState, bonus: SimState['bonuses'][0], events: SimE
       }
       break;
     }
-    case 'score': {
-      state.score += SCORE_BONUS_AMOUNT;
-      events.push({ type: 'score', amount: SCORE_BONUS_AMOUNT, total: state.score });
+    case 'points': {
+      const amount = bonus.amount ?? POINTS_BONUS_BASE;
+      state.score += amount;
+      events.push({ type: 'score', amount, total: state.score });
+      grantXp(state, events, amount);
       break;
     }
     case 'weapon': {
       const available = refreshAvailableWeapons(state.player);
-      const nextWeapon = pickRandomWeapon(state.rng, available);
+      const nextWeapon = bonus.weaponId ?? pickRandomWeapon(state.rng, available);
       unlockWeapon(state.player, nextWeapon);
       assignWeapon(state.player, nextWeapon);
       events.push({ type: 'playSfx', name: 'weapon_pickup' });
       break;
     }
     case 'nuke': {
-      applyBonusAreaDamage(state, events, state.player.pos, 999, NUKE_DAMAGE, false);
+      applyNukeDamage(state, events, state.player.pos);
+      events.push({ type: 'screenShake', intensity: 0.018, durationMs: 240 });
+      events.push({ type: 'screenFlash', kind: 'nuke' });
       break;
     }
     case 'fireblast': {
-      applyBonusAreaDamage(state, events, state.player.pos, FIREBLAST_RADIUS, FIREBLAST_DAMAGE, false);
+      spawnFireblastBurst(state, events);
       break;
     }
     case 'shock_chain': {
       applyShockChain(state, events);
       break;
     }
+    case 'weapon_power_up': {
+      applyTimedBonus(state, bonus.kind, def);
+      const weapon = getWeaponById(state.player.weaponId);
+      state.player.fireCooldownTicks = 0;
+      state.player.reloadTicksRemaining = 0;
+      if (weapon.ammoMax !== undefined) {
+        state.player.ammo = weapon.ammoMax;
+      }
+      break;
+    }
     case 'energizer':
-    case 'weapon_power_up':
     case 'double_xp':
     case 'reflex_boost':
     case 'shield':
@@ -184,6 +217,24 @@ function applyBonus(state: SimState, bonus: SimState['bonuses'][0], events: SimE
   events.push({ type: 'playSfx', name: 'pickup' });
   if (state.mode === 'quest' && state.modeState.kind === 'quest') {
     registerQuestBonusCollected(state.modeState, bonus.kind);
+  }
+}
+
+function applyNukeDamage(state: SimState, events: SimEvent[], center: { x: number; y: number }): void {
+  const radiusSq = NUKE_RADIUS * NUKE_RADIUS;
+  for (const creature of state.creatures) {
+    if (!creature.alive) {
+      continue;
+    }
+    const dx = creature.pos.x - center.x;
+    const dy = creature.pos.y - center.y;
+    const distSq = dx * dx + dy * dy;
+    if (distSq > radiusSq) {
+      continue;
+    }
+    const dist = Math.sqrt(distSq);
+    const damage = Math.max(0, (NUKE_RADIUS - dist) * NUKE_DAMAGE_SCALE);
+    applyBonusDamageToCreature(state, creature, damage, events, false);
   }
 }
 
@@ -212,7 +263,7 @@ function pickBonusWithReroll(state: SimState): BonusId {
       return pick;
     }
   }
-  return 'score';
+  return 'points';
 }
 
 function isBonusAllowed(state: SimState, bonusId: BonusId): boolean {
@@ -229,42 +280,19 @@ function isBonusAllowed(state: SimState, bonusId: BonusId): boolean {
   return true;
 }
 
-function applyBonusAreaDamage(
-  state: SimState,
-  events: SimEvent[],
-  center: { x: number; y: number },
-  radius: number,
-  damage: number,
-  allowBonusDrop: boolean,
-): void {
-  const radiusSq = radius * radius;
-  for (const creature of state.creatures) {
-    if (!creature.alive) {
-      continue;
-    }
-    const dx = creature.pos.x - center.x;
-    const dy = creature.pos.y - center.y;
-    if (dx * dx + dy * dy <= radiusSq) {
-      applyBonusDamageToCreature(state, creature, damage, events, allowBonusDrop);
-    }
-  }
-}
-
 function applyShockChain(state: SimState, events: SimEvent[]): void {
   const player = state.player;
-  const candidates = state.creatures
-    .filter((creature) => creature.alive)
-    .map((creature) => {
-      const dx = creature.pos.x - player.pos.x;
-      const dy = creature.pos.y - player.pos.y;
-      return { creature, distSq: dx * dx + dy * dy };
-    })
-    .filter((entry) => entry.distSq <= SHOCK_CHAIN_RADIUS * SHOCK_CHAIN_RADIUS)
-    .sort((a, b) => a.distSq - b.distSq)
-    .slice(0, SHOCK_CHAIN_MAX_TARGETS);
+  const visited = new Set<number>();
+  let source = { x: player.pos.x, y: player.pos.y };
 
-  for (const entry of candidates) {
-    applyBonusDamageToCreature(state, entry.creature, SHOCK_CHAIN_DAMAGE, events, false);
+  for (let i = 0; i < SHOCK_CHAIN_MAX_TARGETS; i += 1) {
+    const next = findNearestCreatureInRadius(state, source, SHOCK_CHAIN_RADIUS, visited);
+    if (!next) {
+      break;
+    }
+    visited.add(next.id);
+    applyBonusDamageToCreature(state, next, SHOCK_CHAIN_DAMAGE, events, false);
+    source = next.pos;
   }
 }
 
@@ -302,6 +330,60 @@ function applyBonusDamageToCreature(
   }
 }
 
+function spawnFireblastBurst(state: SimState, events: SimEvent[]): void {
+  const { x, y } = state.player.pos;
+  for (let i = 0; i < FIREBLAST_BURST_COUNT; i += 1) {
+    const angle = (i / FIREBLAST_BURST_COUNT) * Math.PI * 2;
+    const vel = {
+      x: Math.cos(angle) * FIREBLAST_PROJECTILE_SPEED,
+      y: Math.sin(angle) * FIREBLAST_PROJECTILE_SPEED,
+    };
+    spawnProjectile(
+      state,
+      events,
+      { x, y },
+      vel,
+      'fireblast',
+      FIREBLAST_DAMAGE,
+      FIREBLAST_PROJECTILE_LIFE_TICKS,
+      'player',
+      FIREBLAST_PROJECTILE_RADIUS,
+    );
+  }
+}
+
+function findNearestCreatureInRadius(
+  state: SimState,
+  origin: { x: number; y: number },
+  radius: number,
+  exclude: Set<number>,
+): SimState['creatures'][0] | null {
+  const radiusSq = radius * radius;
+  let best: SimState['creatures'][0] | null = null;
+  let bestDistSq = Number.POSITIVE_INFINITY;
+
+  for (const creature of state.creatures) {
+    if (!creature.alive || exclude.has(creature.id)) {
+      continue;
+    }
+    const dx = creature.pos.x - origin.x;
+    const dy = creature.pos.y - origin.y;
+    const distSq = dx * dx + dy * dy;
+    if (distSq > radiusSq) {
+      continue;
+    }
+    if (distSq < bestDistSq || (distSq === bestDistSq && best && creature.id < best.id)) {
+      best = creature;
+      bestDistSq = distSq;
+    } else if (distSq === bestDistSq && !best) {
+      best = creature;
+      bestDistSq = distSq;
+    }
+  }
+
+  return best;
+}
+
 export function getDamageMultiplier(player: SimState['player']): number {
   const fireBulletsTicks = player.activeEffects['fire_bullets'] ?? 0;
   const fireBulletsMultiplier = fireBulletsTicks > 0 ? 1.25 : 1.0;
@@ -312,6 +394,12 @@ export function getFireRateMultiplier(player: SimState['player']): number {
   const weaponPowerUpTicks = player.activeEffects['weapon_power_up'] ?? 0;
   const bonusMultiplier = weaponPowerUpTicks > 0 ? 1.5 : 1.0;
   return player.perkStats.fireRateMultiplier * bonusMultiplier;
+}
+
+export function getReloadRateMultiplier(player: SimState['player']): number {
+  const weaponPowerUpTicks = player.activeEffects['weapon_power_up'] ?? 0;
+  const reloadTimeMultiplier = weaponPowerUpTicks > 0 ? 0.6 : 1.0;
+  return 1 / reloadTimeMultiplier;
 }
 
 export function getXpMultiplier(player: SimState['player']): number {

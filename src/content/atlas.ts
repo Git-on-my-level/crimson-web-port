@@ -54,7 +54,7 @@ export const ATLAS_SHEETS: AtlasSheet[] = [
     frameWidth: 32,
     frameHeight: 32,
     labels: {
-      score: 12,
+      points: 12,
       energizer: 10,
       weapon: 1,
       weapon_power_up: 7,
@@ -88,7 +88,7 @@ export const PROJECTILE_FRAMES: Record<WeaponId, number> = {
 };
 
 export const BONUS_FRAMES: Record<BonusId, number> = {
-  score: 12,
+  points: 12,
   energizer: 10,
   weapon: 1,
   weapon_power_up: 7,

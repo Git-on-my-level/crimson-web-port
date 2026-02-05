@@ -87,7 +87,7 @@ const LAND_HOSTILE_TIMELINE = [
   spawn(2500, 'alien', 2, { pattern: 'fixed', position: REF_CORNERS.bottomLeft }),
   spawn(6500, 'alien', 3, { pattern: 'fixed', position: REF_CORNERS.topLeft }),
   spawn(11500, 'alien', 4, { pattern: 'fixed', position: REF_CORNERS.topRight }),
-  grantBonus(18000, 'score', 1),
+  grantBonus(18000, 'points', 1),
 ];
 
 const MINOR_ALIEN_BREACH_TIMELINE = (() => {
