@@ -1,9 +1,10 @@
 import type { QuestDef, QuestSpawnPoint, QuestTimelineEvent } from './types';
 import { QUEST_TITLES } from './quest_ids';
+import { WORLD_WIDTH } from '../../sim/world';
 
 const MS_PER_TICK = 1000 / 60;
 const REF_HALF = 512;
-const WORLD_HALF = 1000;
+const WORLD_HALF = WORLD_WIDTH / 2;
 const REF_TO_WORLD = WORLD_HALF / REF_HALF;
 
 function msToTick(ms: number): number {
@@ -14,7 +15,7 @@ function refCoord(value: number): number {
   return (value - REF_HALF) * REF_TO_WORLD;
 }
 
-function refPos(x: number, y: number): QuestSpawnPoint {
+export function refPos(x: number, y: number): QuestSpawnPoint {
   return { x: refCoord(x), y: refCoord(y) };
 }
 
