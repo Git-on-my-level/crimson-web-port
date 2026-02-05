@@ -4,7 +4,6 @@ import { PhaserInputAdapter } from '../adapters/phaser/input';
 import { PhaserRenderAdapter } from '../adapters/phaser/render';
 import { DebugOverlay } from '../adapters/phaser/debugOverlay';
 import { TerrainBackground } from '../adapters/phaser/terrainBackground';
-import { TerrainObstacles } from '../adapters/phaser/terrainObstacles';
 import { Hud } from '../ui/Hud';
 import { PerkPickerOverlay } from '../ui/PerkPickerOverlay';
 import { ControlsOverlay } from '../ui/ControlsOverlay';
@@ -38,7 +37,6 @@ export class GameScene extends Phaser.Scene {
   private originX = 0;
   private originY = 0;
   private terrain?: TerrainBackground;
-  private terrainObstacles?: TerrainObstacles;
   private gameOverText?: Phaser.GameObjects.Text;
   private questStatusText?: Phaser.GameObjects.Text;
   private wasGameOver = false;
@@ -115,7 +113,6 @@ export class GameScene extends Phaser.Scene {
     this.perkOverlay = new PerkPickerOverlay(this, (slot) => this.queuePerkChoice(slot));
     this.perkOverlay.resize(width, height);
     this.audio = new PhaserAudioAdapter(this);
-    this.terrainObstacles = new TerrainObstacles(this, this.getTransform(), this.sim.state.terrain);
     this.controlsOverlay = new ControlsOverlay(this);
 
     this.scale.on('resize', this.handleResize, this);
@@ -165,7 +162,6 @@ export class GameScene extends Phaser.Scene {
     this.originX = gameSize.width / 2;
     this.originY = gameSize.height / 2;
     this.renderAdapter.setTransform(this.getTransform());
-    this.terrainObstacles?.setTransform(this.getTransform());
     this.terrain?.resize(gameSize.width, gameSize.height);
     this.updateSurvivalSpawnRange();
     this.updateCameraBounds();
