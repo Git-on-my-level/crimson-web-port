@@ -9,12 +9,14 @@ import { getDamageMultiplier, getFireRateMultiplier } from './bonuses';
 const DEFAULT_PROJECTILE_RADIUS = 0.4;
 
 const BURST_COOLDOWN = 4;
+const TICKS_PER_SECOND = 60;
 
 export function updateWeapons(state: SimState, events: SimEvent[], dt: number): void {
   const player = state.player;
+  const tickDelta = dt * TICKS_PER_SECOND;
 
   if (player.fireCooldownTicks > 0) {
-    player.fireCooldownTicks = Math.max(0, player.fireCooldownTicks - 1);
+    player.fireCooldownTicks = Math.max(0, player.fireCooldownTicks - tickDelta);
   }
 
   if (player.input.weaponSwitch !== null) {
@@ -30,8 +32,8 @@ export function updateWeapons(state: SimState, events: SimEvent[], dt: number): 
   }
 
   if (player.reloadTicksRemaining > 0) {
-    player.reloadTicksRemaining = Math.max(0, player.reloadTicksRemaining - 1);
-    if (player.reloadTicksRemaining === 0 && weapon.ammoMax !== undefined) {
+    player.reloadTicksRemaining = Math.max(0, player.reloadTicksRemaining - tickDelta);
+    if (player.reloadTicksRemaining <= 0 && weapon.ammoMax !== undefined) {
       player.ammo = weapon.ammoMax;
     }
   }
@@ -103,7 +105,10 @@ export function updateWeapons(state: SimState, events: SimEvent[], dt: number): 
   events.push({ type: 'playSfx', name: `${weapon.id}_shot` });
 
   const fireRateMultiplier = getFireRateMultiplier(player);
-  let cooldownTicks = Math.max(1, Math.round((1 / (weapon.fireRate * fireRateMultiplier)) / dt));
+  let cooldownTicks = Math.max(
+    1,
+    Math.round((1 / (weapon.fireRate * fireRateMultiplier)) * TICKS_PER_SECOND),
+  );
   if (weapon.fireMode === 'burst') {
     cooldownTicks = Math.max(cooldownTicks, BURST_COOLDOWN);
   }

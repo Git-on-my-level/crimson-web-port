@@ -87,28 +87,33 @@ export class Sim {
       this.state.lastStepTimeMs = profile.totalMs;
       return { events };
     }
+    const realDt = this.fixedDeltaSeconds;
+    const reflexTicks = this.state.player.activeEffects.reflex_boost ?? 0;
+    const timeScale = reflexTicks > 0 ? 0.6 : 1.0;
+    const scaledDt = realDt * timeScale;
+
     phaseStart = performance.now();
-    updatePlayer(this.state, this.fixedDeltaSeconds);
+    updatePlayer(this.state, scaledDt);
     profile.playerMs = performance.now() - phaseStart;
 
     phaseStart = performance.now();
-    updateWeapons(this.state, events, this.fixedDeltaSeconds);
+    updateWeapons(this.state, events, scaledDt);
     profile.weaponsMs = performance.now() - phaseStart;
 
     phaseStart = performance.now();
-    updateProjectiles(this.state, events, this.fixedDeltaSeconds);
+    updateProjectiles(this.state, events, scaledDt);
     profile.projectilesMs = performance.now() - phaseStart;
 
     phaseStart = performance.now();
     if (this.state.mode === 'survival') {
-      updateSurvivalMode(this.state, events);
+      updateSurvivalMode(this.state, events, scaledDt);
     } else {
       updateQuestMode(this.state, events);
     }
     profile.modeMs = performance.now() - phaseStart;
 
     phaseStart = performance.now();
-    updateCreatures(this.state, events, this.fixedDeltaSeconds);
+    updateCreatures(this.state, events, scaledDt);
     profile.creaturesMs = performance.now() - phaseStart;
 
     phaseStart = performance.now();
@@ -120,7 +125,7 @@ export class Sim {
     profile.bonusesMs = performance.now() - phaseStart;
 
     phaseStart = performance.now();
-    updateProgression(this.state, events, this.fixedDeltaSeconds);
+    updateProgression(this.state, events, realDt);
     profile.progressionMs = performance.now() - phaseStart;
 
     if (this.debugEnabled) {
@@ -128,7 +133,7 @@ export class Sim {
     }
 
     this.state.tick += 1;
-    this.state.timeAlive += this.fixedDeltaSeconds;
+    this.state.timeAlive += realDt;
     profile.totalMs = performance.now() - startTime;
     this.state.lastStepTimeMs = profile.totalMs;
 

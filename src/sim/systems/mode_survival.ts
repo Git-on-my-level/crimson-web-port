@@ -87,13 +87,14 @@ const MAX_SPAWNS_PER_TICK = 4;
 const MAX_WAVE_SPAWNS_PER_TICK = 3;
 const WAVE_RING_RADIUS = 14;
 
-export function updateSurvivalMode(state: SimState, events: SimEvent[]): void {
+export function updateSurvivalMode(state: SimState, events: SimEvent[], dt: number): void {
   if (state.mode !== 'survival') {
     return;
   }
 
   const modeState = ensureSurvivalState(state);
-  modeState.elapsedTicks += 1;
+  const tickDelta = dt * TICKS_PER_SECOND;
+  modeState.elapsedTicks += tickDelta;
 
   const elapsedSeconds = modeState.elapsedTicks / TICKS_PER_SECOND;
   const phaseIndex = getPhaseIndex(elapsedSeconds);
@@ -101,7 +102,7 @@ export function updateSurvivalMode(state: SimState, events: SimEvent[]): void {
 
   modeState.difficultyLevel = phaseIndex;
   modeState.maxCreaturesSoftCap = phase.maxCreatures;
-  modeState.spawnBudget += phase.spawnRatePerSecond / TICKS_PER_SECOND;
+  modeState.spawnBudget += phase.spawnRatePerSecond * dt;
 
   let aliveCount = 0;
   const activeByKind: Record<string, number> = {};
