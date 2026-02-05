@@ -16,8 +16,8 @@ export type RenderTransform = {
 const PROJECTILE_SPRITE_KEY = 'game-projs-grid4';
 const BONUS_SPRITE_KEY = 'game-bonuses-grid4';
 const PLAYER_SPRITE_KEY = 'game-trooper';
-const UI_CURSOR_KEY = 'ui-cursor';
-const UI_AIM_KEY = 'ui-aim';
+const PLAYER_SPRITE_FRAME = 16;
+const PLAYER_ROTATION_OFFSET = Math.PI / 2;
 const PLAYER_VISUAL_SCALE = 1.4;
 const PLAYER_MIN_PIXEL_SIZE = 24;
 const PLAYER_OUTLINE_SCALE = 1.12;
@@ -58,8 +58,7 @@ export class PhaserRenderAdapter {
   private readonly projectileSpritePool: Phaser.GameObjects.Sprite[] = [];
   private readonly creatureSpritePool: Phaser.GameObjects.Sprite[] = [];
   private readonly bonusSpritePool: BonusSprites[] = [];
-  private cursorSprite?: Phaser.GameObjects.Image;
-  private aimSprite?: Phaser.GameObjects.Image;
+  private cursorConfigured = false;
   private transform: RenderTransform;
   private debugCollisionEnabled = false;
   private debugGraphics?: Phaser.GameObjects.Graphics;
@@ -78,7 +77,7 @@ export class PhaserRenderAdapter {
     const deltaSeconds = Math.max(0, this.scene.game.loop.delta) / 1000;
     this.bonusAnimTimeSeconds += deltaSeconds;
     this.ensurePlayer(state);
-    this.ensureAimIndicators(state);
+    this.ensureAimIndicators();
     this.syncEntities(
       state.creatures,
       this.creatures,
@@ -93,18 +92,18 @@ export class PhaserRenderAdapter {
 
   private ensurePlayer(state: SimState): void {
     if (!this.player) {
-      this.player = this.scene.add.sprite(0, 0, PLAYER_SPRITE_KEY);
+      this.player = this.scene.add.sprite(0, 0, PLAYER_SPRITE_KEY, PLAYER_SPRITE_FRAME);
       this.player.setOrigin(0.5);
       this.player.setDepth(600);
       this.player.setTint(PLAYER_TINT);
-      this.playerOutline = this.scene.add.sprite(0, 0, PLAYER_SPRITE_KEY);
+      this.playerOutline = this.scene.add.sprite(0, 0, PLAYER_SPRITE_KEY, PLAYER_SPRITE_FRAME);
       this.playerOutline.setOrigin(0.5);
       this.playerOutline.setDepth(590);
       this.playerOutline.setTint(PLAYER_OUTLINE_TINT);
       this.scene.cameras.main.startFollow(this.player, true, 0.12, 0.12);
     }
     if (!this.playerOutline) {
-      this.playerOutline = this.scene.add.sprite(0, 0, PLAYER_SPRITE_KEY);
+      this.playerOutline = this.scene.add.sprite(0, 0, PLAYER_SPRITE_KEY, PLAYER_SPRITE_FRAME);
       this.playerOutline.setOrigin(0.5);
       this.playerOutline.setDepth(590);
       this.playerOutline.setTint(PLAYER_OUTLINE_TINT);
@@ -118,10 +117,10 @@ export class PhaserRenderAdapter {
       PLAYER_MIN_PIXEL_SIZE,
     );
     this.player.setDisplaySize(size, size);
-    this.player.setRotation(state.player.aimAngle);
+    this.player.setRotation(state.player.aimAngle + PLAYER_ROTATION_OFFSET);
     this.playerOutline.setPosition(x, y);
     this.playerOutline.setDisplaySize(size * PLAYER_OUTLINE_SCALE, size * PLAYER_OUTLINE_SCALE);
-    this.playerOutline.setRotation(state.player.aimAngle);
+    this.playerOutline.setRotation(state.player.aimAngle + PLAYER_ROTATION_OFFSET);
   }
 
   private syncEntities<T extends { id: EntityId; pos: { x: number; y: number } }>(
@@ -300,31 +299,11 @@ export class PhaserRenderAdapter {
     return sprites;
   }
 
-  private ensureAimIndicators(state: SimState): void {
-    if (!this.cursorSprite) {
-      this.scene.input.setDefaultCursor('none');
-      this.cursorSprite = this.scene.add.image(0, 0, UI_CURSOR_KEY);
-      this.cursorSprite.setOrigin(0.5);
-      this.cursorSprite.setScrollFactor(0);
-      this.cursorSprite.setDepth(1100);
+  private ensureAimIndicators(): void {
+    if (!this.cursorConfigured) {
+      this.scene.input.setDefaultCursor('crosshair');
+      this.cursorConfigured = true;
     }
-
-    if (!this.aimSprite) {
-      this.aimSprite = this.scene.add.image(0, 0, UI_AIM_KEY);
-      this.aimSprite.setOrigin(0.5);
-      this.aimSprite.setScrollFactor(0);
-      this.aimSprite.setDepth(1090);
-    }
-
-    const pointer = this.scene.input.activePointer;
-    this.cursorSprite.setPosition(pointer.x, pointer.y);
-
-    const aimDistance = 3;
-    const aimX = state.player.pos.x + state.player.aimDir.x * aimDistance;
-    const aimY = state.player.pos.y + state.player.aimDir.y * aimDistance;
-    const aimScreen = this.toScreen(aimX, aimY);
-    this.aimSprite.setPosition(aimScreen.x, aimScreen.y);
-    this.aimSprite.setRotation(state.player.aimAngle);
   }
 
   private toScreen(simX: number, simY: number): { x: number; y: number } {
