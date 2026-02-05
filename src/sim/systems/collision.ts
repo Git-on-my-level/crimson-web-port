@@ -243,6 +243,9 @@ function applyDamageToPlayer(state: SimState, amount: number, events: SimEvent[]
   if (state.player.hp <= 0 || amount <= 0) {
     return;
   }
+  if ((state.player.activeEffects.shield ?? 0) > 0) {
+    return;
+  }
 
   const reduction = state.player.perkStats.damageReduction;
   const finalAmount = amount * (1 - reduction);
