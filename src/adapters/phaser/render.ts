@@ -3,6 +3,7 @@ import type { SimState } from '../../sim/state';
 import type { EntityId } from '../../sim/types';
 import { type BonusId } from '../../content/bonuses';
 import { BONUS_FRAMES, PROJECTILE_FRAMES } from '../../content/atlas';
+import { WEAPON_BY_ID } from '../../content/weapons';
 import { rotationFromVelocity } from '../../render/facing';
 import { computeFadeAlpha, computePulseScale } from '../../render/bonusAnim';
 import { computeDisplaySize } from '../../render/scale';
@@ -16,6 +17,7 @@ export type RenderTransform = {
 const PROJECTILE_SPRITE_KEY = 'game-projs-grid4';
 const PARTICLE_SPRITE_KEY = 'game-particles-grid8';
 const BONUS_SPRITE_KEY = 'game-bonuses-grid4';
+const WEAPON_ICON_SPRITE_KEY = 'ui-wicons-grid2x1';
 const PLAYER_SPRITE_KEY = 'game-trooper';
 const PLAYER_SPRITE_FRAME = 16;
 const PLAYER_ROTATION_OFFSET = Math.PI / 2;
@@ -29,6 +31,9 @@ const BONUS_BUBBLE_SCALE = 1.12;
 const BONUS_ICON_ROTATION_AMPLITUDE = 0.12;
 const BONUS_ICON_ROTATION_SPEED = 1.7;
 const BONUS_ICON_TIME_OFFSET = 0.19;
+const WEAPON_ICON_MAX_INDEX = 31;
+const WEAPON_ICON_WIDTH_SCALE = 1.875;
+const WEAPON_ICON_HEIGHT_SCALE = 0.9375;
 
 const CREATURE_SPRITE_BY_KIND: Record<string, string> = {
   grunt: 'game-zombie',
@@ -185,14 +190,22 @@ export class PhaserRenderAdapter {
         continue;
       }
       seen.add(bonus.id);
-      const frame = BONUS_FRAME_BY_KIND[bonus.kind];
-      const sprites = this.bonuses.get(bonus.id) ?? this.createBonusSprites(bonus.id, frame);
+      const weaponIconIndex =
+        bonus.kind === 'weapon' ? (bonus.weaponId ? WEAPON_BY_ID[bonus.weaponId]?.iconIndex ?? null : null) : null;
+      const usesWeaponIcon =
+        bonus.kind === 'weapon' && weaponIconIndex !== null && weaponIconIndex >= 0 && weaponIconIndex <= WEAPON_ICON_MAX_INDEX;
+      const showIcon = bonus.kind !== 'weapon' || usesWeaponIcon;
+      const frame = usesWeaponIcon ? weaponIconIndex : BONUS_FRAME_BY_KIND[bonus.kind] ?? BONUS_BUBBLE_FRAME;
+      const iconTextureKey = usesWeaponIcon ? WEAPON_ICON_SPRITE_KEY : BONUS_SPRITE_KEY;
+      const sprites = this.bonuses.get(bonus.id) ?? this.createBonusSprites(bonus.id, iconTextureKey, frame);
       const { x, y } = this.toScreen(bonus.pos.x, bonus.pos.y);
       const lifeMaxTicks = bonus.lifeTicksMax ?? bonus.lifeTicksRemaining;
       const alpha = computeFadeAlpha(bonus.lifeTicksRemaining, lifeMaxTicks);
       const timeOffset = bonus.id * BONUS_ICON_TIME_OFFSET;
       const pulse = computePulseScale(tSeconds + timeOffset);
-      const rotation = Math.sin((tSeconds + timeOffset) * BONUS_ICON_ROTATION_SPEED) * BONUS_ICON_ROTATION_AMPLITUDE;
+      const rotation = usesWeaponIcon
+        ? 0
+        : Math.sin((tSeconds + timeOffset) * BONUS_ICON_ROTATION_SPEED) * BONUS_ICON_ROTATION_AMPLITUDE;
 
       sprites.bubble.setPosition(x, y);
       sprites.bubble.setDisplaySize(bubbleSize, bubbleSize);
@@ -200,10 +213,19 @@ export class PhaserRenderAdapter {
       sprites.bubble.setVisible(true);
 
       sprites.icon.setPosition(x, y);
-      sprites.icon.setDisplaySize(baseSize * pulse, baseSize * pulse);
-      sprites.icon.setAlpha(alpha);
-      sprites.icon.setRotation(rotation);
-      sprites.icon.setVisible(true);
+      if (showIcon) {
+        sprites.icon.setTexture(iconTextureKey, frame);
+        if (usesWeaponIcon) {
+          sprites.icon.setDisplaySize(baseSize * pulse * WEAPON_ICON_WIDTH_SCALE, baseSize * pulse * WEAPON_ICON_HEIGHT_SCALE);
+        } else {
+          sprites.icon.setDisplaySize(baseSize * pulse, baseSize * pulse);
+        }
+        sprites.icon.setAlpha(alpha);
+        sprites.icon.setRotation(rotation);
+        sprites.icon.setVisible(true);
+      } else {
+        sprites.icon.setVisible(false);
+      }
     }
 
     for (const [id, sprites] of this.bonuses) {
@@ -355,18 +377,18 @@ export class PhaserRenderAdapter {
     return sprite;
   }
 
-  private createBonusSprites(id: EntityId, frame: number): BonusSprites {
+  private createBonusSprites(id: EntityId, iconTextureKey: string, frame: number): BonusSprites {
     let sprites: BonusSprites;
 
     if (this.bonusSpritePool.length > 0) {
       sprites = this.bonusSpritePool.pop()!;
       sprites.bubble.setTexture(BONUS_SPRITE_KEY, BONUS_BUBBLE_FRAME);
-      sprites.icon.setTexture(BONUS_SPRITE_KEY, frame);
+      sprites.icon.setTexture(iconTextureKey, frame);
     } else {
       const bubble = this.scene.add.sprite(0, 0, BONUS_SPRITE_KEY, BONUS_BUBBLE_FRAME);
       bubble.setOrigin(0.5);
       bubble.setDepth(340);
-      const icon = this.scene.add.sprite(0, 0, BONUS_SPRITE_KEY, frame);
+      const icon = this.scene.add.sprite(0, 0, iconTextureKey, frame);
       icon.setOrigin(0.5);
       icon.setDepth(350);
       sprites = { bubble, icon };

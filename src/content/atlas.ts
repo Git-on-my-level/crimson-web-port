@@ -111,6 +111,12 @@ export const ATLAS_SHEETS: AtlasSheet[] = [
       fire_bullets: 11,
     },
   },
+  {
+    key: 'ui-wicons-grid2x1',
+    path: 'assets/crimson/ui/ui_wicons.png',
+    frameWidth: 64,
+    frameHeight: 32,
+  },
 ];
 
 export const PROJECTILE_FRAMES: Record<WeaponId, number> = {
