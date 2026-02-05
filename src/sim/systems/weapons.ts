@@ -1,5 +1,6 @@
 import type { WeaponDef } from '../../content/weapons';
 import { getProjectileProfile } from '../../content/projectiles';
+import { PROJECTILE_BY_TYPE_ID } from '../../content/projectiles.generated';
 import type { SimState } from '../state';
 import type { SimEvent } from '../types';
 import { assignWeapon, getWeaponById, getWeaponOrder, isWeaponAvailable } from '../weapons/weaponTable';
@@ -9,6 +10,62 @@ import { spawnParticleFast, spawnParticleSlow } from './particles';
 import { getDamageMultiplier, getReloadRateMultiplier } from './bonuses';
 
 const DEFAULT_PROJECTILE_RADIUS = 0.4;
+
+const WEAPON_TO_PROJECTILE_TYPE_ID: Record<string, number | null> = {
+  'pistol': 0x01,
+  'assault_rifle': 0x02,
+  'shotgun': 0x03,
+  'sawed_off_shotgun': 0x03,
+  'submachine_gun': 0x05,
+  'gauss_gun': 0x06,
+  'mean_minigun': 0x01,
+  'flamethrower': null,
+  'plasma_rifle': 0x09,
+  'multi_plasma': 0x09,
+  'plasma_minigun': 0x0B,
+  'rocket_launcher': null,
+  'seeker_rockets': null,
+  'plasma_shotgun': 0x0B,
+  'blow_torch': null,
+  'hr_flamer': null,
+  'mini_rocket_swarmers': null,
+  'rocket_minigun': null,
+  'pulse_gun': 0x13,
+  'jackhammer': 0x03,
+  'ion_rifle': 0x15,
+  'ion_minigun': 0x16,
+  'ion_cannon': 0x17,
+  'shrinkifier_5k': 0x18,
+  'blade_gun': 0x19,
+  'spider_plasma': 0x1A,
+  'evil_scythe': null,
+  'plasma_cannon': 0x1C,
+  'splitter_gun': 0x1D,
+  'gauss_shotgun': 0x06,
+  'ion_shotgun': 0x16,
+  'flameburst': null,
+  'raygun': null,
+  'unknown_34': null,
+  'unknown_35': null,
+  'unknown_36': null,
+  'unknown_37': null,
+  'unknown_38': null,
+  'unknown_39': null,
+  'unknown_40': null,
+  'plague_sphreader_gun': 0x29,
+  'bubblegun': null,
+  'rainbow_gun': 0x2B,
+  'grim_weapon': null,
+  'fire_bullets': 0x2D,
+  'unknown_46': null,
+  'unknown_47': null,
+  'unknown_48': null,
+  'unknown_49': null,
+  'transmutator': null,
+  'blaster_r_300': null,
+  'lighting_rifle': null,
+  'nuke_launcher': null,
+};
 
 const BURST_COOLDOWN_SECONDS = 0.0667;
 const SHARPSHOOTER_SPREAD_HEAT = 0.02;
@@ -100,13 +157,20 @@ export function updateWeapons(state: SimState, events: SimEvent[], dt: number): 
     const velY = pDirY * projectileSpeed;
     const lifeTicks = Math.max(1, weaponDef.projectileLifeTicks);
 
+    const typeId = WEAPON_TO_PROJECTILE_TYPE_ID[weaponDef.id];
+    const projectileId = typeId !== null && typeId !== undefined ? PROJECTILE_BY_TYPE_ID[typeId] : null;
+    const kind = options.kind ?? projectileId ?? weaponDef.id;
+
+    const damage = options.damage ?? weaponDef.damage;
+    const damageWithMultiplier = damage * damageMultiplier;
+
     spawnProjectile(
       state,
       events,
       { x: posX, y: posY },
       { x: velX, y: velY },
-      options.kind ?? weaponDef.id,
-      (options.damage ?? weaponDef.damage) * damageMultiplier,
+      kind,
+      damageWithMultiplier,
       lifeTicks,
       'player',
       projectileRadius,
