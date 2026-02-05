@@ -32,15 +32,15 @@ describe('Sim: bonus payloads', () => {
     const sim = setupSim();
     const events: SimEvent[] = [];
 
-    spawnBonus(sim.state, events, { x: 0, y: 0 }, 'score');
+    spawnBonus(sim.state, events, { x: 0, y: 0 }, 'points');
     const bonus = sim.state.bonuses[0];
-    expect(bonus?.amount).toBe(500);
+    expect(bonus?.amount === 500 || bonus?.amount === 1000).toBe(true);
 
     sim.state.player.pos.x = bonus.pos.x;
     sim.state.player.pos.y = bonus.pos.y;
 
     updateBonuses(sim.state, events);
 
-    expect(sim.state.score).toBe(500);
+    expect(sim.state.score).toBe(bonus.amount ?? 0);
   });
 });

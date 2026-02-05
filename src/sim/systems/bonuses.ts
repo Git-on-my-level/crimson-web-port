@@ -15,7 +15,9 @@ const BONUS_DESPAWN_TICKS = 900;
 const BONUS_RADIUS = 0.8;
 const BONUS_PICKUP_RADIUS = 1.5;
 const MEDKIT_HEAL_AMOUNT = 10;
-const SCORE_BONUS_AMOUNT = 500;
+const POINTS_BONUS_BASE = 500;
+const POINTS_BONUS_BIG = 1000;
+const POINTS_BONUS_BIG_CHANCE = 0.08;
 const BONUS_SPAWN_MIN_DISTANCE = 3.0;
 const BONUS_SPAWN_JITTER = 3.5;
 const BONUS_REROLL_MAX = 100;
@@ -79,8 +81,8 @@ export function spawnBonus(
   if (kind === 'weapon') {
     const available = refreshAvailableWeapons(state.player);
     weaponId = pickRandomWeapon(state.rng, available);
-  } else if (kind === 'score') {
-    amount = SCORE_BONUS_AMOUNT;
+  } else if (kind === 'points') {
+    amount = state.rng.nextFloat01() < POINTS_BONUS_BIG_CHANCE ? POINTS_BONUS_BIG : POINTS_BONUS_BASE;
   }
   state.bonuses.push({
     id,
@@ -156,10 +158,11 @@ function applyBonus(state: SimState, bonus: SimState['bonuses'][0], events: SimE
       }
       break;
     }
-    case 'score': {
-      const amount = bonus.amount ?? SCORE_BONUS_AMOUNT;
+    case 'points': {
+      const amount = bonus.amount ?? POINTS_BONUS_BASE;
       state.score += amount;
       events.push({ type: 'score', amount, total: state.score });
+      grantXp(state, events, amount);
       break;
     }
     case 'weapon': {
@@ -226,7 +229,7 @@ function pickBonusWithReroll(state: SimState): BonusId {
       return pick;
     }
   }
-  return 'score';
+  return 'points';
 }
 
 function isBonusAllowed(state: SimState, bonusId: BonusId): boolean {

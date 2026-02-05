@@ -27,6 +27,23 @@ describe('Parity: bonus pickup effects', () => {
     expect(sim.state.bonuses.length).toBe(0);
   });
 
+  it('applies points to both score and xp on pickup', () => {
+    const sim = setupSim();
+    const events: SimEvent[] = [];
+
+    spawnBonus(sim.state, events, { x: 0, y: 0 }, 'points');
+    const bonus = sim.state.bonuses[0];
+    const amount = bonus?.amount ?? 0;
+
+    sim.state.player.pos.x = bonus.pos.x;
+    sim.state.player.pos.y = bonus.pos.y;
+    updateBonuses(sim.state, events);
+
+    expect(sim.state.score).toBe(amount);
+    expect(sim.state.player.xp).toBe(amount);
+    expect(events.some((event) => event.type === 'pickup' && event.bonusType === 'points')).toBe(true);
+  });
+
   it('applies timed weapon power up bonus and expires', () => {
     const sim = setupSim();
     sim.state.player.weaponId = 'smg';

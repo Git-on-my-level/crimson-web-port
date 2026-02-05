@@ -1,5 +1,5 @@
 export type BonusId =
-  | 'score'
+  | 'points'
   | 'energizer'
   | 'weapon'
   | 'weapon_power_up'
@@ -30,7 +30,7 @@ const TICKS_PER_SECOND = 60;
 
 export const BONUSES: BonusDef[] = [
   {
-    id: 'score',
+    id: 'points',
     name: 'Points',
     kind: 'instant',
     rarityWeight: 832,
