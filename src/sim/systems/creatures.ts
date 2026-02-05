@@ -99,10 +99,20 @@ export function updateCreatures(state: SimState, events: SimEvent[], dt: number)
   void events;
 
   const player = state.player;
+  const freezeTicks = player.activeEffects.freeze ?? 0;
+  const isFrozen = freezeTicks > 0;
   let writeIndex = 0;
   for (let i = 0; i < state.creatures.length; i += 1) {
     const creature = state.creatures[i];
     if (!creature.alive) {
+      continue;
+    }
+
+    if (isFrozen) {
+      creature.vel.x = 0;
+      creature.vel.y = 0;
+      state.creatures[writeIndex] = creature;
+      writeIndex += 1;
       continue;
     }
 
