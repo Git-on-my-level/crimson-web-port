@@ -17,7 +17,10 @@
     "preview": "npm run assets:copy && vite preview",
     "preview:real": "npm run build:real && vite preview",
     "tools:extract-ref": "tsx src/tools/extract_ref_map.ts",
-    "tools:extract-quests": "tsx src/tools/extract_quest_names.ts"
+    "tools:extract-quests": "tsx src/tools/extract_quest_names.ts",
+    "parity:run": "tsx src/tools/parity_run.ts",
+    "parity:extract-ref": "tsx src/tools/extract_ref_specs.ts",
+    "parity:worker": "tsx src/tools/parity_worker.ts"
   },
   "devDependencies": {
     "@types/node": "^25.2.0",

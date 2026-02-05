@@ -62,3 +62,4 @@ Functions: 12
 
 - Reroll gates exist for Freeze/Shield/Shock Chain while active; quest-mode gates not yet implemented.
 - Several timed bonuses are tracked but do not yet implement their full original behavior (Energizer/Reflex/Shield/Freeze/Fire Bullets projectile override).
+- Ref-test ports for `test_nuke_bonus.py` and `test_bonus_pistol_rules.py` are marked skipped pending full bonus spawn rules + nuke projectile parity (TICKET-470).
