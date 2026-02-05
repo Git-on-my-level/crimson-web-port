@@ -5,6 +5,7 @@ import { type BonusId } from '../../content/bonuses';
 import type { WeaponId } from '../../content/weapons';
 import { BONUS_FRAMES, PROJECTILE_FRAMES } from '../../content/atlas';
 import { rotationFromVelocity } from '../../render/facing';
+import { computeDisplaySize } from '../../render/scale';
 
 export type RenderTransform = {
   originX: number;
@@ -17,6 +18,11 @@ const BONUS_SPRITE_KEY = 'game-bonuses-grid4';
 const PLAYER_SPRITE_KEY = 'game-trooper';
 const UI_CURSOR_KEY = 'ui-cursor';
 const UI_AIM_KEY = 'ui-aim';
+const PLAYER_VISUAL_SCALE = 1.4;
+const PLAYER_MIN_PIXEL_SIZE = 24;
+const PLAYER_OUTLINE_SCALE = 1.12;
+const PLAYER_TINT = 0x72e5ff;
+const PLAYER_OUTLINE_TINT = 0x0b0b0b;
 
 const CREATURE_SPRITE_BY_KIND: Record<string, string> = {
   grunt: 'game-zombie',
@@ -31,6 +37,7 @@ const PROJECTILE_ROTATION_OFFSET_BY_WEAPON: Partial<Record<WeaponId, number>> = 
 export class PhaserRenderAdapter {
   private readonly scene: Phaser.Scene;
   private player?: Phaser.GameObjects.Sprite;
+  private playerOutline?: Phaser.GameObjects.Sprite;
   private readonly creatures = new Map<EntityId, Phaser.GameObjects.Sprite>();
   private readonly projectiles = new Map<EntityId, Phaser.GameObjects.Sprite>();
   private readonly bonuses = new Map<EntityId, Phaser.GameObjects.Sprite>();
@@ -71,14 +78,33 @@ export class PhaserRenderAdapter {
     if (!this.player) {
       this.player = this.scene.add.sprite(0, 0, PLAYER_SPRITE_KEY);
       this.player.setOrigin(0.5);
-      this.player.setDepth(500);
+      this.player.setDepth(600);
+      this.player.setTint(PLAYER_TINT);
+      this.playerOutline = this.scene.add.sprite(0, 0, PLAYER_SPRITE_KEY);
+      this.playerOutline.setOrigin(0.5);
+      this.playerOutline.setDepth(590);
+      this.playerOutline.setTint(PLAYER_OUTLINE_TINT);
       this.scene.cameras.main.startFollow(this.player, true, 0.12, 0.12);
+    }
+    if (!this.playerOutline) {
+      this.playerOutline = this.scene.add.sprite(0, 0, PLAYER_SPRITE_KEY);
+      this.playerOutline.setOrigin(0.5);
+      this.playerOutline.setDepth(590);
+      this.playerOutline.setTint(PLAYER_OUTLINE_TINT);
     }
     const { x, y } = this.toScreen(state.player.pos.x, state.player.pos.y);
     this.player.setPosition(x, y);
-    const size = state.player.radius * 2 * this.transform.pixelsPerUnit;
+    const size = computeDisplaySize(
+      state.player.radius,
+      this.transform.pixelsPerUnit,
+      PLAYER_VISUAL_SCALE,
+      PLAYER_MIN_PIXEL_SIZE,
+    );
     this.player.setDisplaySize(size, size);
     this.player.setRotation(state.player.aimAngle);
+    this.playerOutline.setPosition(x, y);
+    this.playerOutline.setDisplaySize(size * PLAYER_OUTLINE_SCALE, size * PLAYER_OUTLINE_SCALE);
+    this.playerOutline.setRotation(state.player.aimAngle);
   }
 
   private syncEntities<T extends { id: EntityId; pos: { x: number; y: number } }>(
@@ -135,6 +161,7 @@ export class PhaserRenderAdapter {
       const { x, y } = this.toScreen(bonus.pos.x, bonus.pos.y);
       obj.setPosition(x, y);
       obj.setDisplaySize(radius * 2 * this.transform.pixelsPerUnit, radius * 2 * this.transform.pixelsPerUnit);
+      obj.setDepth(350);
       obj.setVisible(true);
     }
 
@@ -164,6 +191,7 @@ export class PhaserRenderAdapter {
       const { x, y } = this.toScreen(projectile.pos.x, projectile.pos.y);
       obj.setPosition(x, y);
       obj.setDisplaySize(projectile.radius * 2 * this.transform.pixelsPerUnit, projectile.radius * 2 * this.transform.pixelsPerUnit);
+      obj.setDepth(450);
       obj.setRotation(rotationFromVelocity(projectile.vel.x, projectile.vel.y) + rotationOffset);
       obj.setVisible(true);
     }
