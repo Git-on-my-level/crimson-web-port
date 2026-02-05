@@ -3,7 +3,7 @@ import { Sim } from '../src/sim/sim';
 import { grantXp } from '../src/sim/systems/progression';
 import type { SimEvent } from '../src/sim/types';
 import { createQuestModeState, createSimState } from '../src/sim/state';
-import { getPerkDef } from '../src/content/perks';
+import { PERK_BY_ID } from '../src/content/perks';
 import { perkCanOffer } from '../src/sim/perks';
 
 const NO_INPUT = {
@@ -55,18 +55,18 @@ describe('Perk progression', () => {
 
   it('requires prereqs before offering gated perks', () => {
     const state = createSimState(9);
-    const powerCell = getPerkDef('power_cell');
-    expect(perkCanOffer(powerCell, state.player)).toBe(false);
+    const toxicAvenger = PERK_BY_ID['toxic_avenger'];
+    expect(perkCanOffer(toxicAvenger, state.player)).toBe(false);
 
-    state.player.perks.damage_up = 1;
-    expect(perkCanOffer(powerCell, state.player)).toBe(true);
+    state.player.perks['veins_of_poison'] = 1;
+    expect(perkCanOffer(toxicAvenger, state.player)).toBe(true);
   });
 
-  it('honors exclusive perk groups', () => {
-    const state = createSimState(11);
-    state.player.perks.sharpshooter = 1;
+  it('respects max stacks', () => {
+    const state = createSimState(9);
+    const instantWinner = PERK_BY_ID['instant_winner'];
 
-    const spray = getPerkDef('spray_and_pray');
-    expect(perkCanOffer(spray, state.player)).toBe(false);
+    state.player.perks['instant_winner'] = 99;
+    expect(perkCanOffer(instantWinner, state.player)).toBe(false);
   });
 });

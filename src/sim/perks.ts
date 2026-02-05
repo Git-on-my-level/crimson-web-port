@@ -1,15 +1,16 @@
-import { PERKS, type PerkDef, type PerkId, type PerkModifiers, type PerkRarity } from '../content/perks';
+import { PERKS, type PerkDef, type PerkId } from '../content/perks';
 import type { Rng } from './rng';
 
 export type PerkStats = {
-  damageMultiplier: number;
+  experienceMultiplier: number;
   fireRateMultiplier: number;
   projectileSpeedMultiplier: number;
   moveSpeedMultiplier: number;
-  hpMaxBonus: number;
+  damageMultiplier: number;
   damageReduction: number;
   regenPerSecond: number;
   bonusDropMultiplier: number;
+  reloadSpeedMultiplier: number;
   pickupRangeBonus: number;
 };
 
@@ -25,14 +26,15 @@ const DAMAGE_REDUCTION_CAP = 0.6;
 
 export function createPerkStats(): PerkStats {
   return {
-    damageMultiplier: 1,
+    experienceMultiplier: 1,
     fireRateMultiplier: 1,
     projectileSpeedMultiplier: 1,
     moveSpeedMultiplier: 1,
-    hpMaxBonus: 0,
+    damageMultiplier: 1,
     damageReduction: 0,
     regenPerSecond: 0,
     bonusDropMultiplier: 1,
+    reloadSpeedMultiplier: 1,
     pickupRangeBonus: 0,
   };
 }
@@ -45,7 +47,7 @@ export function recomputePerkStats(player: PerkCarrier): void {
     if (stacks <= 0) {
       continue;
     }
-    applyModifiers(stats, perk.modifiers, stacks);
+    applyPerkModifiers(stats, perk, stacks);
   }
 
   stats.damageReduction = Math.min(stats.damageReduction, DAMAGE_REDUCTION_CAP);
@@ -54,10 +56,11 @@ export function recomputePerkStats(player: PerkCarrier): void {
   stats.damageMultiplier = Math.max(0.1, stats.damageMultiplier);
   stats.moveSpeedMultiplier = Math.max(0.1, stats.moveSpeedMultiplier);
   stats.projectileSpeedMultiplier = Math.max(0.1, stats.projectileSpeedMultiplier);
+  stats.reloadSpeedMultiplier = Math.max(0.1, stats.reloadSpeedMultiplier);
 
   player.perkStats = stats;
 
-  const nextHpMax = player.baseHpMax + stats.hpMaxBonus;
+  const nextHpMax = player.baseHpMax;
   if (nextHpMax !== player.hpMax) {
     player.hpMax = nextHpMax;
     if (player.hp > player.hpMax) {
@@ -72,36 +75,26 @@ export function perkCountGet(player: PerkCarrier, perkId: PerkId): number {
 
 export function perkCanOffer(perk: PerkDef, player: PerkCarrier): boolean {
   const currentStacks = perkCountGet(player, perk.id);
+  const isStackable = perk.tags?.includes('stackable') ?? false;
+  
+  if (!isStackable && currentStacks > 0) {
+    return false;
+  }
+  
   if (currentStacks >= perk.maxStacks) {
     return false;
   }
 
-  if (perk.prereqs && perk.prereqs.length > 0) {
-    for (const prereq of perk.prereqs) {
-      if (perkCountGet(player, prereq) <= 0) {
-        return false;
-      }
-    }
-  }
-
-  if (perk.exclusiveGroup) {
-    for (const other of PERKS) {
-      if (other.exclusiveGroup !== perk.exclusiveGroup) {
-        continue;
-      }
-      if (other.id === perk.id) {
-        continue;
-      }
-      if ((player.perks[other.id] ?? 0) > 0) {
-        return false;
-      }
+  if (perk.prereq) {
+    if (perkCountGet(player, perk.prereq) <= 0) {
+      return false;
     }
   }
 
   return true;
 }
 
-export function generatePerkChoices(rng: Rng, player: PerkCarrier, count = 3): PerkId[] {
+export function generatePerkChoices(rng: Rng, player: PerkCarrier, count = 5): PerkId[] {
   const available = PERKS.filter((perk) => perkCanOffer(perk, player));
 
   if (available.length <= count) {
@@ -112,19 +105,7 @@ export function generatePerkChoices(rng: Rng, player: PerkCarrier, count = 3): P
   const choices: PerkId[] = [];
 
   while (choices.length < count && pool.length > 0) {
-    const totalWeight = pool.reduce((sum, perk) => sum + getPerkWeight(perk), 0);
-    const roll = rng.nextFloat01() * totalWeight;
-    let cursor = 0;
-    let pickedIndex = 0;
-
-    for (let i = 0; i < pool.length; i += 1) {
-      cursor += getPerkWeight(pool[i]);
-      if (roll <= cursor) {
-        pickedIndex = i;
-        break;
-      }
-    }
-
+    const pickedIndex = Math.floor(rng.nextFloat01() * pool.length);
     const [picked] = pool.splice(pickedIndex, 1);
     if (picked) {
       choices.push(picked.id);
@@ -134,53 +115,74 @@ export function generatePerkChoices(rng: Rng, player: PerkCarrier, count = 3): P
   return choices;
 }
 
-function getPerkWeight(perk: PerkDef): number {
-  if (perk.weight && perk.weight > 0) {
-    return perk.weight;
-  }
-  return getRarityWeight(perk.rarity);
-}
+function applyPerkModifiers(stats: PerkStats, perk: PerkDef, stacks: number): void {
+  const id = perk.id;
 
-function getRarityWeight(rarity: PerkRarity): number {
-  switch (rarity) {
-    case 'legendary':
-      return 1;
-    case 'rare':
-      return 3;
-    case 'uncommon':
-      return 6;
-    case 'common':
+  switch (id) {
+    case 'bloody_mess_quick_learner':
+      stats.experienceMultiplier += 0.3 * stacks;
+      break;
+    case 'sharpshooter':
+      stats.fireRateMultiplier *= 0.95;
+      stats.projectileSpeedMultiplier *= 1.1;
+      break;
+    case 'fastloader':
+      stats.reloadSpeedMultiplier *= 1.43;
+      break;
+    case 'lean_mean_exp_machine':
+      stats.experienceMultiplier += 0.5 * stacks;
+      break;
+    case 'long_distance_runner':
+      stats.moveSpeedMultiplier += 0.2 * stacks;
+      break;
+    case 'fastshot':
+      stats.fireRateMultiplier *= 1.14;
+      break;
+    case 'ammo_maniac':
+      stats.damageMultiplier += 0.2 * stacks;
+      break;
+    case 'dodger':
+      stats.damageReduction += 0.2 * stacks;
+      break;
+    case 'bonus_magnet':
+      stats.bonusDropMultiplier += 0.2 * stacks;
+      break;
+    case 'uranium_filled_bullets':
+      stats.damageMultiplier += 0.5 * stacks;
+      break;
+    case 'doctor':
+      stats.damageMultiplier += 0.2 * stacks;
+      break;
+    case 'bonus_economist':
+      stats.bonusDropMultiplier *= 1.5;
+      break;
+    case 'thick_skinned':
+      stats.damageReduction += 0.33 * stacks;
+      break;
+    case 'barrel_greaser':
+      stats.damageMultiplier += 0.4 * stacks;
+      stats.projectileSpeedMultiplier += 0.3 * stacks;
+      break;
+    case 'regeneration':
+      stats.regenPerSecond += 0.5 * stacks;
+      break;
+    case 'pyromaniac':
+      stats.damageMultiplier += 0.5 * stacks;
+      break;
+    case 'ninja':
+      stats.damageReduction += 0.33 * stacks;
+      break;
+    case 'reflex_boosted':
+      stats.fireRateMultiplier *= 1.11;
+      stats.moveSpeedMultiplier *= 1.11;
+      break;
+    case 'stationary_reloader':
+      stats.reloadSpeedMultiplier *= 3.0;
+      break;
+    case 'tough_reloader':
+      stats.damageReduction += 0.5 * stacks;
+      break;
     default:
-      return 10;
-  }
-}
-
-function applyModifiers(stats: PerkStats, modifiers: PerkModifiers, stacks: number): void {
-  if (modifiers.damageMultiplier) {
-    stats.damageMultiplier += modifiers.damageMultiplier * stacks;
-  }
-  if (modifiers.fireRateMultiplier) {
-    stats.fireRateMultiplier += modifiers.fireRateMultiplier * stacks;
-  }
-  if (modifiers.projectileSpeedMultiplier) {
-    stats.projectileSpeedMultiplier += modifiers.projectileSpeedMultiplier * stacks;
-  }
-  if (modifiers.moveSpeedMultiplier) {
-    stats.moveSpeedMultiplier += modifiers.moveSpeedMultiplier * stacks;
-  }
-  if (modifiers.hpMaxBonus) {
-    stats.hpMaxBonus += modifiers.hpMaxBonus * stacks;
-  }
-  if (modifiers.damageReduction) {
-    stats.damageReduction += modifiers.damageReduction * stacks;
-  }
-  if (modifiers.regenPerSecond) {
-    stats.regenPerSecond += modifiers.regenPerSecond * stacks;
-  }
-  if (modifiers.bonusDropMultiplier) {
-    stats.bonusDropMultiplier += modifiers.bonusDropMultiplier * stacks;
-  }
-  if (modifiers.pickupRangeBonus) {
-    stats.pickupRangeBonus += modifiers.pickupRangeBonus * stacks;
+      break;
   }
 }

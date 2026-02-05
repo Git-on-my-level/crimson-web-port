@@ -22,6 +22,8 @@
     "tools:gen-weapons:check": "tsx src/tools/gen_weapons_catalog.ts --check",
     "tools:gen-projectiles": "tsx src/tools/gen_projectile_catalog.ts",
     "tools:gen-projectiles:check": "tsx src/tools/gen_projectile_catalog.ts --check",
+    "tools:gen-perks": "tsx src/tools/gen_perks_catalog.ts",
+    "tools:gen-perks:check": "tsx src/tools/gen_perks_catalog.ts --check",
     "parity:run": "tsx src/tools/parity_run.ts",
     "parity:extract-ref": "tsx src/tools/extract_ref_specs.ts",
     "parity:worker": "tsx src/tools/parity_worker.ts"

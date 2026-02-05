@@ -3,7 +3,7 @@ import { Sim } from '../../src/sim/sim';
 import { grantXp } from '../../src/sim/systems/progression';
 import type { InputFrame, SimEvent } from '../../src/sim/types';
 import { createQuestModeState } from '../../src/sim/state';
-import { getPerkDef } from '../../src/content/perks';
+import { PERK_BY_ID } from '../../src/content/perks';
 
 const NO_INPUT: InputFrame = {
   moveX: 0,
@@ -34,19 +34,16 @@ describe('Parity: perk level-up flow', () => {
     const chosen = sim.state.perkChoices?.[choiceIndex];
     expect(chosen).toBeTruthy();
 
-    const before = { ...sim.state.player.perkStats };
+    const before = { ...sim.state.player.perks };
     const result = sim.step({ ...NO_INPUT, perkChoice: choiceIndex + 1 });
 
     expect(sim.state.phase).toBe('Playing');
     if (chosen) {
       expect(sim.state.player.perks[chosen]).toBe(1);
-      const after = sim.state.player.perkStats;
-      const def = getPerkDef(chosen);
-      const changed = Object.keys(def.modifiers).some((key) => {
-        const k = key as keyof typeof before;
-        return before[k] !== after[k];
-      });
-      expect(changed).toBe(true);
+      expect(sim.state.player.perks[chosen]).toBe((before[chosen] ?? 0) + 1);
+      const def = PERK_BY_ID[chosen];
+      expect(def).toBeDefined();
+      expect(def.id).toBe(chosen);
     }
     expect(result.events.some((event) => event.type === 'perkChosen')).toBe(true);
   });

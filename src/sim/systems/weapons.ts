@@ -358,7 +358,7 @@ export function updateWeapons(state: SimState, events: SimEvent[], dt: number): 
 
   events.push({ type: 'playSfx', name: `${weapon.id}_shot` });
 
-  const hasFastshot = (player.perks['spray_and_pray'] ?? 0) > 0;
+  const hasFastshot = (player.perks['fastshot'] ?? 0) > 0;
   const hasSharpshooter = (player.perks['sharpshooter'] ?? 0) > 0;
   let shotCooldown = Math.max(0, weapon.shotCooldown ?? 0);
   if (hasFastshot) {

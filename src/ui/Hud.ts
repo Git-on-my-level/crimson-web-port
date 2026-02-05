@@ -152,6 +152,7 @@ export class Hud {
       .filter(([_, count]) => (count ?? 0) > 0)
       .map(([perkId, count]) => {
         const def = getPerkDef(perkId as PerkId);
+        if (!def) return '';
         return `${def.name} x${count}`;
       });
 
