@@ -34,12 +34,12 @@ export type PolicyCheckResult = {
   refTestPortCoverageMet: boolean;
 };
 
-export function loadPolicy(rootDir?: string): ParityPolicy {
+export function loadPolicy(rootDir?: string): ParityPolicy | null {
   const cwd = rootDir ?? process.cwd();
   const policyPath = join(cwd, '.codex-autorunner', 'parity', 'policy.json');
 
   if (!existsSync(policyPath)) {
-    throw new Error(`Policy file not found at ${policyPath}`);
+    return null;
   }
 
   const raw = readFileSync(policyPath, 'utf-8');
@@ -115,8 +115,11 @@ function calculateRefTestPortCoverage(rootDir?: string): number {
   return (portedOrSkipped / candidates.length) * 100;
 }
 
-export function checkPolicy(report: ParityReport, policy?: ParityPolicy, rootDir?: string): PolicyCheckResult {
+export function checkPolicy(report: ParityReport, policy?: ParityPolicy | null, rootDir?: string): PolicyCheckResult {
   const loadedPolicy = policy ?? loadPolicy(rootDir);
+  if (!loadedPolicy) {
+    throw new Error('Policy file not found; unable to evaluate policy');
+  }
   const score = calculateScore(report);
   const scoreMet = score >= loadedPolicy.requiredScore;
 
