@@ -156,6 +156,16 @@ function countCriticalFindings(findings: ParityFinding[]): number {
   return findings.filter(f => f.status === 'fail' && (f.tags ?? []).includes('critical')).length;
 }
 
+function buildExceptionFinding(scope: 'static' | 'dynamic', error: unknown): ParityFinding {
+  return {
+    id: `parity:${scope}:exception`,
+    status: 'fail',
+    message: `Parity ${scope} scan crashed during execution.`,
+    details: error instanceof Error ? error.stack ?? error.message : String(error),
+    tags: [`${scope}`, `${scope}:exception`],
+  };
+}
+
 function loadPolicy(rootDir?: string): ParityPolicy | null {
   const policyPath = join(rootDir ?? process.cwd(), '.codex-autorunner', 'parity', 'policy.json');
   if (!existsSync(policyPath)) {
@@ -181,9 +191,20 @@ async function main() {
   }
 
   const vitestFindings = vitestReport ? buildVitestFindings(vitestReport) : { findings: [], totalTests: 0, failedTests: 0 };
-  const staticFindings = runStaticScans({ rootDir: options.rootDir, includeRefTests: options.includeRefTests });
-  const dynamicResult = options.includeDynamicProbes ? runDynamicProbes() : { findings: [] };
-  const dynamicFindings = dynamicResult.findings;
+  let staticFindings: ParityFinding[] = [];
+  try {
+    staticFindings = runStaticScans({ rootDir: options.rootDir, includeRefTests: options.includeRefTests });
+  } catch (error) {
+    staticFindings = [buildExceptionFinding('static', error)];
+  }
+
+  let dynamicFindings: ParityFinding[] = [];
+  try {
+    const dynamicResult = options.includeDynamicProbes ? runDynamicProbes() : { findings: [] };
+    dynamicFindings = dynamicResult.findings;
+  } catch (error) {
+    dynamicFindings = [buildExceptionFinding('dynamic', error)];
+  }
 
   const allFindings = [...vitestFindings.findings, ...staticFindings, ...dynamicFindings];
 
