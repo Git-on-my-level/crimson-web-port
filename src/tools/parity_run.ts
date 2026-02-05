@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { writeReport, type ParityFinding, type ParityReport } from '../parity/report';
 import { runStaticScan } from '../parity/static_scan';
 import { runDynamicProbes } from '../parity/probe_runner';
+import { checkPolicy, formatPolicyCheckResult, type ParityPolicy } from '../parity/policy';
 
 type VitestAssertionResult = {
   fullName?: string;
@@ -155,6 +156,15 @@ function countCriticalFindings(findings: ParityFinding[]): number {
   return findings.filter(f => f.status === 'fail' && (f.tags ?? []).includes('critical')).length;
 }
 
+function loadPolicy(rootDir?: string): ParityPolicy | null {
+  const policyPath = join(rootDir ?? process.cwd(), '.codex-autorunner', 'parity', 'policy.json');
+  if (!existsSync(policyPath)) {
+    return null;
+  }
+  const raw = readFileSync(policyPath, 'utf-8');
+  return JSON.parse(raw) as ParityPolicy;
+}
+
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   const startedAt = Date.now();
@@ -198,9 +208,21 @@ async function main() {
   const summaryScore = summarizeScore(vitestFindings.totalTests, vitestFindings.failedTests, allFindings);
   const criticalCount = countCriticalFindings(allFindings);
 
-  if (summaryScore < options.threshold || criticalCount > 0) {
-    process.exitCode = 1;
-    return;
+  const policy = loadPolicy(options.rootDir);
+
+  if (policy) {
+    const policyResult = checkPolicy(report, policy, options.rootDir);
+    console.log('\n' + formatPolicyCheckResult(policyResult) + '\n');
+
+    if (!policyResult.meetsPolicy) {
+      process.exitCode = 1;
+      return;
+    }
+  } else {
+    if (summaryScore < options.threshold || criticalCount > 0) {
+      process.exitCode = 1;
+      return;
+    }
   }
 
   process.exitCode = 0;

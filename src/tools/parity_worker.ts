@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import type { ParityFinding, ParityReport } from '../parity/report';
 import { readReport } from '../parity/report';
+import { checkPolicy, formatPolicyCheckResult, loadPolicy } from '../parity/policy';
 
 export type OpenCodeSessionConfig = {
   endpoint?: string;
@@ -192,6 +193,7 @@ export type WorkerOptions = {
   maxTickets?: number;
   dry?: boolean;
   openCodeConfig?: OpenCodeSessionConfig;
+  rootDir?: string;
 };
 
 async function executeTicket(ticket: ParityTicketMetadata, options: WorkerOptions): Promise<boolean> {
@@ -244,6 +246,7 @@ type CliOptions = {
   threshold: number;
   maxTickets: number;
   dry: boolean;
+  rootDir?: string;
 };
 
 function parseArgs(argv: string[]): CliOptions {
@@ -282,6 +285,13 @@ function parseArgs(argv: string[]): CliOptions {
       }
       options.maxTickets = parsed;
       i += 1;
+    } else if (arg === '--root-dir') {
+      const raw = argv[i + 1];
+      if (raw === undefined) {
+        throw new Error('Missing value for --root-dir');
+      }
+      options.rootDir = raw;
+      i += 1;
     }
   }
 
@@ -295,6 +305,7 @@ async function main() {
     threshold: cliOptions.threshold,
     maxTickets: cliOptions.maxTickets,
     dry: cliOptions.dry,
+    rootDir: cliOptions.rootDir,
   };
 
   try {
@@ -351,15 +362,25 @@ export async function runParityWorker(options: WorkerOptions = {}): Promise<{
   
   console.log(`[Worker] Latest run ID: ${runId}`);
   
-  const reportPath = join(process.cwd(), '.codex-autorunner', 'parity', 'runs', runId, 'report.json');
+  const rootDir = options.rootDir ?? process.cwd();
+  const reportPath = join(rootDir, '.codex-autorunner', 'parity', 'runs', runId, 'report.json');
   if (!existsSync(reportPath)) {
     throw new Error(`Report not found at ${reportPath}`);
   }
-  
+
   const report = readReport(reportPath);
   const initialScore = calculateScore(report);
   const initialCritical = countCriticalFindings(report);
-  
+
+  const policy = loadPolicy(rootDir);
+  let policyMet = false;
+  if (policy) {
+    const policyResult = checkPolicy(report, policy, rootDir);
+    policyMet = policyResult.meetsPolicy;
+    console.log('[Worker] Initial policy status:');
+    console.log(formatPolicyCheckResult(policyResult));
+  }
+
   console.log(`[Worker] Initial parity score: ${initialScore.toFixed(2)}`);
   console.log(`[Worker] Initial critical findings: ${initialCritical}`);
 
@@ -368,7 +389,7 @@ export async function runParityWorker(options: WorkerOptions = {}): Promise<{
   
   console.log(`[Worker] Failing findings: ${sortedFindings.length}`);
 
-  const tickets = findAutoTickets(process.cwd());
+  const tickets = findAutoTickets(rootDir);
   const sortedTickets = tickets
     .filter(ticket => sortedFindings.some(f => f.id === ticket.finding.id))
     .sort((a, b) => compareFindings(a.finding, b.finding));
@@ -395,6 +416,13 @@ export async function runParityWorker(options: WorkerOptions = {}): Promise<{
       currentScore = calculateScore(parityResult.report);
       criticalFindings = countCriticalFindings(parityResult.report);
 
+      if (policy) {
+        const policyResult = checkPolicy(parityResult.report, policy, rootDir);
+        policyMet = policyResult.meetsPolicy;
+        console.log(`[Worker] Updated policy status:`);
+        console.log(formatPolicyCheckResult(policyResult));
+      }
+
       console.log(`[Worker] Updated parity score: ${currentScore.toFixed(2)}`);
       console.log(`[Worker] Updated critical findings: ${criticalFindings}`);
     }
@@ -408,14 +436,21 @@ export async function runParityWorker(options: WorkerOptions = {}): Promise<{
       break;
     }
 
-    if (currentScore >= threshold && criticalFindings === 0) {
-      console.log('[Worker] Threshold met and no critical findings: stopping');
-      break;
+    if (policy) {
+      if (policyMet) {
+        console.log('[Worker] Policy met: stopping');
+        break;
+      }
+    } else {
+      if (currentScore >= threshold && criticalFindings === 0) {
+        console.log('[Worker] Threshold met and no critical findings: stopping');
+        break;
+      }
     }
   }
 
-  const thresholdMet = currentScore >= threshold && criticalFindings === 0;
-  
+  const thresholdMet = policy ? policyMet : (currentScore >= threshold && criticalFindings === 0);
+
   console.log('[Worker] Summary:');
   console.log(`[Worker] - Tickets processed: ${ticketsProcessed}`);
   console.log(`[Worker] - Tickets succeeded: ${ticketsSucceeded}`);
