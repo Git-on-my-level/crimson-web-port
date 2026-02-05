@@ -141,9 +141,9 @@ function runStaticScans(options: Pick<CliOptions, 'rootDir' | 'includeRefTests'>
 
 // Dynamic probes are handled by src/parity/probe_runner.ts
 
-function summarizeScore(totalTests: number, failedTests: number, findings: ParityFinding[]): number {
-  const additionalTotal = findings.filter(f => f.status === 'pass' || f.status === 'fail').length;
-  const additionalFailed = findings.filter(f => f.status === 'fail').length;
+function summarizeScore(totalTests: number, failedTests: number, extraFindings: ParityFinding[]): number {
+  const additionalTotal = extraFindings.filter(f => f.status === 'pass' || f.status === 'fail').length;
+  const additionalFailed = extraFindings.filter(f => f.status === 'fail').length;
   const total = totalTests + additionalTotal;
   const failed = failedTests + additionalFailed;
   if (total === 0) {
@@ -205,7 +205,11 @@ async function main() {
   ensureDir(latestPath);
   writeFileSync(latestPath, `${JSON.stringify({ runId }, null, 2)}\n`, 'utf-8');
 
-  const summaryScore = summarizeScore(vitestFindings.totalTests, vitestFindings.failedTests, allFindings);
+  const summaryScore = summarizeScore(
+    vitestFindings.totalTests,
+    vitestFindings.failedTests,
+    [...staticFindings, ...dynamicFindings],
+  );
   const criticalCount = countCriticalFindings(allFindings);
 
   const policy = loadPolicy(options.rootDir);

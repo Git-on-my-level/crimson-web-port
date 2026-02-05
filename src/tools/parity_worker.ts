@@ -345,7 +345,8 @@ export async function runParityWorker(options: WorkerOptions = {}): Promise<{
   console.log(`[Worker] Max tickets: ${maxTickets}`);
   console.log(`[Worker] Dry run: ${dry}`);
 
-  const latestPath = join(process.cwd(), '.codex-autorunner', 'parity', 'latest.json');
+  const rootDir = options.rootDir ?? process.cwd();
+  const latestPath = join(rootDir, '.codex-autorunner', 'parity', 'latest.json');
   if (!existsSync(latestPath)) {
     console.log('[Worker] No latest parity report found. Run parity:run first.');
     return {
@@ -362,7 +363,6 @@ export async function runParityWorker(options: WorkerOptions = {}): Promise<{
   
   console.log(`[Worker] Latest run ID: ${runId}`);
   
-  const rootDir = options.rootDir ?? process.cwd();
   const reportPath = join(rootDir, '.codex-autorunner', 'parity', 'runs', runId, 'report.json');
   if (!existsSync(reportPath)) {
     throw new Error(`Report not found at ${reportPath}`);
