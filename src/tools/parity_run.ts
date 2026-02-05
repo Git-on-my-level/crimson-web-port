@@ -28,6 +28,9 @@ type CliOptions = {
   vitestJson?: string;
   threshold: number;
   runId?: string;
+  rootDir?: string;
+  includeRefTests: boolean;
+  includeDynamicProbes: boolean;
 };
 
 function ensureDir(filePath: string): void {
@@ -41,6 +44,8 @@ function parseArgs(argv: string[]): CliOptions {
   const options: CliOptions = {
     dry: false,
     threshold: 1,
+    includeRefTests: true,
+    includeDynamicProbes: true,
   };
 
   for (let i = 0; i < argv.length; i++) {
@@ -64,6 +69,13 @@ function parseArgs(argv: string[]): CliOptions {
     } else if (arg === '--run-id') {
       options.runId = argv[i + 1];
       i += 1;
+    } else if (arg === '--root') {
+      options.rootDir = argv[i + 1];
+      i += 1;
+    } else if (arg === '--no-ref-tests') {
+      options.includeRefTests = false;
+    } else if (arg === '--no-dynamic') {
+      options.includeDynamicProbes = false;
     }
   }
 
@@ -119,8 +131,11 @@ function buildVitestFindings(report: VitestJsonReport): {
   return { findings, totalTests, failedTests };
 }
 
-function runStaticScans(): ParityFinding[] {
-  return runStaticScan();
+function runStaticScans(options: Pick<CliOptions, 'rootDir' | 'includeRefTests'>): ParityFinding[] {
+  return runStaticScan({
+    rootDir: options.rootDir,
+    includeRefTests: options.includeRefTests,
+  });
 }
 
 // Dynamic probes are handled by src/parity/probe_runner.ts
@@ -156,8 +171,8 @@ async function main() {
   }
 
   const vitestFindings = vitestReport ? buildVitestFindings(vitestReport) : { findings: [], totalTests: 0, failedTests: 0 };
-  const staticFindings = runStaticScans();
-  const dynamicFindings = runDynamicProbes();
+  const staticFindings = runStaticScans({ rootDir: options.rootDir, includeRefTests: options.includeRefTests });
+  const dynamicFindings = options.includeDynamicProbes ? runDynamicProbes() : [];
 
   const allFindings = [...vitestFindings.findings, ...staticFindings, ...dynamicFindings];
 
