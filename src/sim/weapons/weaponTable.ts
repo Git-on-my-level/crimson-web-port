@@ -10,8 +10,9 @@ export type WeaponAvailabilityCarrier = {
 export type WeaponCarrier = {
   weaponId: WeaponId;
   ammo: number;
-  reloadTicksRemaining: number;
-  fireCooldownTicks: number;
+  reloadTimer: number;
+  shotCooldown: number;
+  spreadHeat: number;
 };
 
 export function weaponTableInit(): WeaponDef[] {
@@ -59,8 +60,9 @@ export function isWeaponAvailable(player: WeaponAvailabilityCarrier, weaponId: W
 
 export function assignWeapon(player: WeaponCarrier, weaponId: WeaponId): void {
   player.weaponId = weaponId;
-  player.fireCooldownTicks = 0;
-  player.reloadTicksRemaining = 0;
+  player.shotCooldown = 0;
+  player.reloadTimer = 0;
+  player.spreadHeat = 0.01;
   const def = getWeaponById(weaponId);
   if (def.ammoMax !== undefined) {
     player.ammo = def.ammoMax;

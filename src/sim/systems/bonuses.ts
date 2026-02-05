@@ -195,8 +195,8 @@ function applyBonus(state: SimState, bonus: SimState['bonuses'][0], events: SimE
     case 'weapon_power_up': {
       applyTimedBonus(state, bonus.kind, def);
       const weapon = getWeaponById(state.player.weaponId);
-      state.player.fireCooldownTicks = 0;
-      state.player.reloadTicksRemaining = 0;
+      state.player.shotCooldown = 0;
+      state.player.reloadTimer = 0;
       if (weapon.ammoMax !== undefined) {
         state.player.ammo = weapon.ammoMax;
       }

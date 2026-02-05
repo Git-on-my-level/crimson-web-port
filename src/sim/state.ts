@@ -20,10 +20,11 @@ export interface PlayerState {
   baseHpMax: number;
   aimDir: Vec2;
   aimAngle: number;
-  fireCooldownTicks: number;
+  shotCooldown: number;
+  reloadTimer: number;
   weaponId: WeaponId;
   ammo: number;
-  reloadTicksRemaining: number;
+  spreadHeat: number;
   input: InputFrame;
   baseSpeed: number;
   activeEffects: Partial<Record<BonusId, number>>;
@@ -223,10 +224,11 @@ export function createSimState(
     baseHpMax: 100,
     aimDir: vec2(1, 0),
     aimAngle: 0,
-    fireCooldownTicks: 0,
+    shotCooldown: 0,
+    reloadTimer: 0,
     weaponId: startingWeapon,
     ammo: WEAPONS[0]?.ammoMax ?? 0,
-    reloadTicksRemaining: 0,
+    spreadHeat: 0.01,
     input: { ...EMPTY_INPUT },
     baseSpeed: 6,
     activeEffects: {},

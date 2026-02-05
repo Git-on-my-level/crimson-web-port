@@ -395,8 +395,8 @@ export class GameScene extends Phaser.Scene {
       if (def && def.ammoMax !== undefined) {
         player.ammo = def.ammoMax;
       }
-      player.fireCooldownTicks = 0;
-      player.reloadTicksRemaining = 0;
+      player.shotCooldown = 0;
+      player.reloadTimer = 0;
       player.perkStats.fireRateMultiplier = Math.max(player.perkStats.fireRateMultiplier, 6);
     });
 

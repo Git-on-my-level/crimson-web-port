@@ -22,13 +22,13 @@ describe('Weapon availability', () => {
     refreshAvailableWeapons(stateA.player);
     refreshAvailableWeapons(stateB.player);
 
-    unlockWeapon(stateA.player, 'railgun');
-    unlockWeapon(stateB.player, 'railgun');
+    unlockWeapon(stateA.player, 'gauss_gun');
+    unlockWeapon(stateB.player, 'gauss_gun');
 
     const pickA = pickRandomWeapon(stateA.rng, stateA.player.availableWeapons);
     const pickB = pickRandomWeapon(stateB.rng, stateB.player.availableWeapons);
 
-    expect(stateA.player.availableWeapons).toContain('railgun');
+    expect(stateA.player.availableWeapons).toContain('gauss_gun');
     expect(pickA).toBe(pickB);
     expect(stateA.player.availableWeapons).toContain(pickA);
   });
