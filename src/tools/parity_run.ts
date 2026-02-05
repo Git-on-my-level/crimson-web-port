@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { writeReport, type ParityFinding, type ParityReport } from '../parity/report';
+import { runStaticScan } from '../parity/static_scan';
 
 type VitestAssertionResult = {
   fullName?: string;
@@ -118,14 +119,7 @@ function buildVitestFindings(report: VitestJsonReport): {
 }
 
 function runStaticScans(): ParityFinding[] {
-  return [
-    {
-      id: 'static-scans:pending',
-      status: 'skip',
-      message: 'Static scans not implemented yet.',
-      tags: ['static', 'pending'],
-    },
-  ];
+  return runStaticScan();
 }
 
 function runDynamicProbes(): ParityFinding[] {

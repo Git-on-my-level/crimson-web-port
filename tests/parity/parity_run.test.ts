@@ -25,8 +25,10 @@ describe('parity_run', () => {
 
     expect(result.status).toBe(1);
     const report = readReport(reportPath);
-    const failedFindings = report.findings.filter(finding => finding.status === 'fail');
-    expect(failedFindings).toHaveLength(2);
+    const vitestFailures = report.findings.filter(
+      finding => finding.status === 'fail' && (finding.tags ?? []).includes('vitest')
+    );
+    expect(vitestFailures).toHaveLength(2);
     expect(report.meta.runId).toBe(runId);
   });
 });
