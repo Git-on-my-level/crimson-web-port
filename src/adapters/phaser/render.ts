@@ -4,6 +4,7 @@ import type { EntityId } from '../../sim/types';
 import { type BonusId } from '../../content/bonuses';
 import { BONUS_FRAMES, PROJECTILE_FRAMES } from '../../content/atlas';
 import { rotationFromVelocity } from '../../render/facing';
+import { computeFadeAlpha, computePulseScale } from '../../render/bonusAnim';
 import { computeDisplaySize } from '../../render/scale';
 
 export type RenderTransform = {
@@ -22,6 +23,11 @@ const PLAYER_MIN_PIXEL_SIZE = 24;
 const PLAYER_OUTLINE_SCALE = 1.12;
 const PLAYER_TINT = 0x72e5ff;
 const PLAYER_OUTLINE_TINT = 0x0b0b0b;
+const BONUS_BUBBLE_FRAME = 0;
+const BONUS_BUBBLE_SCALE = 1.12;
+const BONUS_ICON_ROTATION_AMPLITUDE = 0.12;
+const BONUS_ICON_ROTATION_SPEED = 1.7;
+const BONUS_ICON_TIME_OFFSET = 0.19;
 
 const CREATURE_SPRITE_BY_KIND: Record<string, string> = {
   grunt: 'game-zombie',
@@ -37,21 +43,27 @@ const PROJECTILE_FRAME_BY_KIND: Record<string, number> = {
 const BONUS_FRAME_BY_KIND: Record<BonusId, number> = BONUS_FRAMES;
 const PROJECTILE_ROTATION_OFFSET_BY_KIND: Record<string, number> = {};
 
+type BonusSprites = {
+  bubble: Phaser.GameObjects.Sprite;
+  icon: Phaser.GameObjects.Sprite;
+};
+
 export class PhaserRenderAdapter {
   private readonly scene: Phaser.Scene;
   private player?: Phaser.GameObjects.Sprite;
   private playerOutline?: Phaser.GameObjects.Sprite;
   private readonly creatures = new Map<EntityId, Phaser.GameObjects.Sprite>();
   private readonly projectiles = new Map<EntityId, Phaser.GameObjects.Sprite>();
-  private readonly bonuses = new Map<EntityId, Phaser.GameObjects.Sprite>();
+  private readonly bonuses = new Map<EntityId, BonusSprites>();
   private readonly projectileSpritePool: Phaser.GameObjects.Sprite[] = [];
   private readonly creatureSpritePool: Phaser.GameObjects.Sprite[] = [];
-  private readonly bonusSpritePool: Phaser.GameObjects.Sprite[] = [];
+  private readonly bonusSpritePool: BonusSprites[] = [];
   private cursorSprite?: Phaser.GameObjects.Image;
   private aimSprite?: Phaser.GameObjects.Image;
   private transform: RenderTransform;
   private debugCollisionEnabled = false;
   private debugGraphics?: Phaser.GameObjects.Graphics;
+  private bonusAnimTimeSeconds = 0;
 
   constructor(scene: Phaser.Scene, transform: RenderTransform) {
     this.scene = scene;
@@ -63,6 +75,8 @@ export class PhaserRenderAdapter {
   }
 
   render(state: SimState): void {
+    const deltaSeconds = Math.max(0, this.scene.game.loop.delta) / 1000;
+    this.bonusAnimTimeSeconds += deltaSeconds;
     this.ensurePlayer(state);
     this.ensureAimIndicators(state);
     this.syncEntities(
@@ -151,6 +165,9 @@ export class PhaserRenderAdapter {
   private syncBonuses(bonuses: SimState['bonuses']): void {
     const seen = new Set<EntityId>();
     const radius = 0.6;
+    const baseSize = radius * 2 * this.transform.pixelsPerUnit;
+    const bubbleSize = baseSize * BONUS_BUBBLE_SCALE;
+    const tSeconds = this.bonusAnimTimeSeconds;
 
     for (const bonus of bonuses) {
       if (!bonus.active) {
@@ -158,21 +175,32 @@ export class PhaserRenderAdapter {
       }
       seen.add(bonus.id);
       const frame = BONUS_FRAME_BY_KIND[bonus.kind];
-      const obj =
-        this.bonuses.get(bonus.id) ??
-        this.createSprite(this.bonuses, this.bonusSpritePool, bonus.id, BONUS_SPRITE_KEY, frame);
+      const sprites = this.bonuses.get(bonus.id) ?? this.createBonusSprites(bonus.id, frame);
       const { x, y } = this.toScreen(bonus.pos.x, bonus.pos.y);
-      obj.setPosition(x, y);
-      obj.setDisplaySize(radius * 2 * this.transform.pixelsPerUnit, radius * 2 * this.transform.pixelsPerUnit);
-      obj.setDepth(350);
-      obj.setVisible(true);
+      const lifeMaxTicks = bonus.lifeTicksMax ?? bonus.lifeTicksRemaining;
+      const alpha = computeFadeAlpha(bonus.lifeTicksRemaining, lifeMaxTicks);
+      const timeOffset = bonus.id * BONUS_ICON_TIME_OFFSET;
+      const pulse = computePulseScale(tSeconds + timeOffset);
+      const rotation = Math.sin((tSeconds + timeOffset) * BONUS_ICON_ROTATION_SPEED) * BONUS_ICON_ROTATION_AMPLITUDE;
+
+      sprites.bubble.setPosition(x, y);
+      sprites.bubble.setDisplaySize(bubbleSize, bubbleSize);
+      sprites.bubble.setAlpha(alpha);
+      sprites.bubble.setVisible(true);
+
+      sprites.icon.setPosition(x, y);
+      sprites.icon.setDisplaySize(baseSize * pulse, baseSize * pulse);
+      sprites.icon.setAlpha(alpha);
+      sprites.icon.setRotation(rotation);
+      sprites.icon.setVisible(true);
     }
 
-    for (const [id, obj] of this.bonuses) {
+    for (const [id, sprites] of this.bonuses) {
       if (!seen.has(id)) {
-        obj.setVisible(false);
+        sprites.bubble.setVisible(false);
+        sprites.icon.setVisible(false);
         this.bonuses.delete(id);
-        this.bonusSpritePool.push(obj);
+        this.bonusSpritePool.push(sprites);
       }
     }
   }
@@ -249,6 +277,27 @@ export class PhaserRenderAdapter {
 
     map.set(id, sprite);
     return sprite;
+  }
+
+  private createBonusSprites(id: EntityId, frame: number): BonusSprites {
+    let sprites: BonusSprites;
+
+    if (this.bonusSpritePool.length > 0) {
+      sprites = this.bonusSpritePool.pop()!;
+      sprites.bubble.setTexture(BONUS_SPRITE_KEY, BONUS_BUBBLE_FRAME);
+      sprites.icon.setTexture(BONUS_SPRITE_KEY, frame);
+    } else {
+      const bubble = this.scene.add.sprite(0, 0, BONUS_SPRITE_KEY, BONUS_BUBBLE_FRAME);
+      bubble.setOrigin(0.5);
+      bubble.setDepth(340);
+      const icon = this.scene.add.sprite(0, 0, BONUS_SPRITE_KEY, frame);
+      icon.setOrigin(0.5);
+      icon.setDepth(350);
+      sprites = { bubble, icon };
+    }
+
+    this.bonuses.set(id, sprites);
+    return sprites;
   }
 
   private ensureAimIndicators(state: SimState): void {
