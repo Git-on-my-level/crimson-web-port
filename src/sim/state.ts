@@ -22,9 +22,16 @@ export interface PlayerState {
   aimAngle: number;
   shotCooldown: number;
   reloadTimer: number;
+  reloadTimerMax: number;
   weaponId: WeaponId;
   ammo: number;
   spreadHeat: number;
+  altWeaponId: WeaponId | null;
+  altAmmo: number;
+  altReloadTimer: number;
+  altReloadTimerMax: number;
+  altShotCooldown: number;
+  altSpreadHeat: number;
   input: InputFrame;
   baseSpeed: number;
   activeEffects: Partial<Record<BonusId, number>>;
@@ -35,6 +42,8 @@ export interface PlayerState {
   perkStats: PerkStats;
   unlockedWeapons: Set<WeaponId>;
   availableWeapons: WeaponId[];
+  prevFirePressed: boolean;
+  prevReloadPressed: boolean;
 }
 
 export interface CreatureState {
@@ -291,9 +300,16 @@ export function createSimState(
     aimAngle: 0,
     shotCooldown: 0,
     reloadTimer: 0,
+    reloadTimerMax: 0,
     weaponId: startingWeapon,
     ammo: WEAPONS[0]?.ammoMax ?? 0,
     spreadHeat: 0.01,
+    altWeaponId: null,
+    altAmmo: 0,
+    altReloadTimer: 0,
+    altReloadTimerMax: 0,
+    altShotCooldown: 0,
+    altSpreadHeat: 0.01,
     input: { ...EMPTY_INPUT },
     baseSpeed: 6,
     activeEffects: {},
@@ -304,6 +320,8 @@ export function createSimState(
     perkStats: createPerkStats(),
     unlockedWeapons: new Set<WeaponId>([startingWeapon]),
     availableWeapons: [],
+    prevFirePressed: false,
+    prevReloadPressed: false,
   };
 
   const state: SimState = {

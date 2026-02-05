@@ -8,8 +8,11 @@ import { spawnProjectile } from './projectiles';
 import { spawnSecondaryProjectile } from './secondaryProjectiles';
 import { spawnParticleFast, spawnParticleSlow } from './particles';
 import { getDamageMultiplier, getReloadRateMultiplier } from './bonuses';
+import { applyDamageToPlayer } from './collision';
 
 const DEFAULT_PROJECTILE_RADIUS = 0.4;
+const ANGRY_RELOADER_PROJECTILE_TYPE_ID = 0x0b;
+const ANGRY_RELOADER_ANGLE_OFFSET = 0.1;
 
 const WEAPON_TO_PROJECTILE_TYPE_ID: Record<string, number | null> = {
   'pistol': 0x01,
@@ -79,6 +82,11 @@ const PELLET_JITTER_RANGE = 200;
 export function updateWeapons(state: SimState, events: SimEvent[], dt: number): void {
   const player = state.player;
 
+  const firePressed = player.input.fire && !player.prevFirePressed;
+  const reloadPressed = player.input.reload && !player.prevReloadPressed;
+  player.prevFirePressed = player.input.fire;
+  player.prevReloadPressed = player.input.reload;
+
   if (player.input.weaponSwitch !== null) {
     const switched = switchWeapon(player, player.input.weaponSwitch);
     if (switched) {
@@ -86,33 +94,95 @@ export function updateWeapons(state: SimState, events: SimEvent[], dt: number): 
     }
   }
 
+  const hasAlternateWeapon = (player.perks['alternate_weapon'] ?? 0) > 0;
+  const altSwapped = reloadPressed && hasAlternateWeapon && player.altWeaponId !== null;
+  if (altSwapped) {
+    swapAltWeapon(player);
+    events.push({ type: 'playSfx', name: 'weapon_switch' });
+    player.shotCooldown = Math.max(0, player.shotCooldown + 0.1);
+  }
+
   const weapon = getWeaponById(player.weaponId);
   if (!weapon) {
     return;
   }
 
+  const hasAnxiousLoader = (player.perks['anxious_loader'] ?? 0) > 0;
+  const hasStationaryReloader = (player.perks['stationary_reloader'] ?? 0) > 0;
+  const hasAngryReloader = (player.perks['angry_reloader'] ?? 0) > 0;
+  const hasRegressionBullets = (player.perks['regression_bullets'] ?? 0) > 0;
+  const hasAmmunitionWithin = (player.perks['ammunition_within'] ?? 0) > 0;
+
+  if (player.reloadTimer > 0 && hasAnxiousLoader && firePressed) {
+    player.reloadTimer = Math.max(0, player.reloadTimer - 0.05);
+  }
+
   if (player.reloadTimer > 0) {
-    const reloadRateMultiplier = getReloadRateMultiplier(player);
-    player.reloadTimer = Math.max(0, player.reloadTimer - dt * reloadRateMultiplier);
+    const moving = Math.hypot(player.input.moveX, player.input.moveY) > 0.01;
+    let reloadRateMultiplier = getReloadRateMultiplier(player);
+    if (!moving && hasStationaryReloader) {
+      reloadRateMultiplier *= 3.0;
+    }
+
+    if (
+      hasAngryReloader &&
+      player.reloadTimerMax > 0.5 &&
+      player.reloadTimer > player.reloadTimerMax * 0.5
+    ) {
+      const half = player.reloadTimerMax * 0.5;
+      const nextTimer = player.reloadTimer - dt * reloadRateMultiplier;
+      player.reloadTimer = nextTimer;
+      if (nextTimer <= half) {
+        const count = 7 + Math.floor(player.reloadTimerMax * 4.0);
+        spawnAngryReloadRing(state, events, count, ANGRY_RELOADER_ANGLE_OFFSET);
+      }
+    } else {
+      player.reloadTimer = Math.max(0, player.reloadTimer - dt * reloadRateMultiplier);
+    }
+
     if (player.reloadTimer <= 0 && weapon.ammoMax !== undefined) {
       player.ammo = weapon.ammoMax;
+      player.reloadTimerMax = 0;
     }
   }
 
-  if (shouldStartReload(player, weapon)) {
+  if (shouldStartReload(player, weapon, altSwapped)) {
     player.reloadTimer = Math.max(0, weapon.reloadTime ?? 0);
+    player.reloadTimerMax = player.reloadTimer;
     return;
   }
 
-  if (!player.input.fire || player.shotCooldown > 0 || player.reloadTimer > 0) {
+  if (!player.input.fire || player.shotCooldown > 0) {
     return;
   }
 
   const damageMultiplier = getDamageMultiplier(player);
 
-  if (weapon.ammoMax !== undefined && player.ammo <= 0) {
+  const ammoClass = weapon.ammoClass ?? 0;
+  const reloadTime = weapon.reloadTime ?? 0;
+  let firingDuringReload = false;
+  if (player.reloadTimer > 0) {
+    if (weapon.ammoMax !== undefined && player.ammo <= 0 && player.xp > 0) {
+      if (hasRegressionBullets) {
+        firingDuringReload = true;
+        const factor = ammoClass === 1 ? 4 : 200;
+        player.xp = Math.max(0, Math.floor(player.xp - reloadTime * factor));
+      } else if (hasAmmunitionWithin) {
+        firingDuringReload = true;
+        const cost = ammoClass === 1 ? 0.15 : 1.0;
+        applyDamageToPlayer(state, cost, events);
+      } else {
+        return;
+      }
+    } else {
+      return;
+    }
+  }
+
+  if (weapon.ammoMax !== undefined && player.ammo <= 0 && !firingDuringReload) {
     if (weapon.reloadTime !== undefined) {
       player.reloadTimer = Math.max(0, weapon.reloadTime ?? 0);
+      player.reloadTimerMax = player.reloadTimer;
     }
     return;
   }
@@ -352,7 +422,7 @@ export function updateWeapons(state: SimState, events: SimEvent[], dt: number): 
     }
   }
 
-  if (weapon.ammoMax !== undefined) {
+  if (weapon.ammoMax !== undefined && !firingDuringReload) {
     player.ammo = Math.max(0, player.ammo - ammoCost);
   }
 
@@ -443,6 +513,92 @@ export function fireSpiralPattern(
   events.push({ type: 'playSfx', name: `${weapon.id}_shot` });
 }
 
+function spawnAngryReloadRing(
+  state: SimState,
+  events: SimEvent[],
+  count: number,
+  angleOffset: number,
+): void {
+  if (count <= 0) {
+    return;
+  }
+  const weapon = getWeaponById('plasma_minigun');
+  if (!weapon) {
+    return;
+  }
+  const player = state.player;
+  const damageMultiplier = getDamageMultiplier(player);
+  const projectileSpeed = weapon.projectileSpeed * player.perkStats.projectileSpeedMultiplier;
+  const projectileProfile = getProjectileProfile(weapon.projectileProfileId);
+  const projectileRadius = projectileProfile.projectileRadius ?? DEFAULT_PROJECTILE_RADIUS;
+  const pierceRemaining = projectileProfile.pierceCount ?? 0;
+  const explosionRadius = projectileProfile.explosionRadius ?? 0;
+  const explosionDamage = explosionRadius
+    ? weapon.damage * damageMultiplier * (projectileProfile.explosionDamageMultiplier ?? 1)
+    : 0;
+  const lifeTicks = Math.max(1, weapon.projectileLifeTicks);
+  const kind = PROJECTILE_BY_TYPE_ID[ANGRY_RELOADER_PROJECTILE_TYPE_ID] ?? weapon.id;
+  const step = (2 * Math.PI) / count;
+
+  for (let i = 0; i < count; i += 1) {
+    const angle = i * step + angleOffset;
+    const dirX = Math.cos(angle);
+    const dirY = Math.sin(angle);
+    const velX = dirX * projectileSpeed;
+    const velY = dirY * projectileSpeed;
+    spawnProjectile(
+      state,
+      events,
+      { x: player.pos.x, y: player.pos.y },
+      { x: velX, y: velY },
+      kind,
+      weapon.damage * damageMultiplier,
+      lifeTicks,
+      'player',
+      projectileRadius,
+      {
+        pierceRemaining,
+        explosionRadius,
+        explosionDamage,
+      },
+    );
+  }
+}
+
+function swapAltWeapon(player: SimState['player']): boolean {
+  if (!player.altWeaponId) {
+    return false;
+  }
+  [
+    player.weaponId,
+    player.ammo,
+    player.reloadTimer,
+    player.reloadTimerMax,
+    player.shotCooldown,
+    player.spreadHeat,
+    player.altWeaponId,
+    player.altAmmo,
+    player.altReloadTimer,
+    player.altReloadTimerMax,
+    player.altShotCooldown,
+    player.altSpreadHeat,
+  ] = [
+    player.altWeaponId,
+    player.altAmmo,
+    player.altReloadTimer,
+    player.altReloadTimerMax,
+    player.altShotCooldown,
+    player.altSpreadHeat,
+    player.weaponId,
+    player.ammo,
+    player.reloadTimer,
+    player.reloadTimerMax,
+    player.shotCooldown,
+    player.spreadHeat,
+  ];
+  return true;
+}
+
 function switchWeapon(player: SimState['player'], slot: number): boolean {
   const order = getWeaponOrder();
   const index = slot - 1;
@@ -459,7 +615,7 @@ function switchWeapon(player: SimState['player'], slot: number): boolean {
   return true;
 }
 
-function shouldStartReload(player: SimState['player'], weapon: WeaponDef): boolean {
+function shouldStartReload(player: SimState['player'], weapon: WeaponDef, ignoreReloadInput: boolean): boolean {
   if (weapon.ammoMax === undefined || weapon.reloadTime === undefined) {
     return false;
   }
@@ -467,6 +623,9 @@ function shouldStartReload(player: SimState['player'], weapon: WeaponDef): boole
     return false;
   }
   if (!player.input.reload && player.ammo > 0) {
+    return false;
+  }
+  if (ignoreReloadInput && player.input.reload) {
     return false;
   }
   if (player.ammo >= weapon.ammoMax) {

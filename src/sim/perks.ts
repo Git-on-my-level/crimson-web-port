@@ -177,10 +177,8 @@ function applyPerkModifiers(stats: PerkStats, perk: PerkDef, stacks: number): vo
       stats.moveSpeedMultiplier *= 1.11;
       break;
     case 'stationary_reloader':
-      stats.reloadSpeedMultiplier *= 3.0;
       break;
     case 'tough_reloader':
-      stats.damageReduction += 0.5 * stacks;
       break;
     default:
       break;

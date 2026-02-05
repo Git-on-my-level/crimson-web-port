@@ -15,6 +15,7 @@ export type WeaponCarrier = {
   weaponId: WeaponId;
   ammo: number;
   reloadTimer: number;
+  reloadTimerMax: number;
   shotCooldown: number;
   spreadHeat: number;
 };
@@ -76,6 +77,7 @@ export function assignWeapon(player: WeaponCarrier, weaponId: WeaponId): void {
   player.weaponId = weaponId;
   player.shotCooldown = 0;
   player.reloadTimer = 0;
+  player.reloadTimerMax = 0;
   player.spreadHeat = 0.01;
   const def = getWeaponById(weaponId);
   if (def.ammoMax !== undefined) {

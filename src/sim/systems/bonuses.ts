@@ -173,6 +173,15 @@ function applyBonus(state: SimState, bonus: SimState['bonuses'][0], events: SimE
     case 'weapon': {
       const available = getWeaponBonusPool(state);
       const nextWeapon = bonus.weaponId ?? pickRandomWeapon(state.rng, available);
+      const hasAlternateWeapon = (state.player.perks['alternate_weapon'] ?? 0) > 0;
+      if (hasAlternateWeapon && state.player.altWeaponId === null) {
+        state.player.altWeaponId = state.player.weaponId;
+        state.player.altAmmo = state.player.ammo;
+        state.player.altReloadTimer = state.player.reloadTimer;
+        state.player.altReloadTimerMax = state.player.reloadTimerMax;
+        state.player.altShotCooldown = state.player.shotCooldown;
+        state.player.altSpreadHeat = state.player.spreadHeat;
+      }
       unlockWeapon(state.player, nextWeapon, { mode: state.mode });
       assignWeapon(state.player, nextWeapon);
       events.push({ type: 'playSfx', name: 'weapon_pickup' });
@@ -197,6 +206,7 @@ function applyBonus(state: SimState, bonus: SimState['bonuses'][0], events: SimE
       const weapon = getWeaponById(state.player.weaponId);
       state.player.shotCooldown = 0;
       state.player.reloadTimer = 0;
+      state.player.reloadTimerMax = 0;
       if (weapon.ammoMax !== undefined) {
         state.player.ammo = weapon.ammoMax;
       }

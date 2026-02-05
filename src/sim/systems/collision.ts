@@ -381,7 +381,7 @@ function applyDamageToCreature(
   }
 }
 
-function applyDamageToPlayer(state: SimState, amount: number, events: SimEvent[]): void {
+export function applyDamageToPlayer(state: SimState, amount: number, events: SimEvent[]): void {
   if (state.player.hp <= 0 || amount <= 0) {
     return;
   }
@@ -390,7 +390,12 @@ function applyDamageToPlayer(state: SimState, amount: number, events: SimEvent[]
   }
 
   const reduction = state.player.perkStats.damageReduction;
-  const finalAmount = amount * (1 - reduction);
+  const hasToughReloader = (state.player.perks['tough_reloader'] ?? 0) > 0;
+  const reloading = state.player.reloadTimer > 0;
+  let finalAmount = amount * (1 - reduction);
+  if (hasToughReloader && reloading) {
+    finalAmount *= 0.5;
+  }
   state.player.hp = Math.max(0, state.player.hp - finalAmount);
   events.push({ type: 'damage', target: 'player', id: state.player.id, amount: finalAmount });
 
