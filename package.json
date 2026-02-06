@@ -9,6 +9,7 @@
     "dev:real": "REAL_ASSETS=1 VITE_USE_REAL_ASSETS=1 npm run dev",
     "build": "npm run assets:copy && tsc && vite build",
     "build:real": "REAL_ASSETS=1 VITE_USE_REAL_ASSETS=1 npm run build",
+    "deploy:real": "node scripts/deploy-gh-pages-real.mjs",
     "check:types": "tsc --noEmit",
     "check:build": "vite build --emptyOutDir",
     "verify": "npm run check:types && npm run check:build",
