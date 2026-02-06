@@ -147,4 +147,17 @@ describe('Perk effects core', () => {
     expect(sim.state.player.hp).toBe(-1);
     expect(sim.state.player.xp).toBe(1180);
   });
+
+  it('Random Weapon immediately swaps to a non-pistol weapon', () => {
+    const sim = new Sim({ seed: 42 });
+    sim.state.player.weaponId = 'pistol';
+    sim.state.phase = 'PerkSelect';
+    sim.state.perkChoices = ['random_weapon'];
+    sim.state.pendingPerks = 1;
+
+    sim.step({ ...NO_INPUT, perkChoice: 1 });
+
+    expect(sim.state.player.weaponId).not.toBe('pistol');
+    expect(sim.state.player.unlockedWeapons.has(sim.state.player.weaponId)).toBe(true);
+  });
 });

@@ -330,6 +330,9 @@ export class GameScene extends Phaser.Scene {
         case 'screenFlash':
           this.triggerScreenFlash(event.kind);
           break;
+        case 'shockArc':
+          this.playShockArcFx(event.from, event.to);
+          break;
         default:
           break;
       }
@@ -597,6 +600,37 @@ export class GameScene extends Phaser.Scene {
       default:
         break;
     }
+  }
+
+  private playShockArcFx(from: { x: number; y: number }, to: { x: number; y: number }): void {
+    const start = this.simToScreen(from.x, from.y);
+    const end = this.simToScreen(to.x, to.y);
+    const arc = this.add.graphics();
+    arc.setDepth(880);
+    arc.lineStyle(5, 0x7dd3fc, 0.35);
+    arc.beginPath();
+    arc.moveTo(start.x, start.y);
+    arc.lineTo(end.x, end.y);
+    arc.strokePath();
+    arc.lineStyle(2, 0xffffff, 0.9);
+    arc.beginPath();
+    arc.moveTo(start.x, start.y);
+    arc.lineTo(end.x, end.y);
+    arc.strokePath();
+    this.tweens.add({
+      targets: arc,
+      alpha: 0,
+      duration: 110,
+      ease: 'Quad.easeOut',
+      onComplete: () => arc.destroy(),
+    });
+  }
+
+  private simToScreen(x: number, y: number): { x: number; y: number } {
+    return {
+      x: this.originX + x * this.pixelsPerUnit,
+      y: this.originY + y * this.pixelsPerUnit,
+    };
   }
 
   private handleShutdown(): void {

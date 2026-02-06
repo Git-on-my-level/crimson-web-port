@@ -4,7 +4,14 @@ import type { SimState } from '../state';
 import type { SimEvent } from '../types';
 import { clampToWorld, findSpawnPosAwayFromPlayer } from '../world';
 import { findOpenTerrainPosition, isTerrainBlocked } from '../terrain';
-import { assignWeapon, getWeaponById, pickRandomWeapon, refreshAvailableWeapons, unlockWeapon } from '../weapons/weaponTable';
+import {
+  assignWeapon,
+  getWeaponById,
+  getWeaponDropPool,
+  pickRandomWeapon,
+  refreshAvailableWeapons,
+  unlockWeapon,
+} from '../weapons/weaponTable';
 import { getCreatureDef } from '../../content/creatures';
 import { grantXp } from './progression';
 import { registerQuestBonusCollected, registerQuestKill } from './mode_quest';
@@ -327,7 +334,10 @@ function pickBonusWithReroll(state: SimState): BonusId {
 }
 
 function getWeaponBonusPool(state: SimState): WeaponId[] {
-  const available = refreshAvailableWeapons(state.player, { mode: state.mode });
+  const unlocked = refreshAvailableWeapons(state.player, { mode: state.mode });
+  const drops = getWeaponDropPool();
+  const union = new Set<WeaponId>([...unlocked, ...drops]);
+  const available = Array.from(union);
   if (available.length <= 1) {
     return available;
   }
@@ -423,6 +433,11 @@ function applyShockChain(state: SimState, events: SimEvent[]): void {
       break;
     }
     visited.add(next.id);
+    events.push({
+      type: 'shockArc',
+      from: { x: source.x, y: source.y },
+      to: { x: next.pos.x, y: next.pos.y },
+    });
     applyBonusDamageToCreature(state, next, SHOCK_CHAIN_DAMAGE, events, false);
     source = next.pos;
   }

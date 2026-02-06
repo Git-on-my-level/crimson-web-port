@@ -32,6 +32,23 @@ export function getWeaponOrder(): WeaponId[] {
   return WEAPON_ORDER;
 }
 
+export function isWeaponDropEligible(weaponId: WeaponId): boolean {
+  if (weaponId === 'pistol') {
+    return false;
+  }
+  if (weaponId.startsWith('unknown_')) {
+    return false;
+  }
+  if (weaponId === 'grim_weapon' || weaponId === 'fire_bullets') {
+    return false;
+  }
+  return true;
+}
+
+export function getWeaponDropPool(): WeaponId[] {
+  return WEAPON_ORDER.filter((weaponId) => isWeaponDropEligible(weaponId));
+}
+
 export function refreshAvailableWeapons(player: WeaponAvailabilityCarrier, context?: WeaponAvailabilityContext): WeaponId[] {
   const available = new Set<WeaponId>();
   const unlocked = player.unlockedWeapons;

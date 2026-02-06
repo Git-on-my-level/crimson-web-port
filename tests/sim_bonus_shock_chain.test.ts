@@ -55,8 +55,10 @@ describe('Shock chain bonus', () => {
     updateBonuses(state, events);
 
     const damageEvents = events.filter((event) => event.type === 'damage' && event.target === 'creature');
+    const arcEvents = events.filter((event) => event.type === 'shockArc');
     const damagedIds = new Set(damageEvents.map((event) => event.id));
     expect(damagedIds.size).toBeGreaterThanOrEqual(3);
+    expect(arcEvents.length).toBeGreaterThanOrEqual(3);
     for (const creature of state.creatures) {
       if (damagedIds.has(creature.id)) {
         expect(creature.hp).toBeLessThan(creature.hpMax);

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { createSimState } from '../src/sim/state';
-import { getWeaponOrder, pickRandomWeapon, refreshAvailableWeapons, unlockWeapon } from '../src/sim/weapons/weaponTable';
+import {
+  getWeaponDropPool,
+  pickRandomWeapon,
+  refreshAvailableWeapons,
+  unlockWeapon,
+} from '../src/sim/weapons/weaponTable';
 
 describe('Weapon availability', () => {
   it('only includes unlocked weapons plus pistol, sorted by refId', () => {
@@ -32,5 +37,13 @@ describe('Weapon availability', () => {
     expect(stateA.player.availableWeapons).toContain('gauss_gun');
     expect(pickA).toBe(pickB);
     expect(stateA.player.availableWeapons).toContain(pickA);
+  });
+
+  it('weapon drop pool includes advanced weapons and excludes placeholder entries', () => {
+    const pool = getWeaponDropPool();
+    expect(pool).toContain('gauss_gun');
+    expect(pool).toContain('rocket_launcher');
+    expect(pool).not.toContain('pistol');
+    expect(pool.some((weaponId) => weaponId.startsWith('unknown_'))).toBe(false);
   });
 });

@@ -3,7 +3,7 @@ import type { SimEvent } from '../types';
 import type { PerkId } from '../../content/perks';
 import { generatePerkChoices, recomputePerkStats } from '../perks';
 import { getXpMultiplier } from './bonuses';
-import { refreshAvailableWeapons } from '../weapons/weaponTable';
+import { assignWeapon, getWeaponDropPool, pickRandomWeapon, refreshAvailableWeapons, unlockWeapon } from '../weapons/weaponTable';
 import { xpThresholdForLevel, xpToNextForLevel } from '../xp';
 
 const XP_PER_SECOND = 0;
@@ -75,6 +75,19 @@ function applyPerkImmediateEffect(state: SimState, events: SimEvent[], perkId: P
       events.push({ type: 'xp', amount: xpBonus, total: state.player.xp, level: state.player.level });
       applyLevelUpsFromXp(state, events);
       break;
+    case 'random_weapon': {
+      const pool = getWeaponDropPool();
+      if (pool.length === 0) {
+        break;
+      }
+      const nonCurrentPool = pool.filter((weaponId) => weaponId !== state.player.weaponId);
+      const pickPool = nonCurrentPool.length > 0 ? nonCurrentPool : pool;
+      const weaponId = pickRandomWeapon(state.rng, pickPool);
+      unlockWeapon(state.player, weaponId, { mode: state.mode });
+      assignWeapon(state.player, weaponId);
+      events.push({ type: 'playSfx', name: 'weapon_pickup' });
+      break;
+    }
     default:
       break;
   }
