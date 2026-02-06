@@ -5,6 +5,7 @@ import { resolveCollisions } from '../src/sim/systems/collision';
 import { spawnProjectile, updateProjectiles } from '../src/sim/systems/projectiles';
 import type { SimEvent } from '../src/sim/types';
 import { refRadius } from '../src/sim/modes/survival_ref';
+import { WORLD_BOUNDS } from '../src/sim/world';
 
 function makeCreature(id: number, x: number, y: number, hp = 20): CreatureState {
   return {
@@ -112,6 +113,32 @@ describe('Projectile mechanics', () => {
     updateProjectiles(state, events, 1 / 60);
     expect(state.projectiles.length).toBe(1);
 
+    updateProjectiles(state, events, 1 / 60);
+    expect(state.projectiles.length).toBe(0);
+  });
+
+  it('projectile can opt out of timed lifetime and only despawns out of bounds', () => {
+    const state = createSimState(4);
+    const events: SimEvent[] = [];
+
+    spawnProjectile(
+      state,
+      events,
+      { x: 0, y: 0 },
+      { x: 0, y: 0 },
+      'pistol',
+      4,
+      1,
+      'player',
+      0.4,
+      { ignoreLifetime: true },
+    );
+
+    updateProjectiles(state, events, 2);
+    expect(state.projectiles.length).toBe(1);
+
+    const proj = state.projectiles[0];
+    proj.pos.x = WORLD_BOUNDS.maxX + 7;
     updateProjectiles(state, events, 1 / 60);
     expect(state.projectiles.length).toBe(0);
   });

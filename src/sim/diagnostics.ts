@@ -32,7 +32,7 @@ export function assertSimInvariants(state: SimState): void {
     assertUnique(ids, id, `projectile(${id}).id`);
     assertFiniteVec(proj.pos, `projectile(${id}).pos`);
     assertFiniteVec(proj.vel, `projectile(${id}).vel`);
-    assertInRange(proj.lifeTicksRemaining, 0, 10000, `projectile(${id}).lifeTicksRemaining`);
+    assertInRange(proj.lifeTicksRemaining, -1, 10000, `projectile(${id}).lifeTicksRemaining`);
   });
 
   state.secondaryProjectilePool.forEachActive((id, proj) => {

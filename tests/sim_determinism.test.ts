@@ -53,7 +53,8 @@ describe('Sim determinism', () => {
   });
 
   it('spawns deterministic projectiles when firing', () => {
-    const sim = new Sim({ seed: 7, mode: 'survival' });
+    const simA = new Sim({ seed: 7, mode: 'survival' });
+    const simB = new Sim({ seed: 7, mode: 'survival' });
     const firingInput: InputFrame = {
       moveX: 0,
       moveY: 0,
@@ -68,13 +69,20 @@ describe('Sim determinism', () => {
     };
 
     for (let i = 0; i < 30; i += 1) {
-      sim.step(firingInput);
+      simA.step(firingInput);
+      simB.step(firingInput);
     }
 
-    expect(sim.state.projectiles.length).toBe(1);
-    for (const projectile of sim.state.projectiles) {
-      expect(projectile.owner).toBe('player');
-      expect(projectile.alive).toBe(true);
+    expect(simA.state.projectiles.length).toBe(simB.state.projectiles.length);
+    expect(simA.state.score).toBe(simB.state.score);
+    expect(simA.state.creatures.length).toBe(simB.state.creatures.length);
+    for (let i = 0; i < simA.state.projectiles.length; i += 1) {
+      const a = simA.state.projectiles[i];
+      const b = simB.state.projectiles[i];
+      expect(a.owner).toBe(b.owner);
+      expect(a.alive).toBe(b.alive);
+      expect(a.pos.x).toBeCloseTo(b.pos.x, 6);
+      expect(a.pos.y).toBeCloseTo(b.pos.y, 6);
     }
   });
 });

@@ -100,8 +100,15 @@ export function resolveCollisions(state: SimState, events: SimEvent[]): void {
             }
 
             const impactDamage = computeProjectileImpactDamage(projectile);
+            const hpBefore = creature.hp;
             applyDamageToCreature(state, creature, impactDamage, events, shouldAllowBonusDrop(projectile.kind));
             events.push({ type: 'projectileImpact', id: projId, pos: impactPos, kind: projectile.kind });
+
+            if (hpBefore > 0 && !creature.alive && !shouldPersistAfterKill(projectile.kind)) {
+              projectile.alive = false;
+              toRemove.push(projId);
+              return;
+            }
 
             const pierceRemaining = projectile.pierceRemaining ?? 0;
             if (pierceRemaining <= 0) {
@@ -360,6 +367,10 @@ function shouldAllowBonusDrop(projectileKind: string): boolean {
     return false;
   }
   return true;
+}
+
+function shouldPersistAfterKill(projectileKind: string): boolean {
+  return projectileKind === 'gauss_gun' || projectileKind === 'fire_bullets' || projectileKind === 'blade_gun';
 }
 
 function applyDamageToCreature(

@@ -5,17 +5,12 @@ const DETAIL_TEXTURE_KEY = 'terrain-q1-base';
 const FALLBACK_TEXTURE_KEY = 'terrain-fallback';
 const FALLBACK_TILE_SIZE = 256;
 const BACKDROP_COLOR = 0x352c19;
-const DETAIL_TILE_LARGE_SCALE = 1.6;
-const DETAIL_TILE_LARGE_ALPHA = 0.35;
 const DETAIL_TILE_ALPHA = 0.55;
-const DETAIL_TILE_LARGE_OFFSET_X = 97;
-const DETAIL_TILE_LARGE_OFFSET_Y = 41;
 
 export class TerrainBackground {
   private readonly backdrop: Phaser.GameObjects.Rectangle;
   private readonly baseTile: Phaser.GameObjects.TileSprite;
   private readonly detailTile?: Phaser.GameObjects.TileSprite;
-  private readonly detailTileLarge?: Phaser.GameObjects.TileSprite;
 
   constructor(scene: Phaser.Scene, width: number, height: number) {
     this.ensureFallbackTexture(scene);
@@ -33,12 +28,6 @@ export class TerrainBackground {
       .setScrollFactor(0);
 
     if (detailKey) {
-      this.detailTileLarge = scene.add
-        .tileSprite(width / 2, height / 2, width, height, detailKey)
-        .setDepth(-45)
-        .setScrollFactor(0)
-        .setAlpha(DETAIL_TILE_LARGE_ALPHA)
-        .setTileScale(DETAIL_TILE_LARGE_SCALE);
       this.detailTile = scene.add
         .tileSprite(width / 2, height / 2, width, height, detailKey)
         .setDepth(-40)
@@ -52,8 +41,6 @@ export class TerrainBackground {
     this.backdrop.setSize(width, height);
     this.baseTile.setPosition(width / 2, height / 2);
     this.baseTile.setSize(width, height);
-    this.detailTileLarge?.setPosition(width / 2, height / 2);
-    this.detailTileLarge?.setSize(width, height);
     this.detailTile?.setPosition(width / 2, height / 2);
     this.detailTile?.setSize(width, height);
   }
@@ -61,10 +48,6 @@ export class TerrainBackground {
   update(camera: Phaser.Cameras.Scene2D.Camera): void {
     this.baseTile.tilePositionX = camera.scrollX;
     this.baseTile.tilePositionY = camera.scrollY;
-    if (this.detailTileLarge) {
-      this.detailTileLarge.tilePositionX = camera.scrollX + DETAIL_TILE_LARGE_OFFSET_X;
-      this.detailTileLarge.tilePositionY = camera.scrollY + DETAIL_TILE_LARGE_OFFSET_Y;
-    }
     if (this.detailTile) {
       this.detailTile.tilePositionX = camera.scrollX;
       this.detailTile.tilePositionY = camera.scrollY;

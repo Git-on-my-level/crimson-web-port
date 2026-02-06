@@ -9,6 +9,7 @@ import { spawnSecondaryProjectile } from './secondaryProjectiles';
 import { spawnParticleFast, spawnParticleSlow } from './particles';
 import { getDamageMultiplier, getReloadRateMultiplier } from './bonuses';
 import { applyDamageToPlayer } from './collision';
+import { refRadius } from '../modes/survival_ref';
 
 const DEFAULT_PROJECTILE_RADIUS = 0.4;
 const ANGRY_RELOADER_PROJECTILE_TYPE_ID = 0x0b;
@@ -78,6 +79,9 @@ const AIM_JITTER_MASK = 0x1ff;
 const AIM_JITTER_SCALE = (2 * Math.PI) / 512;
 const AIM_JITTER_MAG_SCALE = 1 / 512;
 const PELLET_JITTER_RANGE = 200;
+const NATIVE_MUZZLE_FORWARD_OFFSET = refRadius(16);
+const PISTOL_MUZZLE_LATERAL_OFFSET = refRadius(4);
+const PROJECTILE_SPEED_META_CAP = 80;
 
 export function updateWeapons(state: SimState, events: SimEvent[], dt: number): void {
   const player = state.player;
@@ -202,10 +206,10 @@ export function updateWeapons(state: SimState, events: SimEvent[], dt: number): 
   const shotAngle = Math.atan2(jitteredAimY - player.pos.y, jitteredAimX - player.pos.x);
 
   const fireBulletsActive = (player.activeEffects['fire_bullets'] ?? 0) > 0;
-  const muzzleOffset = weapon.muzzleOffset;
   const particleAngle = shotAngle;
-  const muzzleBaseX = player.pos.x + aimDirX * muzzleOffset;
-  const muzzleBaseY = player.pos.y + aimDirY * muzzleOffset;
+  const muzzle = getMuzzlePosition(player.pos.x, player.pos.y, aimDirX, aimDirY, weapon.id);
+  const muzzleBaseX = muzzle.x;
+  const muzzleBaseY = muzzle.y;
   let ammoCost = 1;
 
   const spawnProjectileForWeapon = (
@@ -220,7 +224,7 @@ export function updateWeapons(state: SimState, events: SimEvent[], dt: number): 
     const explosionDamage = explosionRadius
       ? weaponDef.damage * damageMultiplier * (projectileProfile.explosionDamageMultiplier ?? 1)
       : 0;
-    const projectileSpeed = weaponDef.projectileSpeed * player.perkStats.projectileSpeedMultiplier;
+    const projectileSpeed = resolveProjectileSpeed(weaponDef) * player.perkStats.projectileSpeedMultiplier;
     const pDirX = Math.cos(angle);
     const pDirY = Math.sin(angle);
     const posX = muzzleBaseX;
@@ -251,6 +255,7 @@ export function updateWeapons(state: SimState, events: SimEvent[], dt: number): 
         explosionRadius,
         explosionDamage,
         speedScale: options.speedScale,
+        ignoreLifetime: true,
       },
     );
   };
@@ -274,7 +279,7 @@ export function updateWeapons(state: SimState, events: SimEvent[], dt: number): 
       {
         damage: weapon.damage * damageMultiplier,
         lifeTicks: Math.max(1, weapon.projectileLifeTicks),
-        speed: weapon.projectileSpeed * player.perkStats.projectileSpeedMultiplier,
+        speed: resolveProjectileSpeed(weapon) * player.perkStats.projectileSpeedMultiplier,
         explosionRadius: 3.5,
         explosionDamage: weapon.damage * damageMultiplier,
       },
@@ -290,7 +295,7 @@ export function updateWeapons(state: SimState, events: SimEvent[], dt: number): 
       {
         damage: weapon.damage * damageMultiplier,
         lifeTicks: Math.max(1, weapon.projectileLifeTicks),
-        speed: weapon.projectileSpeed * player.perkStats.projectileSpeedMultiplier,
+        speed: resolveProjectileSpeed(weapon) * player.perkStats.projectileSpeedMultiplier,
         explosionRadius: 3.5,
         explosionDamage: weapon.damage * damageMultiplier,
       },
@@ -303,14 +308,17 @@ export function updateWeapons(state: SimState, events: SimEvent[], dt: number): 
       spawnSecondaryProjectile(
         state,
         events,
-        { x: player.pos.x + Math.cos(angle) * muzzleOffset, y: player.pos.y + Math.sin(angle) * muzzleOffset },
+        {
+          x: player.pos.x + Math.cos(angle) * NATIVE_MUZZLE_FORWARD_OFFSET,
+          y: player.pos.y + Math.sin(angle) * NATIVE_MUZZLE_FORWARD_OFFSET,
+        },
         angle,
         2,
         'player',
         {
           damage: weapon.damage * damageMultiplier,
           lifeTicks: Math.max(1, weapon.projectileLifeTicks),
-          speed: weapon.projectileSpeed * player.perkStats.projectileSpeedMultiplier,
+          speed: resolveProjectileSpeed(weapon) * player.perkStats.projectileSpeedMultiplier,
           explosionRadius: 3.5,
           explosionDamage: weapon.damage * damageMultiplier,
         },
@@ -329,7 +337,7 @@ export function updateWeapons(state: SimState, events: SimEvent[], dt: number): 
       {
         damage: weapon.damage * damageMultiplier,
         lifeTicks: Math.max(1, weapon.projectileLifeTicks),
-        speed: weapon.projectileSpeed * player.perkStats.projectileSpeedMultiplier,
+        speed: resolveProjectileSpeed(weapon) * player.perkStats.projectileSpeedMultiplier,
         explosionRadius: 3.5,
         explosionDamage: weapon.damage * damageMultiplier,
       },
@@ -461,6 +469,28 @@ export function getFireBulletsPelletCount(weaponId: WeaponDef['id']): number {
   return Math.max(1, weapon.pellets ?? 1);
 }
 
+function resolveProjectileSpeed(weapon: WeaponDef): number {
+  const metaSpeed = weapon.projectileMeta ?? weapon.projectileSpeed;
+  const boundedMetaSpeed = Math.min(PROJECTILE_SPEED_META_CAP, Math.max(weapon.projectileSpeed, metaSpeed));
+  return Math.max(1, boundedMetaSpeed);
+}
+
+function getMuzzlePosition(
+  playerX: number,
+  playerY: number,
+  aimDirX: number,
+  aimDirY: number,
+  weaponId: WeaponDef['id'],
+): { x: number; y: number } {
+  const lateral = weaponId === 'pistol' ? PISTOL_MUZZLE_LATERAL_OFFSET : 0;
+  const perpX = -aimDirY;
+  const perpY = aimDirX;
+  return {
+    x: playerX + aimDirX * NATIVE_MUZZLE_FORWARD_OFFSET - perpX * lateral,
+    y: playerY + aimDirY * NATIVE_MUZZLE_FORWARD_OFFSET - perpY * lateral,
+  };
+}
+
 export function fireSpiralPattern(
   state: SimState,
   events: SimEvent[],
@@ -472,7 +502,7 @@ export function fireSpiralPattern(
   const player = state.player;
   const lifeTicks = Math.max(1, weapon.projectileLifeTicks);
   const damageMultiplier = getDamageMultiplier(player);
-  const projectileSpeed = weapon.projectileSpeed * player.perkStats.projectileSpeedMultiplier;
+  const projectileSpeed = resolveProjectileSpeed(weapon) * player.perkStats.projectileSpeedMultiplier;
   const projectileProfile = getProjectileProfile(weapon.projectileProfileId);
   const projectileRadius = projectileProfile.projectileRadius ?? DEFAULT_PROJECTILE_RADIUS;
   const pierceRemaining = projectileProfile.pierceCount ?? 0;
@@ -489,8 +519,8 @@ export function fireSpiralPattern(
     const dirX = Math.cos(totalAngle);
     const dirY = Math.sin(totalAngle);
 
-    const posX = player.pos.x + dirX * weapon.muzzleOffset;
-    const posY = player.pos.y + dirY * weapon.muzzleOffset;
+    const posX = player.pos.x + dirX * NATIVE_MUZZLE_FORWARD_OFFSET;
+    const posY = player.pos.y + dirY * NATIVE_MUZZLE_FORWARD_OFFSET;
     const velX = dirX * projectileSpeed;
     const velY = dirY * projectileSpeed;
 
@@ -508,6 +538,7 @@ export function fireSpiralPattern(
         pierceRemaining,
         explosionRadius,
         explosionDamage,
+        ignoreLifetime: true,
       },
     );
   }
@@ -530,7 +561,7 @@ function spawnAngryReloadRing(
   }
   const player = state.player;
   const damageMultiplier = getDamageMultiplier(player);
-  const projectileSpeed = weapon.projectileSpeed * player.perkStats.projectileSpeedMultiplier;
+  const projectileSpeed = resolveProjectileSpeed(weapon) * player.perkStats.projectileSpeedMultiplier;
   const projectileProfile = getProjectileProfile(weapon.projectileProfileId);
   const projectileRadius = projectileProfile.projectileRadius ?? DEFAULT_PROJECTILE_RADIUS;
   const pierceRemaining = projectileProfile.pierceCount ?? 0;
@@ -562,6 +593,7 @@ function spawnAngryReloadRing(
         pierceRemaining,
         explosionRadius,
         explosionDamage,
+        ignoreLifetime: true,
       },
     );
   }

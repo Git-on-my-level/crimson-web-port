@@ -33,7 +33,7 @@ export class GameScene extends Phaser.Scene {
   private seed = 1;
   private mode: 'survival' | 'quest' = 'survival';
   private questId?: string;
-  private readonly pixelsPerUnit = 20;
+  private readonly pixelsPerUnit = 18;
   private originX = 0;
   private originY = 0;
   private terrain?: TerrainBackground;

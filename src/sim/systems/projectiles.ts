@@ -18,6 +18,7 @@ export function spawnProjectile(
     explosionRadius?: number;
     explosionDamage?: number;
     speedScale?: number;
+    ignoreLifetime?: boolean;
   } = {},
 ): number | null {
   const id = state.projectilePool.alloc((proj) => {
@@ -29,7 +30,7 @@ export function spawnProjectile(
     proj.vel.y = vel.y;
     proj.kind = kind;
     proj.damage = damage;
-    proj.lifeTicksRemaining = lifeTicks;
+    proj.lifeTicksRemaining = options.ignoreLifetime ? -1 : lifeTicks;
     proj.owner = owner;
     proj.radius = radius;
     proj.alive = true;
@@ -64,14 +65,19 @@ export function updateProjectiles(state: SimState, events: SimEvent[], dt: numbe
   state.projectilePool.forEachActive((id, proj) => {
     proj.pos.x += proj.vel.x * dt * proj.speedScale;
     proj.pos.y += proj.vel.y * dt * proj.speedScale;
-    proj.lifeTicksRemaining -= tickDelta;
+    const hasTimedLife = proj.lifeTicksRemaining > 0;
+    if (hasTimedLife) {
+      proj.lifeTicksRemaining -= tickDelta;
+    }
 
-    if (
-      proj.lifeTicksRemaining <= 0 ||
+    const outOfBounds =
       proj.pos.x < minX ||
       proj.pos.x > maxX ||
       proj.pos.y < minY ||
-      proj.pos.y > maxY
+      proj.pos.y > maxY;
+    if (
+      (hasTimedLife && proj.lifeTicksRemaining <= 0) ||
+      outOfBounds
     ) {
       toRelease.push(id);
     }
