@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { SimState } from '../../sim/state';
 import type { EntityId } from '../../sim/types';
 import { type BonusId } from '../../content/bonuses';
+import { getModifierDef } from '../../content/modifiers';
 import { BONUS_FRAMES, PROJECTILE_FRAMES } from '../../content/atlas';
 import { WEAPON_BY_ID } from '../../content/weapons';
 import { rotationFromVelocity } from '../../render/facing';
@@ -70,12 +71,14 @@ export class PhaserRenderAdapter {
   private readonly particles = new Map<EntityId, Phaser.GameObjects.Sprite>();
   private readonly bonuses = new Map<EntityId, BonusSprites>();
   private readonly hazards = new Map<EntityId, Phaser.GameObjects.Graphics>();
+  private readonly modifierIndicators = new Map<EntityId, Phaser.GameObjects.Graphics>();
   private readonly projectileSpritePool: Phaser.GameObjects.Sprite[] = [];
   private readonly secondaryProjectileSpritePool: Phaser.GameObjects.Sprite[] = [];
   private readonly particleSpritePool: Phaser.GameObjects.Sprite[] = [];
   private readonly creatureSpritePool: Phaser.GameObjects.Sprite[] = [];
   private readonly bonusSpritePool: BonusSprites[] = [];
   private readonly hazardGraphicsPool: Phaser.GameObjects.Graphics[] = [];
+  private readonly modifierGraphicsPool: Phaser.GameObjects.Graphics[] = [];
   private cursorConfigured = false;
   private transform: RenderTransform;
   private debugCollisionEnabled = false;
@@ -108,6 +111,7 @@ export class PhaserRenderAdapter {
     this.syncSecondaryProjectiles(state.secondaryProjectiles);
     this.syncBonuses(state.bonuses);
     this.syncHazards(state.hazards);
+    this.syncModifiers(state.modifiers);
     this.renderCollisionDebug(state);
   }
 
@@ -272,6 +276,37 @@ export class PhaserRenderAdapter {
         graphics.setVisible(false);
         this.hazards.delete(id);
         this.hazardGraphicsPool.push(graphics);
+      }
+    }
+  }
+
+  private syncModifiers(modifiers: SimState['modifiers']): void {
+    const seen = new Set<EntityId>();
+
+    for (const modifier of modifiers) {
+      seen.add(modifier.id);
+      const def = getModifierDef(modifier.kind);
+      const graphics =
+        this.modifierIndicators.get(modifier.id) ?? this.createModifierIndicator(modifier.id);
+      const { x, y } = this.toScreen(this.player?.x ?? 0, this.player?.y ?? 0);
+      const baseSize = 16;
+      const alpha = 0.7 + Math.sin(this.bonusAnimTimeSeconds * 2) * 0.2;
+
+      graphics.clear();
+      graphics.fillStyle(def.color, 0.9);
+      graphics.fillCircle(x, y, baseSize);
+      graphics.lineStyle(2, def.color, 1.0);
+      graphics.strokeCircle(x, y, baseSize);
+
+      graphics.setAlpha(alpha);
+      graphics.setVisible(true);
+    }
+
+    for (const [id, graphics] of this.modifierIndicators) {
+      if (!seen.has(id)) {
+        graphics.setVisible(false);
+        this.modifierIndicators.delete(id);
+        this.modifierGraphicsPool.push(graphics);
       }
     }
   }
@@ -448,6 +483,21 @@ export class PhaserRenderAdapter {
     }
 
     this.hazards.set(id, graphics);
+    return graphics;
+  }
+
+  private createModifierIndicator(id: EntityId): Phaser.GameObjects.Graphics {
+    let graphics: Phaser.GameObjects.Graphics;
+
+    if (this.modifierGraphicsPool.length > 0) {
+      graphics = this.modifierGraphicsPool.pop()!;
+      graphics.clear();
+    } else {
+      graphics = this.scene.add.graphics();
+      graphics.setDepth(280);
+    }
+
+    this.modifierIndicators.set(id, graphics);
     return graphics;
   }
 

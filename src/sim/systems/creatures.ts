@@ -9,6 +9,7 @@ import { trySpawnBonusOnKill } from './bonuses';
 import { grantXp } from './progression';
 import { registerQuestKill } from './mode_quest';
 import { registerSurvivalKill } from './mode_survival';
+import { getCreatureSpeedMultiplier } from './modifiers';
 
 export const CREATURE_SPAWN_MIN_DISTANCE = 10;
 const CREATURE_SPAWN_MAX_DISTANCE = 24;
@@ -168,12 +169,14 @@ export function updateCreatures(state: SimState, events: SimEvent[], dt: number)
 
       const moveSpeed = creature.speed;
       const turnRate = moveSpeed * (4.0 / 3.0);
-      const speed = moveSpeed * creature.moveScale;
+      let speed = moveSpeed * creature.moveScale;
 
       creature.heading = angleApproach(creature.heading, targetHeading, turnRate, dt);
       const dirX = Math.cos(creature.heading - Math.PI / 2.0);
       const dirY = Math.sin(creature.heading - Math.PI / 2.0);
 
+      const modifierMultiplier = getCreatureSpeedMultiplier(creature, state);
+      speed *= modifierMultiplier;
       creature.vel.x = dirX * speed;
       creature.vel.y = dirY * speed;
       creature.pos.x += creature.vel.x * dt;

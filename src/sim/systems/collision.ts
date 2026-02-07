@@ -11,6 +11,7 @@ import { registerSurvivalKill } from './mode_survival';
 import { WORLD_BOUNDS } from '../world';
 import { isTerrainBlocked } from '../terrain';
 import { refRadius } from '../modes/survival_ref';
+import { getPlayerDamageMultiplier, getCreatureDamageMultiplier } from './modifiers';
 
 const CELL_SIZE = 6;
 const GRID_WIDTH = Math.ceil((WORLD_BOUNDS.maxX - WORLD_BOUNDS.minX) / CELL_SIZE);
@@ -101,6 +102,8 @@ export function resolveCollisions(state: SimState, events: SimEvent[]): void {
 
             const impactDamage = computeProjectileImpactDamage(projectile);
             const hpBefore = creature.hp;
+            const impactDamage =
+              computeProjectileImpactDamage(projectile) * getPlayerDamageMultiplier(state.player, state);
             applyDamageToCreature(state, creature, impactDamage, events, shouldAllowBonusDrop(projectile.kind));
             events.push({ type: 'projectileImpact', id: projId, pos: impactPos, kind: projectile.kind });
 
@@ -261,7 +264,11 @@ export function resolveCollisions(state: SimState, events: SimEvent[]): void {
       if (isEnergized) {
         applyDamageToCreature(state, creature, creature.hp, events, false);
       } else {
-        applyDamageToPlayer(state, creature.touchDamage, events);
+        applyDamageToPlayer(
+          state,
+          creature.touchDamage * getCreatureDamageMultiplier(creature, state),
+          events,
+        );
         creature.touchCooldownTicks = TOUCH_COOLDOWN_TICKS;
       }
     }

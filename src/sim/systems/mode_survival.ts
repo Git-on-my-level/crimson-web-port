@@ -106,6 +106,7 @@ function ensureSurvivalState(state: SimState): SurvivalModeState {
     lastWaveMilestoneIndex: -1,
     waveSpawnQueue: [],
     hazardSpawnQueue: [],
+    modifierSpawnCooldownTicks: 1800,
   };
   state.modeState = next;
   return next;

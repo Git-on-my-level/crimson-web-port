@@ -9,6 +9,7 @@ import { ObjectPool } from './pool';
 import { refreshAvailableWeapons } from './weapons/weaponTable';
 import { xpToNextForLevel } from './xp';
 import { terrain_generate, type TerrainGrid } from './terrain';
+import type { ModifierId } from '../content/modifiers';
 
 export interface PlayerState {
   id: number;
@@ -128,6 +129,13 @@ export interface BonusState {
   weaponId?: WeaponId;
 }
 
+export interface ModifierState {
+  id: number;
+  kind: ModifierId;
+  ticksRemaining: number;
+  effectStrength: number;
+}
+
 export interface HazardState {
   id: number;
   pos: Vec2;
@@ -152,6 +160,7 @@ export interface SimState {
   particles: ParticleState[];
   bonuses: BonusState[];
   hazards: HazardState[];
+  modifiers: ModifierState[];
   score: number;
   timeAlive: number;
   mode: 'survival' | 'quest';
@@ -193,6 +202,7 @@ export interface SurvivalModeState {
   lastWaveMilestoneIndex: number;
   waveSpawnQueue: { kind: string; delayTicks: number }[];
   hazardSpawnQueue: { kind: string; pos: Vec2; delayTicks: number }[];
+  modifierSpawnCooldownTicks: number;
 }
 
 export interface QuestModeState {
@@ -233,6 +243,7 @@ export function createSurvivalModeState(): SurvivalModeState {
     lastWaveMilestoneIndex: -1,
     waveSpawnQueue: [],
     hazardSpawnQueue: [],
+    modifierSpawnCooldownTicks: 0,
   };
 }
 
@@ -360,6 +371,7 @@ export function createSimState(
     particles: [],
     bonuses: [],
     hazards: [],
+    modifiers: [],
     score: 0,
     timeAlive: 0,
     mode,

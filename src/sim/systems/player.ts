@@ -2,13 +2,15 @@ import type { SimState } from '../state';
 import { vec2AddInplace, vec2Length, vec2Scale } from '../types';
 import { clampOrSlide } from '../terrain';
 import { clampToWorld } from '../world';
+import { getPlayerSpeedModifier, getPlayerRegenRate } from './modifiers';
 
 const PLAYER_ACCEL = 18;
 const PLAYER_DAMPING = 10;
-function getPlayerMaxSpeed(player: SimState['player']): number {
+function getPlayerMaxSpeed(player: SimState['player'], state: SimState): number {
   const speedBoostTicks = player.activeEffects['speed'] ?? 0;
   const bonusMultiplier = speedBoostTicks > 0 ? 1.5 : 1.0;
-  return player.baseSpeed * player.perkStats.moveSpeedMultiplier * bonusMultiplier;
+  const modifierMultiplier = getPlayerSpeedModifier(player, state);
+  return player.baseSpeed * player.perkStats.moveSpeedMultiplier * bonusMultiplier * modifierMultiplier;
 }
 
 export function updatePlayer(state: SimState, dt: number): void {
@@ -27,7 +29,7 @@ export function updatePlayer(state: SimState, dt: number): void {
   }
 
   const speed = vec2Length(state.player.vel);
-  const maxSpeed = getPlayerMaxSpeed(state.player);
+  const maxSpeed = getPlayerMaxSpeed(state.player, state);
   if (speed > maxSpeed) {
     const clamped = maxSpeed / speed;
     state.player.vel.x *= clamped;
@@ -68,5 +70,10 @@ export function updatePlayer(state: SimState, dt: number): void {
   if (aimLength > 0.0001) {
     state.player.aimDir = { x: aimDx / aimLength, y: aimDy / aimLength };
     state.player.aimAngle = Math.atan2(aimDy, aimDx);
+  }
+
+  const regenRate = getPlayerRegenRate(state.player, state);
+  if (regenRate > 0 && state.player.hp < state.player.hpMax) {
+    state.player.hp = Math.min(state.player.hpMax, state.player.hp + regenRate);
   }
 }

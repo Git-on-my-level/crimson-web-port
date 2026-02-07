@@ -15,6 +15,7 @@ import { updateSurvivalMode } from './systems/mode_survival';
 import { updateQuestMode } from './systems/mode_quest';
 import { updateHazards } from './systems/hazards';
 import { updatePerkSelection, updateProgression } from './systems/progression';
+import { updateModifiers } from './systems/modifiers';
 import { assertSimInvariants } from './diagnostics';
 
 export class Sim {
@@ -51,6 +52,7 @@ export class Sim {
     this.state.particles = fresh.particles;
     this.state.bonuses = fresh.bonuses;
     this.state.hazards = fresh.hazards;
+    this.state.modifiers = fresh.modifiers;
     this.state.score = fresh.score;
     this.state.timeAlive = fresh.timeAlive;
     this.state.mode = fresh.mode;
@@ -142,6 +144,10 @@ export class Sim {
     phaseStart = performance.now();
     updateHazards(this.state, events, scaledDt);
     profile.hazardsMs = performance.now() - phaseStart;
+
+    phaseStart = performance.now();
+    updateModifiers(this.state, events, realDt);
+    profile.hazardsMs += performance.now() - phaseStart;
 
     phaseStart = performance.now();
     updateProgression(this.state, events, realDt);
