@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { PhaserAudioAdapter } from '../adapters/phaser/audio';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -6,6 +7,10 @@ export class BootScene extends Phaser.Scene {
   }
 
   create() {
+    const audio = new PhaserAudioAdapter(this);
+    audio.initMusic();
+    audio.initSfx();
+    audio.shutdownAll();
     this.scene.start('preload');
   }
 }
