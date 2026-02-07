@@ -192,7 +192,7 @@ export const BONUS_FRAMES: Record<BonusId, number> = {
   fire_bullets: 11,
 };
 
-export const WEAPON_FRAMES: Record<WeaponId, number> = {
+export const WEAPON_FRAMES: Record<string, number> = {
   pistol: 0,
   revolver: 0,
   shotgun: 1,

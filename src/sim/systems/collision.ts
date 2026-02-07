@@ -100,7 +100,6 @@ export function resolveCollisions(state: SimState, events: SimEvent[]): void {
               return;
             }
 
-            const impactDamage = computeProjectileImpactDamage(projectile);
             const hpBefore = creature.hp;
             const impactDamage =
               computeProjectileImpactDamage(projectile) * getPlayerDamageMultiplier(state.player, state);

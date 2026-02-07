@@ -77,6 +77,7 @@ function ensureSurvivalState(state: SimState): SurvivalModeState {
   const next: SurvivalModeState = {
     kind: 'survival',
     elapsedMs: 0,
+    stage: 0,
     spawnCooldownMs: 0,
     spawnMinDistance: 10,
     spawnMaxDistance: 24,
