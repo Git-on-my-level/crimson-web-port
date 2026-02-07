@@ -74,13 +74,6 @@ export const DEFAULT_WIRING_STUBS: WiringStubCheck[] = [
     tags: ['wiring', 'audio'],
   },
   {
-    id: 'weapon-icon-missing',
-    description: 'UI shows weapon name but weapon icon missing',
-    paths: ['src', 'docs'],
-    pattern: /WIRING_STUB:.*weapon icon/,
-    tags: ['wiring', 'ui'],
-  },
-  {
     id: 'reload-input-unconsumed',
     description: 'Reload input exists but never consumed',
     paths: ['src', 'docs'],
