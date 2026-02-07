@@ -72,6 +72,7 @@ export interface CreatureState {
   orbitRadius: number;
   targetPos: Vec2;
   forceTarget: number;
+  label?: string;
 }
 
 export interface ProjectileState {

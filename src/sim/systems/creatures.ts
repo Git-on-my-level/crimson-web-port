@@ -11,6 +11,17 @@ import { registerQuestKill } from './mode_quest';
 import { registerSurvivalKill } from './mode_survival';
 import { getCreatureSpeedMultiplier } from './modifiers';
 
+const CREATURE_LABELS: Record<string, string | undefined> = {
+  zombie_elite: 'ELITE',
+  alien_elite: 'ELITE',
+  spider_elite: 'ELITE',
+  brute: 'BOSS',
+};
+
+export function assignCreatureLabel(kind: string): string | undefined {
+  return CREATURE_LABELS[kind];
+}
+
 export const CREATURE_SPAWN_MIN_DISTANCE = 10;
 const CREATURE_SPAWN_MAX_DISTANCE = 24;
 
@@ -97,6 +108,7 @@ export function spawnCreatureAtPosition(
     orbitRadius: 0,
     targetPos,
     forceTarget: 0,
+    label: assignCreatureLabel(kind),
   });
 
   events.push({ type: 'spawnCreature', id, pos: { x, y }, kind });

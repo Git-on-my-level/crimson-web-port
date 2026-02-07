@@ -36,6 +36,11 @@ const BONUS_ICON_TIME_OFFSET = 0.19;
 const WEAPON_ICON_MAX_INDEX = 31;
 const WEAPON_ICON_WIDTH_SCALE = 1.875;
 const WEAPON_ICON_HEIGHT_SCALE = 0.9375;
+const CREATURE_LABEL_FONT_SIZE = 14;
+const CREATURE_LABEL_OFFSET_Y = 2.0;
+const CREATURE_LABEL_COLOR = 0xf1f5f9;
+const CREATURE_LABEL_STROKE_COLOR = 0x0f172a;
+const CREATURE_LABEL_STROKE_THICKNESS = 3;
 
 const CREATURE_SPRITE_BY_KIND: Record<string, string> = {
   grunt: 'game-zombie',
@@ -66,6 +71,7 @@ export class PhaserRenderAdapter {
   private player?: Phaser.GameObjects.Sprite;
   private playerOutline?: Phaser.GameObjects.Sprite;
   private readonly creatures = new Map<EntityId, Phaser.GameObjects.Sprite>();
+  private readonly creatureLabels = new Map<EntityId, Phaser.GameObjects.Text>();
   private readonly projectiles = new Map<EntityId, Phaser.GameObjects.Sprite>();
   private readonly secondaryProjectiles = new Map<EntityId, Phaser.GameObjects.Sprite>();
   private readonly particles = new Map<EntityId, Phaser.GameObjects.Sprite>();
@@ -76,6 +82,7 @@ export class PhaserRenderAdapter {
   private readonly secondaryProjectileSpritePool: Phaser.GameObjects.Sprite[] = [];
   private readonly particleSpritePool: Phaser.GameObjects.Sprite[] = [];
   private readonly creatureSpritePool: Phaser.GameObjects.Sprite[] = [];
+  private readonly creatureLabelPool: Phaser.GameObjects.Text[] = [];
   private readonly bonusSpritePool: BonusSprites[] = [];
   private readonly hazardGraphicsPool: Phaser.GameObjects.Graphics[] = [];
   private readonly modifierGraphicsPool: Phaser.GameObjects.Graphics[] = [];
@@ -106,6 +113,8 @@ export class PhaserRenderAdapter {
       (entry) => entry.radius ?? 1,
       (entry) => entry.alive,
     );
+    this.syncParticles(state.particles);
+    this.syncCreatureLabels(state.creatures);
     this.syncParticles(state.particles);
     this.syncProjectiles(state.projectiles);
     this.syncSecondaryProjectiles(state.secondaryProjectiles);
@@ -182,6 +191,33 @@ export class PhaserRenderAdapter {
         obj.setVisible(false);
         map.delete(id);
         pool.push(obj);
+      }
+    }
+  }
+
+  private syncCreatureLabels(creatures: SimState['creatures']): void {
+    const seen = new Set<EntityId>();
+
+    for (const creature of creatures) {
+      if (!creature.alive) {
+        continue;
+      }
+      if (!creature.label) {
+        continue;
+      }
+      seen.add(creature.id);
+      const label = this.creatureLabels.get(creature.id) ?? this.createCreatureLabel(creature.id, creature.label);
+      const { x, y } = this.toScreen(creature.pos.x, creature.pos.y);
+      const offsetY = CREATURE_LABEL_OFFSET_Y * this.transform.pixelsPerUnit;
+      label.setPosition(x, y - offsetY);
+      label.setVisible(true);
+    }
+
+    for (const [id, label] of this.creatureLabels) {
+      if (!seen.has(id)) {
+        label.setVisible(false);
+        this.creatureLabels.delete(id);
+        this.creatureLabelPool.push(label);
       }
     }
   }
@@ -427,6 +463,30 @@ export class PhaserRenderAdapter {
 
     map.set(id, sprite);
     return sprite;
+  }
+
+  private createCreatureLabel(id: EntityId, text: string): Phaser.GameObjects.Text {
+    let label: Phaser.GameObjects.Text;
+
+    if (this.creatureLabelPool.length > 0) {
+      label = this.creatureLabelPool.pop()!;
+      label.setText(text);
+    } else {
+      label = this.scene.add.text(0, 0, text, {
+        fontFamily: '"Atkinson Hyperlegible", "Trebuchet MS", sans-serif',
+        fontSize: `${CREATURE_LABEL_FONT_SIZE}px`,
+        color: CREATURE_LABEL_COLOR.toString(),
+        fontStyle: 'bold',
+        align: 'center',
+        stroke: CREATURE_LABEL_STROKE_COLOR.toString(),
+        strokeThickness: CREATURE_LABEL_STROKE_THICKNESS,
+      });
+      label.setOrigin(0.5);
+      label.setDepth(410);
+    }
+
+    this.creatureLabels.set(id, label);
+    return label;
   }
 
   private createSprite(
