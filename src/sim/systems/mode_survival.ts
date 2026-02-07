@@ -105,6 +105,7 @@ function ensureSurvivalState(state: SimState): SurvivalModeState {
     killsTotal: 0,
     lastWaveMilestoneIndex: -1,
     waveSpawnQueue: [],
+    hazardSpawnQueue: [],
   };
   state.modeState = next;
   return next;

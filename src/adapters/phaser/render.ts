@@ -7,6 +7,7 @@ import { WEAPON_BY_ID } from '../../content/weapons';
 import { rotationFromVelocity } from '../../render/facing';
 import { computeFadeAlpha, computePulseScale } from '../../render/bonusAnim';
 import { computeDisplaySize } from '../../render/scale';
+import { getHazardDef } from '../../content/hazards';
 
 export type RenderTransform = {
   originX: number;
@@ -68,11 +69,13 @@ export class PhaserRenderAdapter {
   private readonly secondaryProjectiles = new Map<EntityId, Phaser.GameObjects.Sprite>();
   private readonly particles = new Map<EntityId, Phaser.GameObjects.Sprite>();
   private readonly bonuses = new Map<EntityId, BonusSprites>();
+  private readonly hazards = new Map<EntityId, Phaser.GameObjects.Graphics>();
   private readonly projectileSpritePool: Phaser.GameObjects.Sprite[] = [];
   private readonly secondaryProjectileSpritePool: Phaser.GameObjects.Sprite[] = [];
   private readonly particleSpritePool: Phaser.GameObjects.Sprite[] = [];
   private readonly creatureSpritePool: Phaser.GameObjects.Sprite[] = [];
   private readonly bonusSpritePool: BonusSprites[] = [];
+  private readonly hazardGraphicsPool: Phaser.GameObjects.Graphics[] = [];
   private cursorConfigured = false;
   private transform: RenderTransform;
   private debugCollisionEnabled = false;
@@ -104,6 +107,7 @@ export class PhaserRenderAdapter {
     this.syncProjectiles(state.projectiles);
     this.syncSecondaryProjectiles(state.secondaryProjectiles);
     this.syncBonuses(state.bonuses);
+    this.syncHazards(state.hazards);
     this.renderCollisionDebug(state);
   }
 
@@ -234,6 +238,40 @@ export class PhaserRenderAdapter {
         sprites.icon.setVisible(false);
         this.bonuses.delete(id);
         this.bonusSpritePool.push(sprites);
+      }
+    }
+  }
+
+  private syncHazards(hazards: SimState['hazards']): void {
+    const seen = new Set<EntityId>();
+
+    for (const hazard of hazards) {
+      if (!hazard.alive) {
+        continue;
+      }
+      seen.add(hazard.id);
+      const def = getHazardDef(hazard.kind);
+      const graphics =
+        this.hazards.get(hazard.id) ?? this.createHazardGraphics(hazard.id);
+      const { x, y } = this.toScreen(hazard.pos.x, hazard.pos.y);
+      const radiusPixels = hazard.radius * this.transform.pixelsPerUnit;
+
+      graphics.clear();
+      graphics.lineStyle(2, def.color, 0.8);
+      graphics.fillStyle(def.color, 0.3);
+      graphics.fillCircle(x, y, radiusPixels);
+      graphics.strokeCircle(x, y, radiusPixels);
+
+      const alpha = hazard.lifeTicksRemaining / hazard.lifeTicksMax;
+      graphics.setAlpha(alpha);
+      graphics.setVisible(true);
+    }
+
+    for (const [id, graphics] of this.hazards) {
+      if (!seen.has(id)) {
+        graphics.setVisible(false);
+        this.hazards.delete(id);
+        this.hazardGraphicsPool.push(graphics);
       }
     }
   }
@@ -398,6 +436,21 @@ export class PhaserRenderAdapter {
     return sprites;
   }
 
+  private createHazardGraphics(id: EntityId): Phaser.GameObjects.Graphics {
+    let graphics: Phaser.GameObjects.Graphics;
+
+    if (this.hazardGraphicsPool.length > 0) {
+      graphics = this.hazardGraphicsPool.pop()!;
+      graphics.clear();
+    } else {
+      graphics = this.scene.add.graphics();
+      graphics.setDepth(320);
+    }
+
+    this.hazards.set(id, graphics);
+    return graphics;
+  }
+
   private ensureAimIndicators(): void {
     if (!this.cursorConfigured) {
       this.scene.input.setDefaultCursor('crosshair');
@@ -452,5 +505,10 @@ export class PhaserRenderAdapter {
         drawCircle(proj.pos.x, proj.pos.y, proj.radius);
       }
     });
+    for (const hazard of state.hazards) {
+      if (hazard.alive) {
+        drawCircle(hazard.pos.x, hazard.pos.y, hazard.radius);
+      }
+    }
   }
 }

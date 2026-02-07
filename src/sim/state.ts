@@ -128,6 +128,19 @@ export interface BonusState {
   weaponId?: WeaponId;
 }
 
+export interface HazardState {
+  id: number;
+  pos: Vec2;
+  kind: string;
+  radius: number;
+  damage: number;
+  damageCooldownTicks: number;
+  damageCooldownRemaining: number;
+  lifeTicksRemaining: number;
+  lifeTicksMax: number;
+  alive: boolean;
+}
+
 export interface SimState {
   tick: number;
   rng: Rng;
@@ -138,6 +151,7 @@ export interface SimState {
   secondaryProjectiles: SecondaryProjectileState[];
   particles: ParticleState[];
   bonuses: BonusState[];
+  hazards: HazardState[];
   score: number;
   timeAlive: number;
   mode: 'survival' | 'quest';
@@ -163,6 +177,7 @@ export interface SimProfile {
   creaturesMs: number;
   collisionMs: number;
   bonusesMs: number;
+  hazardsMs: number;
   progressionMs: number;
   totalMs: number;
 }
@@ -177,6 +192,7 @@ export interface SurvivalModeState {
   killsTotal: number;
   lastWaveMilestoneIndex: number;
   waveSpawnQueue: { kind: string; delayTicks: number }[];
+  hazardSpawnQueue: { kind: string; pos: Vec2; delayTicks: number }[];
 }
 
 export interface QuestModeState {
@@ -216,6 +232,7 @@ export function createSurvivalModeState(): SurvivalModeState {
     killsTotal: 0,
     lastWaveMilestoneIndex: -1,
     waveSpawnQueue: [],
+    hazardSpawnQueue: [],
   };
 }
 
@@ -342,6 +359,7 @@ export function createSimState(
     secondaryProjectiles: [],
     particles: [],
     bonuses: [],
+    hazards: [],
     score: 0,
     timeAlive: 0,
     mode,
@@ -363,6 +381,7 @@ export function createSimState(
       creaturesMs: 0,
       collisionMs: 0,
       bonusesMs: 0,
+      hazardsMs: 0,
       progressionMs: 0,
       totalMs: 0,
     },

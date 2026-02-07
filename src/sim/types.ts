@@ -41,6 +41,7 @@ export type SimEvent =
   | { type: 'shockArc'; from: Vec2; to: Vec2 }
   | { type: 'spawnCreature'; id: EntityId; pos: Vec2; kind: string }
   | { type: 'spawnBonus'; id: EntityId; pos: Vec2; kind: BonusId; weaponId?: WeaponId; amount?: number; lifeTicksMax?: number }
+  | { type: 'spawnHazard'; id: EntityId; pos: Vec2; kind: string }
   | { type: 'damage'; target: 'player' | 'creature'; id: EntityId; amount: number }
   | { type: 'death'; target: 'player' | 'creature'; id: EntityId }
   | { type: 'gameOver'; id: EntityId }

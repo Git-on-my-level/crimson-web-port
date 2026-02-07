@@ -267,6 +267,22 @@ export function resolveCollisions(state: SimState, events: SimEvent[]): void {
     }
   }
 
+  for (const hazard of state.hazards) {
+    if (!hazard.alive) {
+      continue;
+    }
+
+    const dx = hazard.pos.x - player.pos.x;
+    const dy = hazard.pos.y - player.pos.y;
+    const radius = hazard.radius + player.radius;
+    if (dx * dx + dy * dy <= radius * radius) {
+      if (hazard.damageCooldownRemaining <= 0) {
+        applyDamageToPlayer(state, hazard.damage, events);
+        hazard.damageCooldownRemaining = hazard.damageCooldownTicks;
+      }
+    }
+  }
+
   clearCollisionGrid();
 }
 
