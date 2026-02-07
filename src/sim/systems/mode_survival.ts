@@ -1,6 +1,7 @@
+import { SURVIVAL_WAVE_MILESTONES } from '../../content/creatures';
 import type { SimState, SurvivalModeState } from '../state';
 import type { SimEvent } from '../types';
-import { spawnCreatureAtPosition } from './creatures';
+import { spawnCreatureAtEdge, spawnCreatureAtPosition } from './creatures';
 import { advanceSurvivalSpawnStage } from '../modes/survival_spawn_stage';
 import { resolveSurvivalSpawnTemplate } from '../modes/survival_spawn_templates';
 import { tickSurvivalWaveSpawns } from '../modes/survival_wave_spawns';
@@ -16,6 +17,7 @@ export function updateSurvivalMode(state: SimState, events: SimEvent[], dt: numb
   const modeState = ensureSurvivalState(state);
   const dtMs = dt * MS_PER_SECOND;
   modeState.elapsedMs += dtMs;
+  const elapsedSeconds = modeState.elapsedMs / MS_PER_SECOND;
 
   const stageAdvance = advanceSurvivalSpawnStage(modeState.stage, state.player.level);
   modeState.stage = stageAdvance.stage;
@@ -27,6 +29,9 @@ export function updateSurvivalMode(state: SimState, events: SimEvent[], dt: numb
     }
   }
 
+  checkWaveMilestones(state, events, modeState, elapsedSeconds);
+  processWaveSpawnQueue(state, events, modeState);
+
   const waveResult = tickSurvivalWaveSpawns(modeState.spawnCooldownMs, dtMs, state.rng, {
     playerCount: 1,
     survivalElapsedMs: modeState.elapsedMs,
@@ -37,6 +42,52 @@ export function updateSurvivalMode(state: SimState, events: SimEvent[], dt: numb
   modeState.spawnCooldownMs = waveResult.spawnCooldownMs;
   for (const waveSpawn of waveResult.spawns) {
     spawnCreatureAtPosition(state, events, waveSpawn.kind, waveSpawn.pos);
+  }
+}
+
+function checkWaveMilestones(
+  state: SimState,
+  events: SimEvent[],
+  modeState: SurvivalModeState,
+  elapsedSeconds: number,
+): void {
+  const nextIndex = modeState.lastWaveMilestoneIndex + 1;
+  if (nextIndex >= SURVIVAL_WAVE_MILESTONES.length) {
+    return;
+  }
+
+  const milestone = SURVIVAL_WAVE_MILESTONES[nextIndex];
+  if (elapsedSeconds >= milestone.atSeconds) {
+    modeState.lastWaveMilestoneIndex = nextIndex;
+
+    const delayBase = 15;
+    const delaySpread = 20;
+    for (let i = 0; i < milestone.creatureKinds.length; i += 1) {
+      const kind = milestone.creatureKinds[i];
+      const count = milestone.counts[i];
+      for (let j = 0; j < count; j += 1) {
+        const delay = delayBase + Math.floor(state.rng.nextFloat01() * delaySpread);
+        modeState.waveSpawnQueue.push({ kind, delayTicks: delay });
+      }
+    }
+
+    events.push({
+      type: 'waveMilestone',
+      waveIndex: nextIndex,
+      waveType: milestone.type,
+      description: `${milestone.type === 'boss' ? 'BOSS' : 'ELITE'} WAVE at ${milestone.atSeconds}s`,
+    });
+  }
+}
+
+function processWaveSpawnQueue(state: SimState, events: SimEvent[], modeState: SurvivalModeState): void {
+  for (let i = modeState.waveSpawnQueue.length - 1; i >= 0; i -= 1) {
+    const entry = modeState.waveSpawnQueue[i];
+    entry.delayTicks -= 1;
+    if (entry.delayTicks <= 0) {
+      spawnCreatureAtEdge(state, events, entry.kind);
+      modeState.waveSpawnQueue.splice(i, 1);
+    }
   }
 }
 
@@ -52,6 +103,8 @@ function ensureSurvivalState(state: SimState): SurvivalModeState {
     spawnMinDistance: 10,
     spawnMaxDistance: 24,
     killsTotal: 0,
+    lastWaveMilestoneIndex: -1,
+    waveSpawnQueue: [],
   };
   state.modeState = next;
   return next;

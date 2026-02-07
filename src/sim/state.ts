@@ -175,6 +175,8 @@ export interface SurvivalModeState {
   spawnMinDistance: number;
   spawnMaxDistance: number;
   killsTotal: number;
+  lastWaveMilestoneIndex: number;
+  waveSpawnQueue: { kind: string; delayTicks: number }[];
 }
 
 export interface QuestModeState {
@@ -212,6 +214,8 @@ export function createSurvivalModeState(): SurvivalModeState {
     spawnMinDistance: 10,
     spawnMaxDistance: 24,
     killsTotal: 0,
+    lastWaveMilestoneIndex: -1,
+    waveSpawnQueue: [],
   };
 }
 

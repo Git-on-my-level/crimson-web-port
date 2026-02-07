@@ -12,3 +12,6 @@ Functions: 3
 - Survival pacing now follows the original cooldown/interval curve (500ms baseline, decaying over time with extra spawns once the interval goes negative).
 - Spawns are pulled from template weights with per-kind caps, and still remain deterministic via `state.rng`.
 - Kill totals are tracked in survival mode state for highscores/UX.
+- Deterministic boss/elite wave milestones implemented with `SURVIVAL_WAVE_MILESTONES` config in `src/content/creatures.ts`.
+- Wave milestones trigger at fixed time intervals, spawning elite/boss creatures with randomized delays using seeded RNG.
+- Wave events are emitted via `waveMilestone` SimEvent type for UI integration.

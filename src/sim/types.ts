@@ -54,7 +54,8 @@ export type SimEvent =
   | { type: 'screenShake'; intensity: number; durationMs: number }
   | { type: 'screenFlash'; kind: 'nuke' | 'pickup' | 'damage' | 'explosion' }
   | { type: 'questStatusChanged'; status: 'Playing' | 'Success' | 'Failed' }
-  | { type: 'questMessage'; text: string };
+  | { type: 'questMessage'; text: string }
+  | { type: 'waveMilestone'; waveIndex: number; waveType: string; description: string };
 
 export function vec2(x = 0, y = 0): Vec2 {
   return { x, y };
