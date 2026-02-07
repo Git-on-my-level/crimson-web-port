@@ -82,7 +82,6 @@ const PELLET_JITTER_RANGE = 200;
 const NATIVE_MUZZLE_FORWARD_OFFSET = refRadius(16);
 const PISTOL_MUZZLE_LATERAL_OFFSET = refRadius(4);
 const PROJECTILE_SPEED_META_CAP = 80;
-
 export function updateWeapons(state: SimState, events: SimEvent[], dt: number): void {
   const player = state.player;
   const reloadWasDown = player.prevReloadPressed;
