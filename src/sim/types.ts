@@ -1,4 +1,5 @@
 import type { BonusId } from '../content/bonuses';
+import type { ModifierId } from '../content/modifiers';
 import type { PerkId } from '../content/perks';
 import type { WeaponId } from '../content/weapons';
 
@@ -41,6 +42,7 @@ export type SimEvent =
   | { type: 'shockArc'; from: Vec2; to: Vec2 }
   | { type: 'spawnCreature'; id: EntityId; pos: Vec2; kind: string }
   | { type: 'spawnBonus'; id: EntityId; pos: Vec2; kind: BonusId; weaponId?: WeaponId; amount?: number; lifeTicksMax?: number }
+  | { type: 'spawnHazard'; id: EntityId; pos: Vec2; kind: string }
   | { type: 'damage'; target: 'player' | 'creature'; id: EntityId; amount: number }
   | { type: 'death'; target: 'player' | 'creature'; id: EntityId }
   | { type: 'gameOver'; id: EntityId }
@@ -54,7 +56,10 @@ export type SimEvent =
   | { type: 'screenShake'; intensity: number; durationMs: number }
   | { type: 'screenFlash'; kind: 'nuke' | 'pickup' | 'damage' | 'explosion' }
   | { type: 'questStatusChanged'; status: 'Playing' | 'Success' | 'Failed' }
-  | { type: 'questMessage'; text: string };
+  | { type: 'questMessage'; text: string }
+  | { type: 'waveMilestone'; waveIndex: number; waveType: string; description: string }
+  | { type: 'modifierActivated'; id: EntityId; kind: ModifierId; name: string; modifierType: 'positive' | 'negative'; durationTicks: number }
+  | { type: 'modifierDeactivated'; id: EntityId; kind: ModifierId; name: string };
 
 export function vec2(x = 0, y = 0): Vec2 {
   return { x, y };

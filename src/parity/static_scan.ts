@@ -73,20 +73,6 @@ export const DEFAULT_WIRING_STUBS: WiringStubCheck[] = [
     pattern: /WIRING_STUB:.*playSfx/,
     tags: ['wiring', 'audio'],
   },
-  {
-    id: 'weapon-icon-missing',
-    description: 'UI shows weapon name but weapon icon missing',
-    paths: ['src', 'docs'],
-    pattern: /WIRING_STUB:.*weapon icon/,
-    tags: ['wiring', 'ui'],
-  },
-  {
-    id: 'reload-input-unconsumed',
-    description: 'Reload input exists but never consumed',
-    paths: ['src', 'docs'],
-    pattern: /WIRING_STUB:.*reload input/,
-    tags: ['wiring', 'input'],
-  },
 ];
 
 function listFiles(rootDir: string, targetPath: string, extensions?: string[]): string[] {

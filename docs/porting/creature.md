@@ -12,7 +12,7 @@ Functions: 16
 - [x] `creature_handle_death` — Implemented (marks dead + score in `src/sim/systems/collision.ts`).
 - [ ] `creature_is_name_unique` — TODO (ref: crimsonland:00445310)
 - [ ] `creature_name_assign_random` — TODO (ref: crimsonland:00445380)
-- [ ] `creature_name_draw_labels` — TODO (ref: crimsonland:00445600)
+- [x] `creature_name_draw_labels` — Implemented (high-signal enemy labels via `assignCreatureLabel` in `src/sim/systems/creatures.ts` and render adapter sync in `src/adapters/phaser/render.ts`).
 - [ ] `creature_render_all` — TODO (ref: crimsonland:00419680)
 - [ ] `creature_render_type` — TODO (ref: crimsonland:00418b60)
 - [x] `creature_spawn` — Implemented (basic edge spawn in `src/sim/systems/creatures.ts`).
@@ -24,3 +24,4 @@ Functions: 16
 ## Notes
 - Added template metadata (`CREATURE_TEMPLATES`) to drive survival spawn selection.
 - Added behavior variants (strafe/burst) for select creature kinds to reduce "seek-only" feel.
+- Added high-signal enemy labels (ELITE/BOSS) displayed above creature sprites with deterministic assignment and lifecycle management.

@@ -82,9 +82,9 @@ const PELLET_JITTER_RANGE = 200;
 const NATIVE_MUZZLE_FORWARD_OFFSET = refRadius(16);
 const PISTOL_MUZZLE_LATERAL_OFFSET = refRadius(4);
 const PROJECTILE_SPEED_META_CAP = 80;
-
 export function updateWeapons(state: SimState, events: SimEvent[], dt: number): void {
   const player = state.player;
+  const reloadWasDown = player.prevReloadPressed;
 
   const firePressed = player.input.fire && !player.prevFirePressed;
   const reloadPressed = player.input.reload && !player.prevReloadPressed;
@@ -150,7 +150,7 @@ export function updateWeapons(state: SimState, events: SimEvent[], dt: number): 
     }
   }
 
-  if (shouldStartReload(player, weapon, altSwapped)) {
+  if (shouldStartReload(player, weapon, altSwapped, reloadWasDown)) {
     player.reloadTimer = Math.max(0, weapon.reloadTime ?? 0);
     player.reloadTimerMax = player.reloadTimer;
     return;
@@ -649,7 +649,12 @@ function switchWeapon(player: SimState['player'], slot: number): boolean {
   return true;
 }
 
-function shouldStartReload(player: SimState['player'], weapon: WeaponDef, ignoreReloadInput: boolean): boolean {
+function shouldStartReload(
+  player: SimState['player'],
+  weapon: WeaponDef,
+  ignoreReloadInput: boolean,
+  reloadWasDown: boolean,
+): boolean {
   if (weapon.ammoMax === undefined || weapon.reloadTime === undefined) {
     return false;
   }
@@ -663,6 +668,9 @@ function shouldStartReload(player: SimState['player'], weapon: WeaponDef, ignore
     return false;
   }
   if (player.ammo >= weapon.ammoMax) {
+    return false;
+  }
+  if (player.input.reload && reloadWasDown) {
     return false;
   }
   return true;

@@ -95,4 +95,49 @@ export class PhaserAudioAdapter {
       PhaserAudioAdapter.currentMusic.setVolume(this.volumeSettings.music);
     }
   }
+
+  initMusic(): void {
+    this.applyVolumes();
+  }
+
+  initSfx(): void {
+    this.applyVolumes();
+  }
+
+  suspendAll(): void {
+    this.sound.pauseAll();
+    if (PhaserAudioAdapter.currentMusic) {
+      PhaserAudioAdapter.currentMusic.pause();
+    }
+  }
+
+  resumeAll(): void {
+    this.sound.resumeAll();
+    if (PhaserAudioAdapter.currentMusic && !PhaserAudioAdapter.currentMusic.isPlaying) {
+      PhaserAudioAdapter.currentMusic.resume();
+    }
+  }
+
+  suspendChannels(): void {
+    this.sound.pauseAll();
+  }
+
+  resumeChannels(): void {
+    this.sound.resumeAll();
+  }
+
+  update(): void {
+    this.sfxCooldowns.forEach((lastPlayed, key) => {
+      const now = this.now();
+      if (now - lastPlayed >= this.sfxCooldownMs) {
+        this.sfxCooldowns.delete(key);
+      }
+    });
+  }
+
+  shutdownAll(): void {
+    this.stopMusic();
+    this.sound.stopAll();
+    this.sfxCooldowns.clear();
+  }
 }

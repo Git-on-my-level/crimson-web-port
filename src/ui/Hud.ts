@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { WEAPON_BY_ID } from '../content/weapons';
 import { getBonusDef, type BonusId } from '../content/bonuses';
-import { BONUS_FRAMES } from '../content/atlas';
+import { BONUS_FRAMES, WEAPON_FRAMES } from '../content/atlas';
 import { getPerkDef, type PerkId } from '../content/perks';
 import type { SimState } from '../sim/state';
 import { xpForLevelStart } from '../sim/xp';
@@ -12,6 +12,7 @@ export class Hud {
   private xpText: Phaser.GameObjects.Text;
   private scoreText: Phaser.GameObjects.Text;
   private weaponText: Phaser.GameObjects.Text;
+  private weaponIcon: Phaser.GameObjects.Sprite;
   private pauseText: Phaser.GameObjects.Text;
   private entityCountText?: Phaser.GameObjects.Text;
   private activeBonusesText: Phaser.GameObjects.Text;
@@ -51,10 +52,17 @@ export class Hud {
       .setScrollFactor(0)
       .setDepth(1000);
 
-    this.weaponText = scene.add.text(width - padding, padding, '', style)
+    this.weaponText = scene.add.text(width - padding, padding + 2, '', style)
       .setOrigin(1, 0)
       .setScrollFactor(0)
       .setDepth(1000);
+
+    this.weaponIcon = scene.add.sprite(width - padding, padding, 'game-projs-grid4', 0)
+      .setOrigin(1, 0)
+      .setScrollFactor(0)
+      .setDepth(1000)
+      .setDisplaySize(24, 24)
+      .setVisible(false);
 
     this.pauseText = scene.add.text(width / 2, height / 2, 'PAUSED', {
       fontFamily: '"Atkinson Hyperlegible", "Trebuchet MS", sans-serif',
@@ -119,6 +127,10 @@ export class Hud {
 
     const weapon = WEAPON_BY_ID[state.player.weaponId];
     if (weapon) {
+      const frame = WEAPON_FRAMES[weapon.id] ?? 0;
+      this.weaponIcon.setTexture('game-projs-grid4', frame);
+      this.weaponIcon.setVisible(true);
+
       if (weapon.ammoMax !== undefined) {
         const ammo = Math.max(0, state.player.ammo);
         const reloadTag = state.player.reloadTimer > 0 ? ' (Reloading)' : '';
@@ -127,6 +139,7 @@ export class Hud {
         this.weaponText.setText(weapon.name ?? 'Unknown');
       }
     } else {
+      this.weaponIcon.setVisible(false);
       this.weaponText.setText('Weapon');
     }
 
@@ -183,7 +196,8 @@ export class Hud {
     const padding = 16;
 
     this.scoreText.setPosition(width / 2, padding);
-    this.weaponText.setPosition(width - padding, padding);
+    this.weaponText.setPosition(width - padding, padding + 2);
+    this.weaponIcon.setPosition(width - padding, padding);
     this.pauseText.setPosition(width / 2, height / 2);
 
     if (this.entityCountText) {
@@ -197,6 +211,7 @@ export class Hud {
     this.xpText.destroy();
     this.scoreText.destroy();
     this.weaponText.destroy();
+    this.weaponIcon.destroy();
     this.pauseText.destroy();
     this.entityCountText?.destroy();
     this.activeBonusesText.destroy();

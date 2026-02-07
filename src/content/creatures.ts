@@ -169,6 +169,26 @@ export const CREATURE_TEMPLATES: CreatureTemplate[] = [
   { id: 'brute', kind: 'brute', minSeconds: 200, weight: 1, cost: 4.2, maxActive: 2 },
 ];
 
+export type WaveMilestoneType = 'elite' | 'boss';
+
+export type WaveMilestone = {
+  atSeconds: number;
+  type: WaveMilestoneType;
+  creatureKinds: string[];
+  counts: number[];
+};
+
+export const SURVIVAL_WAVE_MILESTONES: WaveMilestone[] = [
+  { atSeconds: 60, type: 'elite', creatureKinds: ['zombie_elite'], counts: [2] },
+  { atSeconds: 120, type: 'elite', creatureKinds: ['spider_elite'], counts: [2] },
+  { atSeconds: 180, type: 'boss', creatureKinds: ['brute'], counts: [1] },
+  { atSeconds: 240, type: 'elite', creatureKinds: ['alien_elite'], counts: [2] },
+  { atSeconds: 300, type: 'elite', creatureKinds: ['zombie_elite', 'spider_elite'], counts: [2, 2] },
+  { atSeconds: 420, type: 'boss', creatureKinds: ['brute'], counts: [2] },
+  { atSeconds: 540, type: 'elite', creatureKinds: ['alien_elite', 'spider_elite'], counts: [3, 3] },
+  { atSeconds: 600, type: 'boss', creatureKinds: ['brute'], counts: [3] },
+];
+
 const CREATURE_TEMPLATES_BY_ID = new Map<string, CreatureTemplate>(
   CREATURE_TEMPLATES.map((template) => [template.id, template]),
 );

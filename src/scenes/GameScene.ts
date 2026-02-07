@@ -118,6 +118,7 @@ export class GameScene extends Phaser.Scene {
     this.scale.on('resize', this.handleResize, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleShutdown, this);
     this.events.on(Phaser.Scenes.Events.RESUME, this.handleResume, this);
+    this.events.on(Phaser.Scenes.Events.PAUSE, this.handlePause, this);
 
     this.controlsKeyHandler = () => this.toggleControlsOverlay();
     this.input.keyboard?.on('keydown-H', this.controlsKeyHandler);
@@ -151,6 +152,7 @@ export class GameScene extends Phaser.Scene {
     this.debugOverlay.update(this.sim.state, this.seed, fps);
     this.hud.update(this.sim.state);
     this.perkOverlay.update(this.sim.state);
+    this.audio.update();
     this.syncPauseMenu();
     this.syncGameOverOverlay();
     this.syncQuestOverlay();
@@ -550,6 +552,11 @@ export class GameScene extends Phaser.Scene {
   private handleResume(): void {
     this.inputAdapter.reloadKeybinds();
     this.audio.reloadSettings();
+    this.audio.resumeAll();
+  }
+
+  private handlePause(): void {
+    this.audio.suspendAll();
   }
 
   private isBigPickup(bonusType: string): boolean {
@@ -636,6 +643,7 @@ export class GameScene extends Phaser.Scene {
   private handleShutdown(): void {
     this.scale.off('resize', this.handleResize, this);
     this.events.off(Phaser.Scenes.Events.RESUME, this.handleResume, this);
+    this.events.off(Phaser.Scenes.Events.PAUSE, this.handlePause, this);
     if (this.controlsKeyHandler) {
       this.input.keyboard?.off('keydown-H', this.controlsKeyHandler);
     }
@@ -648,6 +656,7 @@ export class GameScene extends Phaser.Scene {
     this.pauseHint?.destroy();
     this.controlsOverlay?.destroy();
     this.debugOverlay?.destroy();
+    this.audio.shutdownAll();
     for (const key of this.debugKeys) {
       key.removeAllListeners();
       key.destroy();

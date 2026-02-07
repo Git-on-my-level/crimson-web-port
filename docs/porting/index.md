@@ -77,8 +77,7 @@ Implemented features:
 See TICKET-450 documentation: `docs/progress/TICKET-450.md`
 See `weapon_refresh_available` checklist: `docs/porting/weapon.md`
 
-Intentionally skipped for now:
-- Survival boss/elite wave logic and scripted wave banners.
+ Intentionally skipped for now:
 - Arena hazards, map modifiers, and timed events beyond the spawn-budget ramp.
 - Meta-progression, unlock tables, and leaderboard persistence.
 - Full Crimsonland UI chrome (wave cards, streak trackers, announcers).

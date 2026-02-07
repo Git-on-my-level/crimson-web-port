@@ -9,6 +9,7 @@ import { ObjectPool } from './pool';
 import { refreshAvailableWeapons } from './weapons/weaponTable';
 import { xpToNextForLevel } from './xp';
 import { terrain_generate, type TerrainGrid } from './terrain';
+import type { ModifierId } from '../content/modifiers';
 
 export interface PlayerState {
   id: number;
@@ -71,6 +72,7 @@ export interface CreatureState {
   orbitRadius: number;
   targetPos: Vec2;
   forceTarget: number;
+  label?: string;
 }
 
 export interface ProjectileState {
@@ -128,6 +130,26 @@ export interface BonusState {
   weaponId?: WeaponId;
 }
 
+export interface ModifierState {
+  id: number;
+  kind: ModifierId;
+  ticksRemaining: number;
+  effectStrength: number;
+}
+
+export interface HazardState {
+  id: number;
+  pos: Vec2;
+  kind: string;
+  radius: number;
+  damage: number;
+  damageCooldownTicks: number;
+  damageCooldownRemaining: number;
+  lifeTicksRemaining: number;
+  lifeTicksMax: number;
+  alive: boolean;
+}
+
 export interface SimState {
   tick: number;
   rng: Rng;
@@ -138,6 +160,8 @@ export interface SimState {
   secondaryProjectiles: SecondaryProjectileState[];
   particles: ParticleState[];
   bonuses: BonusState[];
+  hazards: HazardState[];
+  modifiers: ModifierState[];
   score: number;
   timeAlive: number;
   mode: 'survival' | 'quest';
@@ -163,6 +187,7 @@ export interface SimProfile {
   creaturesMs: number;
   collisionMs: number;
   bonusesMs: number;
+  hazardsMs: number;
   progressionMs: number;
   totalMs: number;
 }
@@ -175,6 +200,10 @@ export interface SurvivalModeState {
   spawnMinDistance: number;
   spawnMaxDistance: number;
   killsTotal: number;
+  lastWaveMilestoneIndex: number;
+  waveSpawnQueue: { kind: string; delayTicks: number }[];
+  hazardSpawnQueue: { kind: string; pos: Vec2; delayTicks: number }[];
+  modifierSpawnCooldownTicks: number;
 }
 
 export interface QuestModeState {
@@ -212,6 +241,10 @@ export function createSurvivalModeState(): SurvivalModeState {
     spawnMinDistance: 10,
     spawnMaxDistance: 24,
     killsTotal: 0,
+    lastWaveMilestoneIndex: -1,
+    waveSpawnQueue: [],
+    hazardSpawnQueue: [],
+    modifierSpawnCooldownTicks: 0,
   };
 }
 
@@ -338,6 +371,8 @@ export function createSimState(
     secondaryProjectiles: [],
     particles: [],
     bonuses: [],
+    hazards: [],
+    modifiers: [],
     score: 0,
     timeAlive: 0,
     mode,
@@ -359,6 +394,7 @@ export function createSimState(
       creaturesMs: 0,
       collisionMs: 0,
       bonusesMs: 0,
+      hazardsMs: 0,
       progressionMs: 0,
       totalMs: 0,
     },

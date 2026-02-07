@@ -2,11 +2,13 @@ import Phaser from 'phaser';
 import type { SimState } from '../../sim/state';
 import type { EntityId } from '../../sim/types';
 import { type BonusId } from '../../content/bonuses';
+import { getModifierDef } from '../../content/modifiers';
 import { BONUS_FRAMES, PROJECTILE_FRAMES } from '../../content/atlas';
 import { WEAPON_BY_ID } from '../../content/weapons';
 import { rotationFromVelocity } from '../../render/facing';
 import { computeFadeAlpha, computePulseScale } from '../../render/bonusAnim';
 import { computeDisplaySize } from '../../render/scale';
+import { getHazardDef } from '../../content/hazards';
 
 export type RenderTransform = {
   originX: number;
@@ -34,6 +36,11 @@ const BONUS_ICON_TIME_OFFSET = 0.19;
 const WEAPON_ICON_MAX_INDEX = 31;
 const WEAPON_ICON_WIDTH_SCALE = 1.875;
 const WEAPON_ICON_HEIGHT_SCALE = 0.9375;
+const CREATURE_LABEL_FONT_SIZE = 14;
+const CREATURE_LABEL_OFFSET_Y = 2.0;
+const CREATURE_LABEL_COLOR = 0xf1f5f9;
+const CREATURE_LABEL_STROKE_COLOR = 0x0f172a;
+const CREATURE_LABEL_STROKE_THICKNESS = 3;
 
 const CREATURE_SPRITE_BY_KIND: Record<string, string> = {
   grunt: 'game-zombie',
@@ -64,15 +71,21 @@ export class PhaserRenderAdapter {
   private player?: Phaser.GameObjects.Sprite;
   private playerOutline?: Phaser.GameObjects.Sprite;
   private readonly creatures = new Map<EntityId, Phaser.GameObjects.Sprite>();
+  private readonly creatureLabels = new Map<EntityId, Phaser.GameObjects.Text>();
   private readonly projectiles = new Map<EntityId, Phaser.GameObjects.Sprite>();
   private readonly secondaryProjectiles = new Map<EntityId, Phaser.GameObjects.Sprite>();
   private readonly particles = new Map<EntityId, Phaser.GameObjects.Sprite>();
   private readonly bonuses = new Map<EntityId, BonusSprites>();
+  private readonly hazards = new Map<EntityId, Phaser.GameObjects.Graphics>();
+  private readonly modifierIndicators = new Map<EntityId, Phaser.GameObjects.Graphics>();
   private readonly projectileSpritePool: Phaser.GameObjects.Sprite[] = [];
   private readonly secondaryProjectileSpritePool: Phaser.GameObjects.Sprite[] = [];
   private readonly particleSpritePool: Phaser.GameObjects.Sprite[] = [];
   private readonly creatureSpritePool: Phaser.GameObjects.Sprite[] = [];
+  private readonly creatureLabelPool: Phaser.GameObjects.Text[] = [];
   private readonly bonusSpritePool: BonusSprites[] = [];
+  private readonly hazardGraphicsPool: Phaser.GameObjects.Graphics[] = [];
+  private readonly modifierGraphicsPool: Phaser.GameObjects.Graphics[] = [];
   private cursorConfigured = false;
   private transform: RenderTransform;
   private debugCollisionEnabled = false;
@@ -101,9 +114,13 @@ export class PhaserRenderAdapter {
       (entry) => entry.alive,
     );
     this.syncParticles(state.particles);
+    this.syncCreatureLabels(state.creatures);
+    this.syncParticles(state.particles);
     this.syncProjectiles(state.projectiles);
     this.syncSecondaryProjectiles(state.secondaryProjectiles);
     this.syncBonuses(state.bonuses);
+    this.syncHazards(state.hazards);
+    this.syncModifiers(state.modifiers);
     this.renderCollisionDebug(state);
   }
 
@@ -178,6 +195,33 @@ export class PhaserRenderAdapter {
     }
   }
 
+  private syncCreatureLabels(creatures: SimState['creatures']): void {
+    const seen = new Set<EntityId>();
+
+    for (const creature of creatures) {
+      if (!creature.alive) {
+        continue;
+      }
+      if (!creature.label) {
+        continue;
+      }
+      seen.add(creature.id);
+      const label = this.creatureLabels.get(creature.id) ?? this.createCreatureLabel(creature.id, creature.label);
+      const { x, y } = this.toScreen(creature.pos.x, creature.pos.y);
+      const offsetY = CREATURE_LABEL_OFFSET_Y * this.transform.pixelsPerUnit;
+      label.setPosition(x, y - offsetY);
+      label.setVisible(true);
+    }
+
+    for (const [id, label] of this.creatureLabels) {
+      if (!seen.has(id)) {
+        label.setVisible(false);
+        this.creatureLabels.delete(id);
+        this.creatureLabelPool.push(label);
+      }
+    }
+  }
+
   private syncBonuses(bonuses: SimState['bonuses']): void {
     const seen = new Set<EntityId>();
     const radius = 0.6;
@@ -234,6 +278,71 @@ export class PhaserRenderAdapter {
         sprites.icon.setVisible(false);
         this.bonuses.delete(id);
         this.bonusSpritePool.push(sprites);
+      }
+    }
+  }
+
+  private syncHazards(hazards: SimState['hazards']): void {
+    const seen = new Set<EntityId>();
+
+    for (const hazard of hazards) {
+      if (!hazard.alive) {
+        continue;
+      }
+      seen.add(hazard.id);
+      const def = getHazardDef(hazard.kind);
+      const graphics =
+        this.hazards.get(hazard.id) ?? this.createHazardGraphics(hazard.id);
+      const { x, y } = this.toScreen(hazard.pos.x, hazard.pos.y);
+      const radiusPixels = hazard.radius * this.transform.pixelsPerUnit;
+
+      graphics.clear();
+      graphics.lineStyle(2, def.color, 0.8);
+      graphics.fillStyle(def.color, 0.3);
+      graphics.fillCircle(x, y, radiusPixels);
+      graphics.strokeCircle(x, y, radiusPixels);
+
+      const alpha = hazard.lifeTicksRemaining / hazard.lifeTicksMax;
+      graphics.setAlpha(alpha);
+      graphics.setVisible(true);
+    }
+
+    for (const [id, graphics] of this.hazards) {
+      if (!seen.has(id)) {
+        graphics.setVisible(false);
+        this.hazards.delete(id);
+        this.hazardGraphicsPool.push(graphics);
+      }
+    }
+  }
+
+  private syncModifiers(modifiers: SimState['modifiers']): void {
+    const seen = new Set<EntityId>();
+
+    for (const modifier of modifiers) {
+      seen.add(modifier.id);
+      const def = getModifierDef(modifier.kind);
+      const graphics =
+        this.modifierIndicators.get(modifier.id) ?? this.createModifierIndicator(modifier.id);
+      const { x, y } = this.toScreen(this.player?.x ?? 0, this.player?.y ?? 0);
+      const baseSize = 16;
+      const alpha = 0.7 + Math.sin(this.bonusAnimTimeSeconds * 2) * 0.2;
+
+      graphics.clear();
+      graphics.fillStyle(def.color, 0.9);
+      graphics.fillCircle(x, y, baseSize);
+      graphics.lineStyle(2, def.color, 1.0);
+      graphics.strokeCircle(x, y, baseSize);
+
+      graphics.setAlpha(alpha);
+      graphics.setVisible(true);
+    }
+
+    for (const [id, graphics] of this.modifierIndicators) {
+      if (!seen.has(id)) {
+        graphics.setVisible(false);
+        this.modifierIndicators.delete(id);
+        this.modifierGraphicsPool.push(graphics);
       }
     }
   }
@@ -356,6 +465,30 @@ export class PhaserRenderAdapter {
     return sprite;
   }
 
+  private createCreatureLabel(id: EntityId, text: string): Phaser.GameObjects.Text {
+    let label: Phaser.GameObjects.Text;
+
+    if (this.creatureLabelPool.length > 0) {
+      label = this.creatureLabelPool.pop()!;
+      label.setText(text);
+    } else {
+      label = this.scene.add.text(0, 0, text, {
+        fontFamily: '"Atkinson Hyperlegible", "Trebuchet MS", sans-serif',
+        fontSize: `${CREATURE_LABEL_FONT_SIZE}px`,
+        color: CREATURE_LABEL_COLOR.toString(),
+        fontStyle: 'bold',
+        align: 'center',
+        stroke: CREATURE_LABEL_STROKE_COLOR.toString(),
+        strokeThickness: CREATURE_LABEL_STROKE_THICKNESS,
+      });
+      label.setOrigin(0.5);
+      label.setDepth(410);
+    }
+
+    this.creatureLabels.set(id, label);
+    return label;
+  }
+
   private createSprite(
     map: Map<EntityId, Phaser.GameObjects.Sprite>,
     pool: Phaser.GameObjects.Sprite[],
@@ -396,6 +529,36 @@ export class PhaserRenderAdapter {
 
     this.bonuses.set(id, sprites);
     return sprites;
+  }
+
+  private createHazardGraphics(id: EntityId): Phaser.GameObjects.Graphics {
+    let graphics: Phaser.GameObjects.Graphics;
+
+    if (this.hazardGraphicsPool.length > 0) {
+      graphics = this.hazardGraphicsPool.pop()!;
+      graphics.clear();
+    } else {
+      graphics = this.scene.add.graphics();
+      graphics.setDepth(320);
+    }
+
+    this.hazards.set(id, graphics);
+    return graphics;
+  }
+
+  private createModifierIndicator(id: EntityId): Phaser.GameObjects.Graphics {
+    let graphics: Phaser.GameObjects.Graphics;
+
+    if (this.modifierGraphicsPool.length > 0) {
+      graphics = this.modifierGraphicsPool.pop()!;
+      graphics.clear();
+    } else {
+      graphics = this.scene.add.graphics();
+      graphics.setDepth(280);
+    }
+
+    this.modifierIndicators.set(id, graphics);
+    return graphics;
   }
 
   private ensureAimIndicators(): void {
@@ -452,5 +615,10 @@ export class PhaserRenderAdapter {
         drawCircle(proj.pos.x, proj.pos.y, proj.radius);
       }
     });
+    for (const hazard of state.hazards) {
+      if (hazard.alive) {
+        drawCircle(hazard.pos.x, hazard.pos.y, hazard.radius);
+      }
+    }
   }
 }

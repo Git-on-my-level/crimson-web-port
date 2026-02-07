@@ -11,6 +11,7 @@ import { registerSurvivalKill } from './mode_survival';
 import { WORLD_BOUNDS } from '../world';
 import { isTerrainBlocked } from '../terrain';
 import { refRadius } from '../modes/survival_ref';
+import { getPlayerDamageMultiplier, getCreatureDamageMultiplier } from './modifiers';
 
 const CELL_SIZE = 6;
 const GRID_WIDTH = Math.ceil((WORLD_BOUNDS.maxX - WORLD_BOUNDS.minX) / CELL_SIZE);
@@ -99,8 +100,9 @@ export function resolveCollisions(state: SimState, events: SimEvent[]): void {
               return;
             }
 
-            const impactDamage = computeProjectileImpactDamage(projectile);
             const hpBefore = creature.hp;
+            const impactDamage =
+              computeProjectileImpactDamage(projectile) * getPlayerDamageMultiplier(state.player, state);
             applyDamageToCreature(state, creature, impactDamage, events, shouldAllowBonusDrop(projectile.kind));
             events.push({ type: 'projectileImpact', id: projId, pos: impactPos, kind: projectile.kind });
 
@@ -261,8 +263,28 @@ export function resolveCollisions(state: SimState, events: SimEvent[]): void {
       if (isEnergized) {
         applyDamageToCreature(state, creature, creature.hp, events, false);
       } else {
-        applyDamageToPlayer(state, creature.touchDamage, events);
+        applyDamageToPlayer(
+          state,
+          creature.touchDamage * getCreatureDamageMultiplier(creature, state),
+          events,
+        );
         creature.touchCooldownTicks = TOUCH_COOLDOWN_TICKS;
+      }
+    }
+  }
+
+  for (const hazard of state.hazards) {
+    if (!hazard.alive) {
+      continue;
+    }
+
+    const dx = hazard.pos.x - player.pos.x;
+    const dy = hazard.pos.y - player.pos.y;
+    const radius = hazard.radius + player.radius;
+    if (dx * dx + dy * dy <= radius * radius) {
+      if (hazard.damageCooldownRemaining <= 0) {
+        applyDamageToPlayer(state, hazard.damage, events);
+        hazard.damageCooldownRemaining = hazard.damageCooldownTicks;
       }
     }
   }

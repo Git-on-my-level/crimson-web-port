@@ -191,3 +191,18 @@ export const BONUS_FRAMES: Record<BonusId, number> = {
   speed: 9,
   fire_bullets: 11,
 };
+
+export const WEAPON_FRAMES: Record<string, number> = {
+  pistol: 0,
+  revolver: 0,
+  shotgun: 1,
+  smg: 2,
+  burst_rifle: 3,
+  rifle: 3,
+  sniper: 3,
+  flamethrower: 2,
+  plasma: 4,
+  railgun: 4,
+  rocket: 1,
+  laser: 4,
+};

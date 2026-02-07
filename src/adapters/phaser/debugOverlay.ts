@@ -15,6 +15,7 @@ export class DebugOverlay {
     creaturesMs: [],
     collisionMs: [],
     bonusesMs: [],
+    hazardsMs: [],
     progressionMs: [],
     totalMs: [],
   };
@@ -75,8 +76,9 @@ export class DebugOverlay {
         `Projectiles ${avg('projectilesMs').toFixed(3)} | Mode ${avg('modeMs').toFixed(3)} | Creatures ${avg('creaturesMs').toFixed(3)}`,
       );
       profileLines.push(
-        `Collision ${avg('collisionMs').toFixed(3)} | Bonuses ${avg('bonusesMs').toFixed(3)} | Progress ${avg('progressionMs').toFixed(3)}`,
+        `Collision ${avg('collisionMs').toFixed(3)} | Bonuses ${avg('bonusesMs').toFixed(3)} | Hazards ${avg('hazardsMs').toFixed(3)}`,
       );
+      profileLines.push(`Progress ${avg('progressionMs').toFixed(3)}`);
       profileLines.push(`Total ${avg('totalMs').toFixed(3)}`);
     }
 
@@ -91,6 +93,7 @@ export class DebugOverlay {
       `Creatures: ${state.creatures.length}`,
       `Projectiles: ${state.projectiles.length}`,
       `Bonuses: ${state.bonuses.length}`,
+      `Hazards: ${state.hazards.length}`,
       `Score: ${state.score}`,
       `Seed: ${seed}`,
       `Step Time: ${(avgStepTime * 1000).toFixed(2)}µs`,
