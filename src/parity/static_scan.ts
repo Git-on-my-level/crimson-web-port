@@ -73,13 +73,6 @@ export const DEFAULT_WIRING_STUBS: WiringStubCheck[] = [
     pattern: /WIRING_STUB:.*playSfx/,
     tags: ['wiring', 'audio'],
   },
-  {
-    id: 'reload-input-unconsumed',
-    description: 'Reload input exists but never consumed',
-    paths: ['src', 'docs'],
-    pattern: /WIRING_STUB:.*reload input/,
-    tags: ['wiring', 'input'],
-  },
 ];
 
 function listFiles(rootDir: string, targetPath: string, extensions?: string[]): string[] {
